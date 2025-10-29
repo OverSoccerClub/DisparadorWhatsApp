@@ -16,12 +16,10 @@ import {
 import { Disparo, Cliente } from '@/lib/supabase'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
-// Novo modal unificado (Evolution + WAHA)
-import UnifiedDisparoModal from './UnifiedDisparoModal'
-import { DispatchMethod } from './DispatchMethodSelector'
-// Manter modal antigo para rollback se necessário
+// Modal original (ativo)
 import DisparoModal from './DisparoModal'
 import ConfirmModal from './ConfirmModal'
+import WahaDispatchModal from './WahaDispatchModal'
 
 export default function DisparosPage() {
   const [disparos, setDisparos] = useState<Disparo[]>([])
@@ -29,17 +27,10 @@ export default function DisparosPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'todos' | 'pendente' | 'enviado' | 'entregue' | 'falhou' | 'cancelado'>('todos')
   const [showDisparoModal, setShowDisparoModal] = useState(false)
+  const [showWahaModal, setShowWahaModal] = useState(false)
   const [loading, setLoading] = useState(false)
-  
-  // Novo: Estado para método de disparo (evolution ou waha)
-  const [dispatchMethod, setDispatchMethod] = useState<DispatchMethod>('evolution')
-  
-  // Novo: Estado para clientes (necessário para o modal unificado)
   const [clientes, setClientes] = useState<Cliente[]>([])
-  
-  // Novo: Flag para usar modal unificado (true) ou antigo (false)
-  // TEMPORARIAMENTE FALSE para diagnosticar problema
-  const [useUnifiedModal] = useState(false)
+  const [dispatchMethod, setDispatchMethod] = useState<'evolution' | 'waha'>('evolution')
   const [dateFilters, setDateFilters] = useState({
     dataInicio: '',
     dataFim: '',
@@ -90,7 +81,6 @@ export default function DisparosPage() {
     }
   }
 
-  // Novo: Carregar clientes para o modal unificado
   const loadClientes = async () => {
     try {
       const response = await fetch('/api/clientes')
@@ -109,10 +99,7 @@ export default function DisparosPage() {
   // Carregar dados iniciais
   useEffect(() => {
     loadDisparos()
-    // Carregar clientes se usar modal unificado
-    if (useUnifiedModal) {
-      loadClientes()
-    }
+    loadClientes()
   }, [])
 
   // Filtros
@@ -243,6 +230,25 @@ export default function DisparosPage() {
           </div>
         </div>
         <div className="flex space-x-3">
+          {/* Seletor de método de envio (Evolution x WAHA) */}
+          <div className="hidden lg:flex items-center bg-secondary-100 rounded-lg overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setDispatchMethod('evolution')}
+              className={`px-3 py-2 text-sm font-medium ${dispatchMethod === 'evolution' ? 'bg-white text-primary-700' : 'text-secondary-700'}`}
+              title="Evolution API"
+            >
+              Evolution
+            </button>
+            <button
+              type="button"
+              onClick={() => setDispatchMethod('waha')}
+              className={`px-3 py-2 text-sm font-medium ${dispatchMethod === 'waha' ? 'bg-white text-primary-700' : 'text-secondary-700'}`}
+              title="WAHA API"
+            >
+              WAHA
+            </button>
+          </div>
           <button
             onClick={handleRefresh}
             disabled={loading}
@@ -252,11 +258,17 @@ export default function DisparosPage() {
             Atualizar
           </button>
           <button
-            onClick={() => setShowDisparoModal(true)}
+            onClick={() => {
+              if (dispatchMethod === 'waha') {
+                setShowWahaModal(true)
+              } else {
+                setShowDisparoModal(true)
+              }
+            }}
             className="btn btn-primary btn-md"
           >
             <PlusIcon className="h-4 w-4 mr-2" />
-            Novo Disparo
+            Novo Disparo ({dispatchMethod === 'waha' ? 'WAHA' : 'Evolution'})
           </button>
         </div>
       </div>
@@ -561,29 +573,27 @@ export default function DisparosPage() {
         </div>
       </div>
 
-      {/* Modal de Disparo - Temporariamente usando modal antigo */}
-      {useUnifiedModal ? (
-        <UnifiedDisparoModal
-          isOpen={showDisparoModal}
-          onClose={() => {
-            setShowDisparoModal(false)
-            // Recarregar disparos após fechar modal
-            loadDisparos(pagination.page, searchTerm, statusFilter, dateFilters.dataInicio, dateFilters.dataFim, dateFilters.tipoData)
-          }}
-          clientes={clientes}
-          defaultMethod={dispatchMethod}
-        />
-      ) : (
-        <DisparoModal
-          isOpen={showDisparoModal}
-          onClose={() => {
-            setShowDisparoModal(false)
-            // Recarregar disparos após fechar modal
-            loadDisparos(pagination.page, searchTerm, statusFilter, dateFilters.dataInicio, dateFilters.dataFim, dateFilters.tipoData)
-          }}
-          clientes={clientes}
-        />
-      )}
+      {/* Modal de Disparo Evolution */}
+      <DisparoModal
+        isOpen={showDisparoModal}
+        onClose={() => {
+          setShowDisparoModal(false)
+          // Recarregar disparos após fechar modal
+          loadDisparos(pagination.page, searchTerm, statusFilter, dateFilters.dataInicio, dateFilters.dataFim, dateFilters.tipoData)
+        }}
+        clientes={clientes}
+      />
+
+      {/* Modal de Disparo WAHA */}
+      <WahaDispatchModal
+        isOpen={showWahaModal}
+        onClose={() => {
+          setShowWahaModal(false)
+          // Recarregar disparos após fechar modal (se aplicável)
+          loadDisparos(pagination.page, searchTerm, statusFilter, dateFilters.dataInicio, dateFilters.dataFim, dateFilters.tipoData)
+        }}
+        clientes={clientes}
+      />
 
       {/* Modal de Confirmação */}
       <ConfirmModal
