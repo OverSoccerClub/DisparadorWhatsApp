@@ -20,7 +20,7 @@ import toast from 'react-hot-toast'
 import UnifiedDisparoModal from './UnifiedDisparoModal'
 import { DispatchMethod } from './DispatchMethodSelector'
 // Manter modal antigo para rollback se necessário
-// import DisparoModal from './DisparoModal'
+import DisparoModal from './DisparoModal'
 import ConfirmModal from './ConfirmModal'
 
 export default function DisparosPage() {
@@ -38,8 +38,8 @@ export default function DisparosPage() {
   const [clientes, setClientes] = useState<Cliente[]>([])
   
   // Novo: Flag para usar modal unificado (true) ou antigo (false)
-  // Deixar true por padrão para usar o novo sistema
-  const [useUnifiedModal] = useState(true)
+  // TEMPORARIAMENTE FALSE para diagnosticar problema
+  const [useUnifiedModal] = useState(false)
   const [dateFilters, setDateFilters] = useState({
     dataInicio: '',
     dataFim: '',
@@ -561,7 +561,7 @@ export default function DisparosPage() {
         </div>
       </div>
 
-      {/* Novo Modal Unificado (Evolution + WAHA) */}
+      {/* Modal de Disparo - Temporariamente usando modal antigo */}
       {useUnifiedModal ? (
         <UnifiedDisparoModal
           isOpen={showDisparoModal}
@@ -574,14 +574,15 @@ export default function DisparosPage() {
           defaultMethod={dispatchMethod}
         />
       ) : (
-        /* Modal antigo (comentado mas mantido para rollback)
         <DisparoModal
           isOpen={showDisparoModal}
-          onClose={() => setShowDisparoModal(false)}
-          clientes={[]}
+          onClose={() => {
+            setShowDisparoModal(false)
+            // Recarregar disparos após fechar modal
+            loadDisparos(pagination.page, searchTerm, statusFilter, dateFilters.dataInicio, dateFilters.dataFim, dateFilters.tipoData)
+          }}
+          clientes={clientes}
         />
-        */
-        null
       )}
 
       {/* Modal de Confirmação */}
