@@ -1,0 +1,35 @@
+name: Version Check
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'package.json'
+
+jobs:
+  check-version:
+    name: Verify Version Tag
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Get package.json version
+        id: pkg_version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Check if tag exists
+        run: |
+          VERSION="${{ steps.pkg_version.outputs.version }}"
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "✅ Tag v$VERSION já existe"
+          else
+            echo "⚠️ Tag v$VERSION não encontrada"
+            echo "Execute: npm run version:patch|minor|major"
+            exit 1
+          fi
