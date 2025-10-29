@@ -19,8 +19,8 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: HomeIcon },
   { name: 'Clientes', href: '/clientes', icon: UsersIcon },
   { name: 'Campanhas', href: '/campanhas', icon: MegaphoneIcon },
-  { name: 'Disparos', href: '/disparos', icon: PaperAirplaneIcon },
-  { name: 'Disparos WAHA', href: '/waha-dispatches', icon: DevicePhoneMobileIcon },
+  { name: 'Disparos', href: '/disparos', icon: PaperAirplaneIcon }, // Agora unificado: Evolution + WAHA
+  // Removido: { name: 'Disparos WAHA', href: '/waha-dispatches', icon: DevicePhoneMobileIcon }, // Unificado em /disparos
   { name: 'Sessões WAHA', href: '/waha-sessions', icon: DevicePhoneMobileIcon },
   { name: 'Relatórios', href: '/relatorios', icon: ChartBarIcon },
   { name: 'Configurações', href: '/configuracoes', icon: CogIcon },

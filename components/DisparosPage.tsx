@@ -13,10 +13,14 @@ import {
   ArrowPathIcon,
   TrashIcon
 } from '@heroicons/react/24/outline'
-import { Disparo } from '@/lib/supabase'
+import { Disparo, Cliente } from '@/lib/supabase'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import DisparoModal from './DisparoModal'
+// Novo modal unificado (Evolution + WAHA)
+import UnifiedDisparoModal from './UnifiedDisparoModal'
+import { DispatchMethod } from './DispatchMethodSelector'
+// Manter modal antigo para rollback se necessário
+// import DisparoModal from './DisparoModal'
 import ConfirmModal from './ConfirmModal'
 
 export default function DisparosPage() {
@@ -26,6 +30,16 @@ export default function DisparosPage() {
   const [statusFilter, setStatusFilter] = useState<'todos' | 'pendente' | 'enviado' | 'entregue' | 'falhou' | 'cancelado'>('todos')
   const [showDisparoModal, setShowDisparoModal] = useState(false)
   const [loading, setLoading] = useState(false)
+  
+  // Novo: Estado para método de disparo (evolution ou waha)
+  const [dispatchMethod, setDispatchMethod] = useState<DispatchMethod>('evolution')
+  
+  // Novo: Estado para clientes (necessário para o modal unificado)
+  const [clientes, setClientes] = useState<Cliente[]>([])
+  
+  // Novo: Flag para usar modal unificado (true) ou antigo (false)
+  // Deixar true por padrão para usar o novo sistema
+  const [useUnifiedModal] = useState(true)
   const [dateFilters, setDateFilters] = useState({
     dataInicio: '',
     dataFim: '',
@@ -76,9 +90,29 @@ export default function DisparosPage() {
     }
   }
 
+  // Novo: Carregar clientes para o modal unificado
+  const loadClientes = async () => {
+    try {
+      const response = await fetch('/api/clientes')
+      const data = await response.json()
+      
+      if (data.success) {
+        setClientes(data.clientes || [])
+      } else {
+        console.error('Erro ao carregar clientes:', data.error)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar clientes:', error)
+    }
+  }
+
   // Carregar dados iniciais
   useEffect(() => {
     loadDisparos()
+    // Carregar clientes se usar modal unificado
+    if (useUnifiedModal) {
+      loadClientes()
+    }
   }, [])
 
   // Filtros
@@ -527,12 +561,28 @@ export default function DisparosPage() {
         </div>
       </div>
 
-      {/* Disparo Modal */}
-      <DisparoModal
-        isOpen={showDisparoModal}
-        onClose={() => setShowDisparoModal(false)}
-        clientes={[]}
-      />
+      {/* Novo Modal Unificado (Evolution + WAHA) */}
+      {useUnifiedModal ? (
+        <UnifiedDisparoModal
+          isOpen={showDisparoModal}
+          onClose={() => {
+            setShowDisparoModal(false)
+            // Recarregar disparos após fechar modal
+            loadDisparos(pagination.page, searchTerm, statusFilter, dateFilters.dataInicio, dateFilters.dataFim, dateFilters.tipoData)
+          }}
+          clientes={clientes}
+          defaultMethod={dispatchMethod}
+        />
+      ) : (
+        /* Modal antigo (comentado mas mantido para rollback)
+        <DisparoModal
+          isOpen={showDisparoModal}
+          onClose={() => setShowDisparoModal(false)}
+          clientes={[]}
+        />
+        */
+        null
+      )}
 
       {/* Modal de Confirmação */}
       <ConfirmModal
