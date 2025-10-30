@@ -279,18 +279,20 @@ export async function POST(request: NextRequest) {
           results.failed++
           results.errors.push(`Erro ao enviar para ${phone}: falha no envio humanizado`)
           
-          // Registrar falha no banco
-          await WahaDispatchService.createDispatch({
-            campaign_id: campaign.id,
-            user_id: user.id,
-            waha_server_id: selectedSess.serverId,
-            session_name: selectedSess.sessionName,
-            mensagem: message,
-            variation_index: variationIndex,
-            status: 'failed',
-            success: false,
-            error_message: 'Falha no envio humanizado'
-          })
+          // Registrar falha no banco (supabase server-side)
+          await supabase
+            .from('waha_dispatches')
+            .insert({
+              campaign_id: campaign.id,
+              user_id: user.id,
+              waha_server_id: selectedSess.serverId,
+              session_name: selectedSess.sessionName,
+              mensagem: message,
+              variation_index: variationIndex,
+              status: 'failed',
+              success: false,
+              error_message: 'Falha no envio humanizado'
+            })
         }
 
         // Delay entre destinatários para evitar rate limiting
@@ -303,18 +305,20 @@ export async function POST(request: NextRequest) {
         results.failed++
         results.errors.push(`Erro de conexão para ${phone}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
         
-        // Registrar erro no banco
-        await WahaDispatchService.createDispatch({
-          campaign_id: campaign.id,
-          user_id: user.id,
-          waha_server_id: selectedSess.serverId,
-          session_name: selectedSess.sessionName,
-          mensagem: message,
-          variation_index: variationIndex,
-          status: 'failed',
-          success: false,
-          error_message: error instanceof Error ? error.message : 'Erro de conexão'
-        })
+        // Registrar erro no banco (supabase server-side)
+        await supabase
+          .from('waha_dispatches')
+          .insert({
+            campaign_id: campaign.id,
+            user_id: user.id,
+            waha_server_id: selectedSess.serverId,
+            session_name: selectedSess.sessionName,
+            mensagem: message,
+            variation_index: variationIndex,
+            status: 'failed',
+            success: false,
+            error_message: error instanceof Error ? error.message : 'Erro de conexão'
+          })
       }
     }
 
