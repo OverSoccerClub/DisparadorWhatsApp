@@ -35,7 +35,8 @@ export async function POST(request: NextRequest) {
       selectedSession, 
       enableVariations,
       humanizeConversation = true,
-      sessionId
+      sessionId,
+      timeControl
     } = body
 
     if (!telefones || !Array.isArray(telefones) || telefones.length === 0) {
@@ -87,7 +88,8 @@ export async function POST(request: NextRequest) {
               sessionName: session.name,
               status: session.status,
               apiUrl: server.api_url,
-              apiKey: server.api_key
+              apiKey: server.api_key,
+              phoneNumber: session.phoneNumber || session.phone || (session.me && session.me.id ? String(session.me.id).split(':')[0] : undefined)
             })
           })
         }
@@ -208,6 +210,23 @@ export async function POST(request: NextRequest) {
       const nomes = ['João','Maria','Pedro','Ana','Lucas','Mariana','Gabriel','Carla','Rafael','Beatriz','Felipe','Camila','Gustavo','Larissa','Bruno','Patrícia','André','Juliana','Thiago','Letícia']
       return nomes[Math.floor(Math.random()*nomes.length)]
     }
+    const buildGreeting = () => {
+      const nome = randomBrazilianName()
+      const period = getTimeGreeting()
+      const patterns = [
+        `${period}, ${nome}!`,
+        `${period} ${nome}!`,
+        `Olá, ${nome}! ${period.toLowerCase()}!`,
+        `Oi ${nome}, ${period.toLowerCase()}!`,
+        `${period}! Tudo bem, ${nome}?`,
+        `E aí, ${nome}? ${period.toLowerCase()}!`
+      ]
+      return patterns[Math.floor(Math.random()*patterns.length)]
+    }
+
+    // Delay entre destinatários baseado no timeControl (fallback para 4-8s)
+    const configuredDelayMs = timeControl ? ((Number(timeControl.delayMinutes||0)*60 + Number(timeControl.delaySeconds||0)) * 1000) : 0
+    const perRecipientDelayMs = Math.max(4000, configuredDelayMs || 0)
 
     // Usar balanceamento de carga para distribuir mensagens
     for (let i = 0; i < messagesToSend.length; i++) {
@@ -239,31 +258,30 @@ export async function POST(request: NextRequest) {
 
         let lastOk = false
         if (humanizeConversation) {
-          const nome = randomBrazilianName()
-          const saudacao = `${getTimeGreeting()} ${nome}!`
+          const saudacao = buildGreeting()
           const cumprimento = 'Como vai?'
           const optout = 'Se não deseja mais receber este tipo de mensagem, escreva: NÃO'
 
-          await postProgress('updateCurrent', { message: saudacao, phone, instance: selectedSess.sessionName })
+          await postProgress('updateCurrent', { message: saudacao, phone, instance: `${selectedSess.serverName} • ${selectedSess.sessionName}${selectedSess.phoneNumber ? ' • ' + selectedSess.phoneNumber : ''}` })
           const step1 = await sendText(saudacao)
           lastOk = step1.ok
-          await randomDelay(1200, 3500)
+          await randomDelay(2500, 6000)
 
-          await postProgress('updateCurrent', { message: cumprimento, phone, instance: selectedSess.sessionName })
+          await postProgress('updateCurrent', { message: cumprimento, phone, instance: `${selectedSess.serverName} • ${selectedSess.sessionName}${selectedSess.phoneNumber ? ' • ' + selectedSess.phoneNumber : ''}` })
           const step2 = await sendText(cumprimento)
           lastOk = step2.ok && lastOk
-          await randomDelay(1500, 4000)
+          await randomDelay(3000, 7000)
 
-          await postProgress('updateCurrent', { message, phone, instance: selectedSess.sessionName })
+          await postProgress('updateCurrent', { message, phone, instance: `${selectedSess.serverName} • ${selectedSess.sessionName}${selectedSess.phoneNumber ? ' • ' + selectedSess.phoneNumber : ''}` })
           const step3 = await sendText(message)
           lastOk = step3.ok && lastOk
-          await randomDelay(1500, 4000)
+          await randomDelay(3000, 7000)
 
-          await postProgress('updateCurrent', { message: optout, phone, instance: selectedSess.sessionName })
+          await postProgress('updateCurrent', { message: optout, phone, instance: `${selectedSess.serverName} • ${selectedSess.sessionName}${selectedSess.phoneNumber ? ' • ' + selectedSess.phoneNumber : ''}` })
           const step4 = await sendText(optout)
           lastOk = step4.ok && lastOk
         } else {
-          await postProgress('updateCurrent', { message, phone, instance: selectedSess.sessionName })
+          await postProgress('updateCurrent', { message, phone, instance: `${selectedSess.serverName} • ${selectedSess.sessionName}${selectedSess.phoneNumber ? ' • ' + selectedSess.phoneNumber : ''}` })
           const single = await sendText(message)
           lastOk = single.ok
         }
@@ -320,8 +338,8 @@ export async function POST(request: NextRequest) {
 
         // Delay entre destinatários para evitar rate limiting
         if (i < messagesToSend.length - 1) {
-          const delay = WahaLoadBalancer.calculateDelay(1, 3) * 1000
-          await new Promise(resolve => setTimeout(resolve, delay))
+          const jitter = Math.floor(Math.random()*1500)
+          await new Promise(resolve => setTimeout(resolve, perRecipientDelayMs + jitter))
         }
 
       } catch (error) {

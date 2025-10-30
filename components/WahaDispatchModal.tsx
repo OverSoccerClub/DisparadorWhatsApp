@@ -376,6 +376,9 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
               <div className="flex items-center justify-between">
                 <div className="text-sm text-blue-700">
                   Envio em andamento: {realtime.progress.sentMessages}/{realtime.progress.totalMessages}
+                  {typeof realtime.progress.totalMessages === 'number' && (
+                    <span className="ml-2">• Restantes: {Math.max(0, (realtime.progress.totalMessages - (realtime.progress.sentMessages || 0) - (realtime.progress.failedMessages || 0)))}</span>
+                  )}
                   {realtime.progress.currentPhone && (
                     <span className="ml-2">• {realtime.progress.currentPhone} ({realtime.progress.currentInstance || 'sessão'})</span>
                   )}
