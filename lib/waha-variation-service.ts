@@ -35,7 +35,7 @@ export class WahaVariationService {
     }
 
     // Seleciona modelo com fallback para versões suportadas
-    const preferredModel = process.env.GEMINI_MODEL || 'gemini-1.5-flash'
+    const preferredModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
     let model = ai.getGenerativeModel({ model: preferredModel })
 
     // Prompt padrão se não fornecido
@@ -63,10 +63,11 @@ export class WahaVariationService {
         prompt: defaultPrompt
       }
     } catch (error) {
-      // Tentar fallback de modelo
+      // Tentar fallbacks de modelo
       try {
-        const fallbackModel = ai.getGenerativeModel({ model: 'gemini-1.5-pro' })
-        const result = await fallbackModel.generateContent(defaultPrompt)
+        // 1º fallback: 2.5-pro
+        const fb25 = ai.getGenerativeModel({ model: 'gemini-2.5-pro' })
+        const result = await fb25.generateContent(defaultPrompt)
         const response = await result.response
         const text = response.text()
         const variations = this.parseVariations(text, request.count)
@@ -77,8 +78,23 @@ export class WahaVariationService {
           prompt: defaultPrompt
         }
       } catch (fallbackError) {
-        console.error('Erro ao gerar variações com Gemini (fallback):', fallbackError)
-        throw new Error(`Falha ao gerar variações: ${fallbackError instanceof Error ? fallbackError.message : 'Erro desconhecido'}`)
+        try {
+          // 2º fallback: 1.5-pro
+          const fb15 = ai.getGenerativeModel({ model: 'gemini-1.5-pro' })
+          const result = await fb15.generateContent(defaultPrompt)
+          const response = await result.response
+          const text = response.text()
+          const variations = this.parseVariations(text, request.count)
+          return {
+            variations,
+            originalMessage: request.originalMessage,
+            generatedAt: new Date().toISOString(),
+            prompt: defaultPrompt
+          }
+        } catch (fb2Error) {
+          console.error('Erro ao gerar variações com Gemini (fallbacks):', fb2Error)
+          throw new Error(`Falha ao gerar variações: ${fb2Error instanceof Error ? fb2Error.message : 'Erro desconhecido'}`)
+        }
       }
     }
   }
@@ -207,7 +223,7 @@ export class WahaVariationService {
         return { success: false, message: 'Chave da API Gemini não configurada' }
       }
 
-      const preferredModel = process.env.GEMINI_MODEL || 'gemini-1.5-flash'
+      const preferredModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
       const model = ai.getGenerativeModel({ model: preferredModel })
       const result = await model.generateContent('Teste de conectividade')
       await result.response
