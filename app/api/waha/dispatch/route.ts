@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
       useLoadBalancing, 
       selectedSession, 
       enableVariations,
-      humanizeConversation = true
+      humanizeConversation = true,
+      sessionId
     } = body
 
     if (!telefones || !Array.isArray(telefones) || telefones.length === 0) {
@@ -172,6 +173,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erro ao adicionar contatos à campanha WAHA' }, { status: 500 })
     }
 
+    // Funções de progresso (opcional)
+    const postProgress = async (action: string, data?: any) => {
+      try {
+        if (!sessionId) return
+        await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/disparos/progress`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, action, data })
+        })
+      } catch {}
+    }
+
+    await postProgress('start', { totalMessages: telefones.length })
+
     // Resultados
     const results = {
       total: telefones.length,
@@ -228,27 +243,33 @@ export async function POST(request: NextRequest) {
           const cumprimento = 'Como vai?'
           const optout = 'Se não deseja mais receber este tipo de mensagem, escreva: NÃO'
 
+          await postProgress('updateCurrent', { message: saudacao, phone, instance: selectedSess.sessionName })
           const step1 = await sendText(saudacao)
           lastOk = step1.ok
           await randomDelay(1200, 3500)
 
+          await postProgress('updateCurrent', { message: cumprimento, phone, instance: selectedSess.sessionName })
           const step2 = await sendText(cumprimento)
           lastOk = step2.ok && lastOk
           await randomDelay(1500, 4000)
 
+          await postProgress('updateCurrent', { message, phone, instance: selectedSess.sessionName })
           const step3 = await sendText(message)
           lastOk = step3.ok && lastOk
           await randomDelay(1500, 4000)
 
+          await postProgress('updateCurrent', { message: optout, phone, instance: selectedSess.sessionName })
           const step4 = await sendText(optout)
           lastOk = step4.ok && lastOk
         } else {
+          await postProgress('updateCurrent', { message, phone, instance: selectedSess.sessionName })
           const single = await sendText(message)
           lastOk = single.ok
         }
 
         if (lastOk) {
           results.sent++
+          await postProgress('markSent')
           
           // Registrar disparo no banco
           await supabase
@@ -278,6 +299,7 @@ export async function POST(request: NextRequest) {
         } else {
           results.failed++
           results.errors.push(`Erro ao enviar para ${phone}: falha no envio humanizado`)
+          await postProgress('markFailed')
           
           // Registrar falha no banco (supabase server-side)
           await supabase
@@ -304,6 +326,7 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         results.failed++
         results.errors.push(`Erro de conexão para ${phone}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
+        await postProgress('markFailed')
         
         // Registrar erro no banco (supabase server-side)
         await supabase
@@ -333,6 +356,8 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', campaign.id)
       .eq('user_id', user.id)
+
+    await postProgress('finish')
 
     return NextResponse.json({
       success: true,

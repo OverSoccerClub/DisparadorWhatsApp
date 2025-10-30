@@ -21,6 +21,7 @@ import toast from 'react-hot-toast'
 import TimeControl from './TimeControl'
 import { detectMessageType, generateTypedVariations } from '@/lib/messageVariations'
 import VariationsGenerationOverlay from './VariationsGenerationOverlay'
+import { useRealtimeProgress } from '@/hooks/useRealtimeProgress'
 
 interface WahaDispatchModalProps {
   isOpen: boolean
@@ -55,6 +56,8 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
   const [aiLoading, setAiLoading] = useState(false)
   const [variationsPreview, setVariationsPreview] = useState<string[]>([])
   const [genStatus, setGenStatus] = useState<'generating' | 'success' | 'error'>('generating')
+  const [sessionId] = useState(() => `waha_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
+  const realtime = useRealtimeProgress(sessionId)
   const inferredType = detectMessageType(mensagem || '')
   const [timeControlConfig, setTimeControlConfig] = useState<{
     delayMinutes: number
@@ -276,6 +279,8 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
           totalTimeMinutes: timeControlConfig.totalTimeMinutes
         },
         humanizeConversation: true // Adicionado para habilitar a conversão humana
+        ,
+        sessionId
       }
 
       // Enviar via API WAHA
@@ -290,6 +295,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
       const data = await response.json()
       
       if (response.ok) {
+        realtime.finish()
         const variationText = enableVariations && variationsPreview.length > 0 
           ? ` com ${variationsPreview.length} variações diferentes` 
           : ''
@@ -312,10 +318,12 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
           onClose()
         }, 2000)
       } else {
+        realtime.setError()
         toast.error(data.error || 'Erro ao enviar mensagens')
       }
     } catch (error) {
       console.error('Erro ao enviar mensagens:', error)
+      realtime.setError()
       toast.error('Erro de conexão. Tente novamente.')
     } finally {
       setLoading(false)
@@ -344,6 +352,26 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
+      {/* Barra de progresso de envio */}
+      {realtime.progress && (
+        <div className="fixed top-0 left-0 right-0 z-[9998]">
+          <div className="max-w-4xl mx-auto mt-2 px-4">
+            <div className="bg-white border border-blue-200 rounded-md p-3 shadow">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-blue-700">
+                  Envio em andamento: {realtime.progress.sentMessages}/{realtime.progress.totalMessages}
+                  {realtime.progress.currentPhone && (
+                    <span className="ml-2">• {realtime.progress.currentPhone} ({realtime.progress.currentInstance || 'sessão'})</span>
+                  )}
+                </div>
+                <div className="w-40 bg-blue-100 h-2 rounded">
+                  <div className="bg-blue-600 h-2 rounded" style={{ width: `${realtime.progress.progress || 0}%` }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Overlay de geração de variações */}
       <VariationsGenerationOverlay
         open={aiLoading}
