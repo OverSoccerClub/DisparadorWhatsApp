@@ -58,6 +58,22 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
   const [genStatus, setGenStatus] = useState<'generating' | 'success' | 'error'>('generating')
   const [sessionId] = useState(() => `waha_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
   const realtime = useRealtimeProgress(sessionId)
+  const [sendLogs, setSendLogs] = useState<Array<{ ts: number; phone?: string; instance?: string; message?: string; status?: 'sending'|'sent'|'failed' }>>([])
+
+  // Atualizar logs quando o progresso mudar
+  useEffect(() => {
+    const p = realtime.progress
+    if (!p) return
+    if (p.currentPhone || p.currentMessage) {
+      setSendLogs(prev => [...prev, {
+        ts: Date.now(),
+        phone: p.currentPhone,
+        instance: p.currentInstance,
+        message: p.currentMessage,
+        status: 'sending'
+      }].slice(-100))
+    }
+  }, [realtime.progress?.currentPhone, realtime.progress?.currentMessage, realtime.progress?.currentInstance])
   const inferredType = detectMessageType(mensagem || '')
   const [timeControlConfig, setTimeControlConfig] = useState<{
     delayMinutes: number
@@ -368,6 +384,22 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                   <div className="bg-blue-600 h-2 rounded" style={{ width: `${realtime.progress.progress || 0}%` }}></div>
                 </div>
               </div>
+              {/* Lista sucinta das últimas mensagens */}
+              {sendLogs.length > 0 && (
+                <div className="mt-2 max-h-32 overflow-y-auto text-xs text-secondary-700">
+                  {sendLogs.slice(-5).map((e, idx) => (
+                    <div key={idx} className="flex items-center justify-between border-t border-secondary-100 py-1">
+                      <div className="truncate mr-2">
+                        <span className="text-secondary-500 mr-1">{new Date(e.ts).toLocaleTimeString()}</span>
+                        <span className="font-medium">{e.phone}</span>
+                        {e.instance && <span className="ml-1 text-secondary-500">({e.instance})</span>}
+                        {e.message && <span className="ml-2 truncate">- {e.message.substring(0, 80)}...</span>}
+                      </div>
+                      <span className="text-blue-600">{e.status === 'sending' ? 'enviando' : e.status}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

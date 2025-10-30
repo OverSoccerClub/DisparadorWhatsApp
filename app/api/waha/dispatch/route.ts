@@ -174,10 +174,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Funções de progresso (opcional)
+    const origin = new URL(request.url).origin
     const postProgress = async (action: string, data?: any) => {
       try {
         if (!sessionId) return
-        await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/disparos/progress`, {
+        await fetch(`${origin}/api/disparos/progress`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId, action, data })
