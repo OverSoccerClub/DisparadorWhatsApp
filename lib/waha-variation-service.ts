@@ -20,8 +20,9 @@ export class WahaVariationService {
   private static genAI: GoogleGenerativeAI | null = null
 
   private static initializeAI() {
-    if (!this.genAI && process.env.GEMINI_API_KEY) {
-      this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+    const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY
+    if (!this.genAI && apiKey) {
+      this.genAI = new GoogleGenerativeAI(apiKey)
     }
     return this.genAI
   }
@@ -33,7 +34,9 @@ export class WahaVariationService {
       throw new Error('Chave da API Gemini não configurada')
     }
 
-    const model = ai.getGenerativeModel({ model: 'gemini-pro' })
+    // Seleciona modelo com fallback para versões suportadas
+    const preferredModel = process.env.GEMINI_MODEL || 'gemini-1.5-flash'
+    let model = ai.getGenerativeModel({ model: preferredModel })
 
     // Prompt padrão se não fornecido
     const defaultPrompt = request.prompt || 
@@ -46,7 +49,7 @@ export class WahaVariationService {
       Mensagem original: "${request.originalMessage}"`
 
     try {
-      const result = await model.generateContent(defaultPrompt)
+      let result = await model.generateContent(defaultPrompt)
       const response = await result.response
       const text = response.text()
 
@@ -60,8 +63,23 @@ export class WahaVariationService {
         prompt: defaultPrompt
       }
     } catch (error) {
-      console.error('Erro ao gerar variações com Gemini:', error)
-      throw new Error(`Falha ao gerar variações: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
+      // Tentar fallback de modelo
+      try {
+        const fallbackModel = ai.getGenerativeModel({ model: 'gemini-1.5-pro' })
+        const result = await fallbackModel.generateContent(defaultPrompt)
+        const response = await result.response
+        const text = response.text()
+        const variations = this.parseVariations(text, request.count)
+        return {
+          variations,
+          originalMessage: request.originalMessage,
+          generatedAt: new Date().toISOString(),
+          prompt: defaultPrompt
+        }
+      } catch (fallbackError) {
+        console.error('Erro ao gerar variações com Gemini (fallback):', fallbackError)
+        throw new Error(`Falha ao gerar variações: ${fallbackError instanceof Error ? fallbackError.message : 'Erro desconhecido'}`)
+      }
     }
   }
 
@@ -189,11 +207,12 @@ export class WahaVariationService {
         return { success: false, message: 'Chave da API Gemini não configurada' }
       }
 
-      const model = ai.getGenerativeModel({ model: 'gemini-pro' })
+      const preferredModel = process.env.GEMINI_MODEL || 'gemini-1.5-flash'
+      const model = ai.getGenerativeModel({ model: preferredModel })
       const result = await model.generateContent('Teste de conectividade')
       await result.response
 
-      return { success: true, message: 'Conexão com Gemini estabelecida com sucesso' }
+      return { success: true, message: `Conexão com Gemini OK (${preferredModel})` }
     } catch (error) {
       return { 
         success: false, 
