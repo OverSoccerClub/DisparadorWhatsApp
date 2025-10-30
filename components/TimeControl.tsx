@@ -16,13 +16,15 @@ interface TimeControlProps {
   totalInstancias: number
   onConfigChange: (config: TimeControlConfig) => void
   disabled?: boolean
+  messageType?: 'promocional' | 'informativa' | 'pessoal' | 'comercial'
 }
 
 export default function TimeControl({ 
   totalDestinatarios, 
   totalInstancias, 
   onConfigChange, 
-  disabled = false 
+  disabled = false,
+  messageType
 }: TimeControlProps) {
   const [config, setConfig] = useState<TimeControlConfig>({
     delayMinutes: 1,
@@ -40,6 +42,45 @@ export default function TimeControl({
     isFeasible: true,
     warningMessage: ''
   })
+
+  // Sugestão segura baseada no tipo da mensagem
+  const getSuggestedConfig = () => {
+    const instances = Math.max(1, totalInstancias)
+    const recipients = Math.max(0, totalDestinatarios)
+
+    let minDelaySecondsByType = 12 // default de segurança
+    switch (messageType) {
+      case 'promocional':
+        minDelaySecondsByType = 20
+        break
+      case 'comercial':
+        minDelaySecondsByType = 18
+        break
+      case 'informativa':
+        minDelaySecondsByType = 12
+        break
+      case 'pessoal':
+        minDelaySecondsByType = 6
+        break
+      default:
+        minDelaySecondsByType = 12
+    }
+
+    const delaySecondsSuggested = minDelaySecondsByType
+    const totalTimeSecondsSuggested = Math.ceil((recipients * delaySecondsSuggested) / instances * 1.1) // +10% buffer
+
+    const hours = Math.floor(totalTimeSecondsSuggested / 3600)
+    const minutes = Math.floor((totalTimeSecondsSuggested % 3600) / 60)
+    const seconds = Math.max(0, delaySecondsSuggested)
+
+    return {
+      delayMinutes: Math.floor(seconds / 60),
+      delaySeconds: seconds % 60,
+      totalTimeHours: hours,
+      totalTimeMinutes: minutes,
+      description: `Sugestão segura para ${messageType || 'mensagem'}`,
+    }
+  }
 
   // Calcular métricas quando config mudar
   useEffect(() => {
@@ -262,6 +303,53 @@ export default function TimeControl({
               <span className="text-sm">{calculations.warningMessage}</span>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Sugestão Segura */}
+      {totalDestinatarios > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <ClockIcon className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-800">Sugestão segura{messageType ? ` (${messageType})` : ''}</span>
+            </div>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => {
+                const s = getSuggestedConfig()
+                setConfig(prev => ({
+                  ...prev,
+                  delayMinutes: s.delayMinutes,
+                  delaySeconds: s.delaySeconds,
+                  totalTimeHours: s.totalTimeHours,
+                  totalTimeMinutes: s.totalTimeMinutes,
+                  autoCalculate: true
+                }))
+              }}
+              className="px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400"
+            >
+              Aplicar sugestão
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-sm text-blue-900">
+            {(() => { const s = getSuggestedConfig(); return (
+              <>
+                <div>
+                  <span className="text-blue-800">Delay recomendado:</span>
+                  <span className="ml-2 font-semibold">{s.delayMinutes}m {s.delaySeconds}s</span>
+                </div>
+                <div>
+                  <span className="text-blue-800">Tempo total estimado:</span>
+                  <span className="ml-2 font-semibold">{s.totalTimeHours}h {s.totalTimeMinutes}m</span>
+                </div>
+              </>
+            )})()}
+          </div>
+          <p className="mt-2 text-xs text-blue-700">
+            A sugestão considera o tipo de mensagem, o número de destinatários e as instâncias conectadas para mitigar riscos de spam.
+          </p>
         </div>
       )}
     </div>

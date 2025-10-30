@@ -19,6 +19,7 @@ import { formatPhoneNumber, validatePhoneNumber } from '@/lib/utils'
 import { useAuth } from '@/lib/hooks/useAuth'
 import toast from 'react-hot-toast'
 import TimeControl from './TimeControl'
+import { detectMessageType } from '@/lib/messageVariations'
 
 interface WahaDispatchModalProps {
   isOpen: boolean
@@ -52,6 +53,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
   const [useAI, setUseAI] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
   const [variationsPreview, setVariationsPreview] = useState<string[]>([])
+  const inferredType = detectMessageType(mensagem || '')
   const [timeControlConfig, setTimeControlConfig] = useState<{
     delayMinutes: number
     delaySeconds: number
@@ -649,6 +651,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                 totalInstancias={workingSessions.length}
                 onConfigChange={setTimeControlConfig}
                 disabled={loading}
+                messageType={inferredType}
               />
             </div>
 

@@ -1191,6 +1191,7 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
               totalInstancias={instanceStats?.connected || 0}
               onConfigChange={setTimeControlConfig}
               disabled={loading}
+              messageType={messageType}
             />
             </div>
 
