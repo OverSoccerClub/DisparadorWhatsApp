@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
       user_id, 
       useLoadBalancing, 
       selectedSession, 
-      enableVariations 
+      enableVariations,
+      humanizeConversation = true
     } = body
 
     if (!telefones || !Array.isArray(telefones) || telefones.length === 0) {
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar sessões ativas de todos os servidores
-    const allSessions = []
+    const allSessions: any[] = []
     for (const server of wahaServers) {
       try {
         const response = await fetch(`${server.api_url}/api/sessions`, {
@@ -98,7 +99,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Determinar estratégia de distribuição
-    let sessionsToUse = []
+    let sessionsToUse: any[] = []
     if (useLoadBalancing) {
       sessionsToUse = allSessions
     } else if (selectedSession) {
@@ -114,19 +115,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Preparar mensagens para envio
-    const messagesToSend = []
+    const messagesToSend: { phone: string, message: string, variationIndex: number }[] = []
     for (let i = 0; i < telefones.length; i++) {
       const phone = telefones[i]
-      let message = mensagem
+      let messageText = mensagem
 
       // Usar variação se disponível
       if (enableVariations && messageVariations && messageVariations[i]) {
-        message = messageVariations[i]
+        messageText = messageVariations[i]
       }
 
       messagesToSend.push({
         phone,
-        message,
+        message: messageText,
         variationIndex: enableVariations ? i : 0
       })
     }
@@ -148,10 +149,10 @@ export async function POST(request: NextRequest) {
     })
 
     // Adicionar contatos à campanha
-    const contacts = telefones.map(phone => ({ phone_number: phone }))
+    const contacts = telefones.map((phone: string) => ({ phone_number: phone }))
     await WahaDispatchService.addContactsToCampaign(campaign.id, contacts)
 
-    // Processar envios
+    // Resultados
     const results = {
       total: telefones.length,
       sent: 0,
@@ -159,78 +160,114 @@ export async function POST(request: NextRequest) {
       errors: [] as string[]
     }
 
+    // Utilitários de conversa humanizada
+    const randomDelay = (minMs: number, maxMs: number) => new Promise(res => setTimeout(res, Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs))
+    const getTimeGreeting = () => {
+      const h = new Date().getHours()
+      if (h < 12) return 'Bom dia'
+      if (h < 18) return 'Boa tarde'
+      return 'Boa noite'
+    }
+    const randomBrazilianName = () => {
+      const nomes = ['João','Maria','Pedro','Ana','Lucas','Mariana','Gabriel','Carla','Rafael','Beatriz','Felipe','Camila','Gustavo','Larissa','Bruno','Patrícia','André','Juliana','Thiago','Letícia']
+      return nomes[Math.floor(Math.random()*nomes.length)]
+    }
+
     // Usar balanceamento de carga para distribuir mensagens
     for (let i = 0; i < messagesToSend.length; i++) {
       const { phone, message, variationIndex } = messagesToSend[i]
       
       // Selecionar sessão usando balanceamento
-      const selectedSession = WahaLoadBalancer.selectSession(sessionsToUse, 'round_robin')
+      const selectedSess = WahaLoadBalancer.selectSession(sessionsToUse, 'round_robin')
       
-      if (!selectedSession) {
+      if (!selectedSess) {
         results.failed++
         results.errors.push(`Nenhuma sessão disponível para ${phone}`)
         continue
       }
 
       try {
-        // Enviar mensagem via WAHA
-        const response = await fetch(`${selectedSession.apiUrl}/api/${selectedSession.sessionName}/sendText`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${selectedSession.apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            chatId: `${phone}@c.us`,
-            text: message
+        const sendText = async (text: string) => {
+          const resp = await fetch(`${selectedSess.apiUrl}/api/${selectedSess.sessionName}/sendText`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${selectedSess.apiKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ chatId: `${phone}@c.us`, text })
           })
-        })
+          const data = await resp.json()
+          return { ok: resp.ok && data.sent === true, data }
+        }
 
-        const responseData = await response.json()
+        let lastOk = false
+        if (humanizeConversation) {
+          const nome = randomBrazilianName()
+          const saudacao = `${getTimeGreeting()} ${nome}!`
+          const cumprimento = 'Como vai?'
+          const optout = 'Se não deseja mais receber este tipo de mensagem, escreva: NÃO'
 
-        if (response.ok && responseData.sent) {
+          const step1 = await sendText(saudacao)
+          lastOk = step1.ok
+          await randomDelay(1200, 3500)
+
+          const step2 = await sendText(cumprimento)
+          lastOk = step2.ok && lastOk
+          await randomDelay(1500, 4000)
+
+          const step3 = await sendText(message)
+          lastOk = step3.ok && lastOk
+          await randomDelay(1500, 4000)
+
+          const step4 = await sendText(optout)
+          lastOk = step4.ok && lastOk
+        } else {
+          const single = await sendText(message)
+          lastOk = single.ok
+        }
+
+        if (lastOk) {
           results.sent++
           
           // Registrar disparo no banco
           await WahaDispatchService.createDispatch({
             campaign_id: campaign.id,
             user_id: user.id,
-            waha_server_id: selectedSession.serverId,
-            session_name: selectedSession.sessionName,
+            waha_server_id: selectedSess.serverId,
+            session_name: selectedSess.sessionName,
             mensagem: message,
             variation_index: variationIndex,
             status: 'sent',
             sent_at: new Date().toISOString(),
             success: true,
-            whatsapp_message_id: responseData.id
           })
 
           // Atualizar estatísticas da sessão
           await WahaDispatchService.updateSessionStats(
-            selectedSession.serverId,
-            selectedSession.sessionName,
+            selectedSess.serverId,
+            selectedSess.sessionName,
             user.id,
             { total_sent: 1 }
           )
         } else {
           results.failed++
-          results.errors.push(`Erro ao enviar para ${phone}: ${responseData.message || 'Erro desconhecido'}`)
+          results.errors.push(`Erro ao enviar para ${phone}: falha no envio humanizado`)
           
           // Registrar falha no banco
           await WahaDispatchService.createDispatch({
             campaign_id: campaign.id,
             user_id: user.id,
-            waha_server_id: selectedSession.serverId,
-            session_name: selectedSession.sessionName,
+            waha_server_id: selectedSess.serverId,
+            session_name: selectedSess.sessionName,
             mensagem: message,
             variation_index: variationIndex,
             status: 'failed',
             success: false,
-            error_message: responseData.message || 'Erro desconhecido'
+            error_message: 'Falha no envio humanizado'
           })
         }
 
-        // Delay entre mensagens para evitar rate limiting
+        // Delay entre destinatários para evitar rate limiting
         if (i < messagesToSend.length - 1) {
           const delay = WahaLoadBalancer.calculateDelay(1, 3) * 1000
           await new Promise(resolve => setTimeout(resolve, delay))
@@ -244,8 +281,8 @@ export async function POST(request: NextRequest) {
         await WahaDispatchService.createDispatch({
           campaign_id: campaign.id,
           user_id: user.id,
-          waha_server_id: selectedSession.serverId,
-          session_name: selectedSession.sessionName,
+          waha_server_id: selectedSess.serverId,
+          session_name: selectedSess.sessionName,
           mensagem: message,
           variation_index: variationIndex,
           status: 'failed',

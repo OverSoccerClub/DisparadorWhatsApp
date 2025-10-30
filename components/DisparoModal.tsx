@@ -596,7 +596,8 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
             delaySeconds: timeControlConfig.delaySeconds,
             totalTimeHours: timeControlConfig.totalTimeHours,
             totalTimeMinutes: timeControlConfig.totalTimeMinutes
-          }
+          },
+          humanizeConversation: true
         })
       })
 

@@ -267,7 +267,8 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
           delaySeconds: timeControlConfig.delaySeconds,
           totalTimeHours: timeControlConfig.totalTimeHours,
           totalTimeMinutes: timeControlConfig.totalTimeMinutes
-        }
+        },
+        humanizeConversation: true // Adicionado para habilitar a conversão humana
       }
 
       // Enviar via API WAHA

@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     console.log('📨 Dados recebidos na API de disparos:', body)
-    const { telefones, mensagem, agendamento, user_id, instanceName, useRandomDistribution, messageVariations, timeControl } = body
+    const { telefones, mensagem, agendamento, user_id, instanceName, useRandomDistribution, messageVariations, timeControl, humanizeConversation = true } = body
     
     console.log('🔍 Parâmetros extraídos:', {
       telefones: telefones?.length,
@@ -333,6 +333,19 @@ export async function POST(request: NextRequest) {
                   // Processamento tradicional para instância específica ou fallback
                   console.log('🔄 Usando processamento tradicional...')
                   
+                  // Utilitários humanizados
+                  const randomDelay = (minMs: number, maxMs: number) => new Promise(res => setTimeout(res, Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs))
+                  const getTimeGreeting = () => {
+                    const h = new Date().getHours()
+                    if (h < 12) return 'Bom dia'
+                    if (h < 18) return 'Boa tarde'
+                    return 'Boa noite'
+                  }
+                  const randomBrazilianName = () => {
+                    const nomes = ['João','Maria','Pedro','Ana','Lucas','Mariana','Gabriel','Carla','Rafael','Beatriz','Felipe','Camila','Gustavo','Larissa','Bruno','Patrícia','André','Juliana','Thiago','Letícia']
+                    return nomes[Math.floor(Math.random()*nomes.length)]
+                  }
+
                   for (let i = 0; i < createdDisparos.length; i++) {
                     const disparo = createdDisparos[i]
                     const distribution = distributions[i]
@@ -345,12 +358,29 @@ export async function POST(request: NextRequest) {
 
                     try {
                       // Enviar mensagem via Evolution API
-                      const sucesso = await enviarMensagemEvolutionAPI(
-                        disparo.telefone,
-                        disparo.mensagem,
-                        distribution.instanceName,
-                        user_id
-                      )
+                      let sucesso = false
+                      if (humanizeConversation) {
+                        const nome = randomBrazilianName()
+                        const saudacao = `${getTimeGreeting()} ${nome}!`
+                        const cumprimento = 'Como vai?'
+                        const optout = 'Se não deseja mais receber este tipo de mensagem, escreva: NÃO'
+
+                        const s1 = await enviarMensagemEvolutionAPI(disparo.telefone, saudacao, distribution.instanceName, user_id)
+                        await randomDelay(1200, 3500)
+                        const s2 = await enviarMensagemEvolutionAPI(disparo.telefone, cumprimento, distribution.instanceName, user_id)
+                        await randomDelay(1500, 4000)
+                        const s3 = await enviarMensagemEvolutionAPI(disparo.telefone, disparo.mensagem, distribution.instanceName, user_id)
+                        await randomDelay(1500, 4000)
+                        const s4 = await enviarMensagemEvolutionAPI(disparo.telefone, optout, distribution.instanceName, user_id)
+                        sucesso = s1 && s2 && s3 && s4
+                      } else {
+                        sucesso = await enviarMensagemEvolutionAPI(
+                          disparo.telefone,
+                          disparo.mensagem,
+                          distribution.instanceName,
+                          user_id
+                        )
+                      }
 
                       // Atualizar status no banco
                       await atualizarStatusDisparo(disparo.id, sucesso ? 'enviado' : 'falhou')
