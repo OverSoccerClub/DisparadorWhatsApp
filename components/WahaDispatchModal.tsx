@@ -93,9 +93,10 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
         console.log('📊 Sessões WAHA carregadas:', data)
         
         if (data.success) {
-          const workingSessions = data.sessions.filter((session: any) => 
-            session.status === 'WORKING' || session.status === 'CONNECTED'
-          )
+          const workingSessions = data.sessions.filter((session: any) => {
+            const s = String(session.status || '').toUpperCase()
+            return s === 'WORKING' || s === 'CONNECTED' || s === 'OPEN' || s === 'READY' || s === 'AUTHENTICATED'
+          })
           
           setWahaSessions(data.sessions)
           
@@ -334,7 +335,10 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
     return mensagem
   }
 
-  const workingSessions = wahaSessions.filter(s => s.status === 'WORKING' || s.status === 'CONNECTED')
+  const workingSessions = wahaSessions.filter(s => {
+    const st = String(s.status || '').toUpperCase()
+    return st === 'WORKING' || st === 'CONNECTED' || st === 'OPEN' || st === 'READY' || st === 'AUTHENTICATED'
+  })
 
   if (!isOpen) return null
 

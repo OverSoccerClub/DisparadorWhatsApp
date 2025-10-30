@@ -65,18 +65,19 @@ export async function POST(request: NextRequest) {
     const allSessions: any[] = []
     for (const server of wahaServers) {
       try {
-        const response = await fetch(`${server.api_url}/api/sessions`, {
-          headers: {
-            'Authorization': `Bearer ${server.api_key}`,
-            'Content-Type': 'application/json'
-          }
-        })
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+        if (server.api_key) {
+          // Preferido pelo restante do sistema
+          headers['X-Api-Key'] = server.api_key
+        }
+        const response = await fetch(`${server.api_url}/api/sessions`, { headers })
 
         if (response.ok) {
           const sessions = await response.json()
-          const workingSessions = sessions.filter((session: any) => 
-            session.status === 'WORKING' || session.status === 'CONNECTED'
-          )
+          const workingSessions = sessions.filter((session: any) => {
+            const s = String(session.status || '').toUpperCase()
+            return s === 'WORKING' || s === 'CONNECTED' || s === 'OPEN' || s === 'READY' || s === 'AUTHENTICATED'
+          })
 
           workingSessions.forEach((session: any) => {
             allSessions.push({
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
       sessionsToUse = allSessions
     } else if (selectedSession) {
       const [serverId, sessionName] = selectedSession.split(':')
-      const session = allSessions.find(s => s.serverId === serverId && s.sessionName === sessionName)
+      const session = allSessions.find(s => String(s.serverId) === String(serverId) && s.sessionName === sessionName)
       if (session) {
         sessionsToUse = [session]
       } else {
