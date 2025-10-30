@@ -1193,6 +1193,7 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
               onConfigChange={setTimeControlConfig}
               disabled={loading}
               messageType={messageType}
+              humanizeConversation={true}
             />
             </div>
 

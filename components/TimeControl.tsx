@@ -17,6 +17,7 @@ interface TimeControlProps {
   onConfigChange: (config: TimeControlConfig) => void
   disabled?: boolean
   messageType?: 'promocional' | 'informativa' | 'pessoal' | 'comercial'
+  humanizeConversation?: boolean
 }
 
 export default function TimeControl({ 
@@ -24,7 +25,8 @@ export default function TimeControl({
   totalInstancias, 
   onConfigChange, 
   disabled = false,
-  messageType
+  messageType,
+  humanizeConversation = true
 }: TimeControlProps) {
   const [config, setConfig] = useState<TimeControlConfig>({
     delayMinutes: 1,
@@ -98,9 +100,16 @@ export default function TimeControl({
     }
 
     const totalDelaySeconds = (config.delayMinutes * 60) + config.delaySeconds
+
+    // Conversa humanizada: 3 esperas médias entre 4 mensagens
+    // Médias aproximadas: 1.2-3.5s (2.35), 1.5-4s (2.75), 1.5-4s (2.75) => ~7.85s
+    const humanizedOverheadSeconds = humanizeConversation ? 7.85 : 0
+
+    // Tempo por destinatário considera o delay configurado + overhead da conversa humanizada
+    const timePerRecipientSeconds = totalDelaySeconds + humanizedOverheadSeconds
     const totalTimeSeconds = (config.totalTimeHours * 3600) + (config.totalTimeMinutes * 60)
     const messagesPerInstance = Math.ceil(totalDestinatarios / totalInstancias)
-    const totalTimeNeeded = totalDestinatarios * totalDelaySeconds
+    const totalTimeNeeded = totalDestinatarios * timePerRecipientSeconds
     const estimatedTimeSeconds = totalTimeNeeded
 
     // Converter para formato legível
@@ -138,7 +147,7 @@ export default function TimeControl({
     })
 
     onConfigChange(config)
-  }, [config, totalDestinatarios, totalInstancias, onConfigChange])
+  }, [config, totalDestinatarios, totalInstancias, onConfigChange, humanizeConversation])
 
   const handleDelayChange = (field: 'delayMinutes' | 'delaySeconds', value: number) => {
     setConfig(prev => ({

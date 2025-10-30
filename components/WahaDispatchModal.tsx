@@ -659,6 +659,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                 onConfigChange={setTimeControlConfig}
                 disabled={loading}
                 messageType={inferredType}
+                humanizeConversation={true}
               />
             </div>
 
