@@ -20,6 +20,7 @@ import { useAuth } from '@/lib/hooks/useAuth'
 import toast from 'react-hot-toast'
 import TimeControl from './TimeControl'
 import { detectMessageType, generateTypedVariations } from '@/lib/messageVariations'
+import VariationsGenerationOverlay from './VariationsGenerationOverlay'
 
 interface WahaDispatchModalProps {
   isOpen: boolean
@@ -53,6 +54,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
   const [useAI, setUseAI] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
   const [variationsPreview, setVariationsPreview] = useState<string[]>([])
+  const [genStatus, setGenStatus] = useState<'generating' | 'success' | 'error'>('generating')
   const inferredType = detectMessageType(mensagem || '')
   const [timeControlConfig, setTimeControlConfig] = useState<{
     delayMinutes: number
@@ -183,6 +185,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
 
     try {
       setAiLoading(true)
+      setGenStatus('generating')
       
       const response = await fetch('/api/waha/variations', {
         method: 'POST',
@@ -199,11 +202,13 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
 
       if (response.ok && data.success) {
         setVariationsPreview(data.result.variations)
+        setGenStatus('success')
         toast.success(`${data.result.variations.length} variações geradas!`)
       } else {
         // Fallback local (sinônimos) para não bloquear o fluxo
         const fallback = generateTypedVariations(mensagem, totalDestinatarios)
         setVariationsPreview(fallback)
+        setGenStatus('success')
         toast.success(`${fallback.length} variações geradas localmente`)
       }
     } catch (error) {
@@ -211,6 +216,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
       // Fallback local em caso de erro de rede/API
       const fallback = generateTypedVariations(mensagem, totalDestinatarios)
       setVariationsPreview(fallback)
+      setGenStatus('success')
       toast.success(`${fallback.length} variações geradas localmente`)
     } finally {
       setAiLoading(false)
@@ -334,6 +340,16 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
+      {/* Overlay de geração de variações */}
+      <VariationsGenerationOverlay
+        open={aiLoading}
+        status={genStatus}
+        details={{
+          totalVariations: (activeTab === 'clientes' ? selectedClientes.length : numerosProcessados.length) || 0,
+          generatedVariations: variationsPreview.length,
+          messageType: inferredType
+        }}
+      />
       <div className="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         <div className="fixed inset-0 bg-secondary-500 bg-opacity-75 transition-opacity" onClick={onClose} />
 

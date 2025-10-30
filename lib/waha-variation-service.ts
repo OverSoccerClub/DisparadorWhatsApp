@@ -101,13 +101,21 @@ export class WahaVariationService {
 
   private static parseVariations(text: string, expectedCount: number): string[] {
     // Remove numeração e quebras de linha desnecessárias
-    const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0)
+    const lines = text
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
     
     const variations: string[] = []
     
     for (const line of lines) {
       // Remove numeração (1., 2., - , etc.)
       const cleaned = line.replace(/^[\d\.\-\s]+/, '').trim()
+      // Ignorar frases introdutórias do modelo
+      const isIntro = /^(aqui\s+est(á|ao|ão)|foram\s+geradas|seguem|lista\s+de)\b/i.test(cleaned)
+        || /varia(ç|c)ões?\s+da\s+mensagem/i.test(cleaned)
+        || /mantendo\s+o\s+significado/i.test(cleaned)
+      if (isIntro) continue
       
       if (cleaned.length > 10 && cleaned.length < 1000) { // Filtra linhas muito curtas ou muito longas
         variations.push(cleaned)
