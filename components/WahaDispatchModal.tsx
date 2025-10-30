@@ -19,7 +19,7 @@ import { formatPhoneNumber, validatePhoneNumber } from '@/lib/utils'
 import { useAuth } from '@/lib/hooks/useAuth'
 import toast from 'react-hot-toast'
 import TimeControl from './TimeControl'
-import { detectMessageType } from '@/lib/messageVariations'
+import { detectMessageType, generateTypedVariations } from '@/lib/messageVariations'
 
 interface WahaDispatchModalProps {
   isOpen: boolean
@@ -197,15 +197,21 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
 
       const data = await response.json()
 
-      if (data.success) {
+      if (response.ok && data.success) {
         setVariationsPreview(data.result.variations)
         toast.success(`${data.result.variations.length} variações geradas!`)
       } else {
-        toast.error(data.error || 'Erro ao gerar variações')
+        // Fallback local (sinônimos) para não bloquear o fluxo
+        const fallback = generateTypedVariations(mensagem, totalDestinatarios)
+        setVariationsPreview(fallback)
+        toast.success(`${fallback.length} variações geradas localmente`)
       }
     } catch (error) {
       console.error('Erro ao gerar variações:', error)
-      toast.error('Erro ao gerar variações')
+      // Fallback local em caso de erro de rede/API
+      const fallback = generateTypedVariations(mensagem, totalDestinatarios)
+      setVariationsPreview(fallback)
+      toast.success(`${fallback.length} variações geradas localmente`)
     } finally {
       setAiLoading(false)
     }

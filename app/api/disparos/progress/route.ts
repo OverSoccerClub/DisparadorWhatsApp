@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
   const progress = progressStore.get(sessionId)
   
   if (!progress) {
-    return NextResponse.json({ error: 'Progresso não encontrado' }, { status: 404 })
+    // Sem progresso ainda para esta sessão; responder vazio para evitar 404 ruidoso no polling
+    return NextResponse.json({ success: true, progress: null })
   }
 
   return NextResponse.json({

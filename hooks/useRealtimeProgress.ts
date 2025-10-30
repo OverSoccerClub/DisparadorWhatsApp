@@ -66,6 +66,11 @@ export function useRealtimeProgress(sessionId: string | null) {
     const pollProgress = async () => {
       try {
         const response = await fetch(`/api/disparos/progress?sessionId=${sessionId}`)
+        if (response.status === 404) {
+          // Ainda sem progresso armazenado para esta sessão; ignorar silenciosamente
+          setIsConnected(false)
+          return
+        }
         if (response.ok) {
           const data = await response.json()
           if (data.success) {

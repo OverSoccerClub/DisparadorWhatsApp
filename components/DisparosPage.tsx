@@ -86,8 +86,8 @@ export default function DisparosPage() {
       const response = await fetch('/api/clientes')
       const data = await response.json()
       
-      if (data.success) {
-        setClientes(data.clientes || [])
+      if (response.ok) {
+        setClientes(data.data || [])
       } else {
         console.error('Erro ao carregar clientes:', data.error)
       }
