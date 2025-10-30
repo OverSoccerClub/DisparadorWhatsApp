@@ -54,7 +54,7 @@ export class WahaVariationService {
       const text = response.text()
 
       // Processa a resposta para extrair as variações
-      const variations = this.parseVariations(text, request.count)
+      const variations = this.parseVariations(text, request.count, request.originalMessage)
 
       return {
         variations,
@@ -70,7 +70,7 @@ export class WahaVariationService {
         const result = await fb25.generateContent(defaultPrompt)
         const response = await result.response
         const text = response.text()
-        const variations = this.parseVariations(text, request.count)
+        const variations = this.parseVariations(text, request.count, request.originalMessage)
         return {
           variations,
           originalMessage: request.originalMessage,
@@ -84,7 +84,7 @@ export class WahaVariationService {
           const result = await fb15.generateContent(defaultPrompt)
           const response = await result.response
           const text = response.text()
-          const variations = this.parseVariations(text, request.count)
+          const variations = this.parseVariations(text, request.count, request.originalMessage)
           return {
             variations,
             originalMessage: request.originalMessage,
@@ -99,7 +99,7 @@ export class WahaVariationService {
     }
   }
 
-  private static parseVariations(text: string, expectedCount: number): string[] {
+  private static parseVariations(text: string, expectedCount: number, originalMessage?: string): string[] {
     // Remove numeração e quebras de linha desnecessárias
     const lines = text
       .split('\n')
@@ -107,6 +107,18 @@ export class WahaVariationService {
       .filter(line => line.length > 0)
     
     const variations: string[] = []
+
+    // Preparar conjunto de palavras relevantes da original para coerência de contexto
+    const normalize = (s: string) => s
+      .toLowerCase()
+      .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+      .replace(/[^a-z0-9\s]/g, ' ')
+    const splitWords = (s: string) => normalize(s)
+      .split(/\s+/)
+      .filter(w => w.length > 3 && !['para','com','como','mais','pois','esse','essa','isso','esta','este','uma','umas','uns','entre','sobre','apenas','ainda','agora','hoje','amanha','tambem','porque','quando','onde','qual','quais','quem','seu','sua','seus','suas','nosso','nossa','nossos','nossas'].includes(w))
+    const originalWords = originalMessage ? new Set(splitWords(originalMessage)) : new Set<string>()
+
+    const isHeadingOrGroup = (s: string) => /^(#{1,6}\s|[-*]\s|\d+\.|grupo\s*\d+[:]?|secao\s*\d+[:]?)/i.test(s)
     
     for (const line of lines) {
       // Remove numeração (1., 2., - , etc.)
@@ -115,16 +127,40 @@ export class WahaVariationService {
       const isIntro = /^(aqui\s+est(á|ao|ão)|foram\s+geradas|seguem|lista\s+de)\b/i.test(cleaned)
         || /varia(ç|c)ões?\s+da\s+mensagem/i.test(cleaned)
         || /mantendo\s+o\s+significado/i.test(cleaned)
-      if (isIntro) continue
-      
-      if (cleaned.length > 10 && cleaned.length < 1000) { // Filtra linhas muito curtas ou muito longas
-        variations.push(cleaned)
+      if (isIntro || isHeadingOrGroup(cleaned)) continue
+
+      // Rejeitar linhas muito curtinhas ou muito longas
+      if (!(cleaned.length > 10 && cleaned.length < 1000)) continue
+
+      // Checagem simples de coerência com a original: requer pelo menos 2 palavras relevantes em comum
+      if (originalWords.size > 0) {
+        const candWords = splitWords(cleaned)
+        let overlap = 0
+        for (const w of candWords) {
+          if (originalWords.has(w)) overlap++
+        }
+        if (overlap < Math.min(2, Math.max(1, Math.floor(originalWords.size * 0.1))))) {
+          continue
+        }
       }
+      
+      variations.push(cleaned)
     }
 
     // Se não encontrou variações suficientes, tenta dividir por pontos
     if (variations.length < expectedCount) {
-      const sentences = text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 10)
+      const sentences = text.split(/[.!?]+/)
+        .map(s => s.trim())
+        .filter(s => s.length > 10 && !isHeadingOrGroup(s))
+        .filter(s => {
+          if (originalWords.size === 0) return true
+          const candWords = splitWords(s)
+          let overlap = 0
+          for (const w of candWords) {
+            if (originalWords.has(w)) overlap++
+          }
+          return overlap >= Math.min(2, Math.max(1, Math.floor(originalWords.size * 0.1)))
+        })
       variations.push(...sentences.slice(0, expectedCount - variations.length))
     }
 
