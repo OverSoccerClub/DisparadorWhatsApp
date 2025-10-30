@@ -139,7 +139,7 @@ export class WahaVariationService {
         for (const w of candWords) {
           if (originalWords.has(w)) overlap++
         }
-        if (overlap < Math.min(2, Math.max(1, Math.floor(originalWords.size * 0.1))))) {
+        if (overlap < Math.min(2, Math.max(1, Math.floor(originalWords.size * 0.1)))) {
           continue
         }
       }
