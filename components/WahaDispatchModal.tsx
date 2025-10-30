@@ -18,6 +18,7 @@ import { Cliente } from '@/lib/supabase'
 import { formatPhoneNumber, validatePhoneNumber } from '@/lib/utils'
 import { useAuth } from '@/lib/hooks/useAuth'
 import toast from 'react-hot-toast'
+import TimeControl from './TimeControl'
 
 interface WahaDispatchModalProps {
   isOpen: boolean
@@ -51,6 +52,19 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
   const [useAI, setUseAI] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
   const [variationsPreview, setVariationsPreview] = useState<string[]>([])
+  const [timeControlConfig, setTimeControlConfig] = useState<{
+    delayMinutes: number
+    delaySeconds: number
+    totalTimeHours: number
+    totalTimeMinutes: number
+    autoCalculate: boolean
+  }>({
+    delayMinutes: 1,
+    delaySeconds: 30,
+    totalTimeHours: 3,
+    totalTimeMinutes: 0,
+    autoCalculate: true
+  })
 
   // Carregar sessões WAHA quando o modal abrir
   useEffect(() => {
@@ -239,7 +253,13 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
         user_id: user?.id,
         useLoadBalancing,
         selectedSession: useLoadBalancing ? null : selectedSession,
-        enableVariations
+        enableVariations,
+        timeControl: {
+          delayMinutes: timeControlConfig.delayMinutes,
+          delaySeconds: timeControlConfig.delaySeconds,
+          totalTimeHours: timeControlConfig.totalTimeHours,
+          totalTimeMinutes: timeControlConfig.totalTimeMinutes
+        }
       }
 
       // Enviar via API WAHA
@@ -620,6 +640,16 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Controle de Tempo */}
+            <div className="mt-6">
+              <TimeControl
+                totalDestinatarios={activeTab === 'clientes' ? selectedClientes.length : numerosProcessados.length}
+                totalInstancias={workingSessions.length}
+                onConfigChange={setTimeControlConfig}
+                disabled={loading}
+              />
             </div>
 
             {/* Preview das Variações */}
