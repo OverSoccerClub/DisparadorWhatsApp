@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { WahaVariationService } from '@/lib/waha-variation-service'
+import { generateTypedVariations } from '@/lib/messageVariations'
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,11 +60,41 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, result })
   } catch (error) {
-    console.error('Erro ao gerar variações:', error)
-    return NextResponse.json({ 
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
-    }, { status: 500 })
+    console.error('Erro ao gerar variações (IA):', error)
+    // Fallback local sem IA para não bloquear o fluxo
+    try {
+      const body = await request.json()
+      const originalMessage: string = body.originalMessage
+      const count: number = body.count || 3
+
+      const primaryUrl = (originalMessage.match(/https?:\/\/\S+/i) || [])[0]
+      const responsibility = 'Jogue com responsabilidade'
+
+      let variations = generateTypedVariations(originalMessage, count)
+      // Garantir link e responsabilidade
+      variations = variations.map(v => {
+        let s = v
+        if (primaryUrl && !s.includes(primaryUrl)) s = `${s} ${primaryUrl}`.trim()
+        if (!new RegExp(responsibility, 'i').test(s)) s = `${s} ${responsibility}`.trim()
+        return s
+      })
+
+      return NextResponse.json({ 
+        success: true,
+        result: {
+          variations,
+          originalMessage,
+          generatedAt: new Date().toISOString(),
+          prompt: 'local-fallback'
+        }
+      })
+    } catch (fbError) {
+      console.error('Erro no fallback local de variações:', fbError)
+      return NextResponse.json({ 
+        error: 'Erro ao gerar variações',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      }, { status: 500 })
+    }
   }
 }
 
