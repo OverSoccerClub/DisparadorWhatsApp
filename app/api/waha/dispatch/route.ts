@@ -189,16 +189,17 @@ export async function POST(request: NextRequest) {
 
       try {
         const sendText = async (text: string) => {
-          const resp = await fetch(`${selectedSess.apiUrl}/api/${selectedSess.sessionName}/sendText`, {
+          const resp = await fetch(`${selectedSess.apiUrl}/api/${encodeURIComponent(selectedSess.sessionName)}/sendText`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${selectedSess.apiKey}`,
+              'X-Api-Key': selectedSess.apiKey,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({ chatId: `${phone}@c.us`, text })
           })
-          const data = await resp.json()
-          return { ok: resp.ok && data.sent === true, data }
+          let data: any = null
+          try { data = await resp.json() } catch {}
+          return { ok: resp.ok && (data?.sent === true || data?.success === true), data }
         }
 
         let lastOk = false
