@@ -133,25 +133,44 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Criar campanha temporária para tracking
-    const campaign = await WahaDispatchService.createCampaign({
-      user_id: user.id,
-      nome: `Disparo Rápido - ${new Date().toLocaleString()}`,
-      descricao: 'Disparo realizado via modal',
-      mensagem,
-      status: 'active',
-      delay_min: 1,
-      delay_max: 3,
-      messages_per_minute: 20,
-      enable_variations: enableVariations,
-      variation_count: messageVariations?.length || 0,
-      load_balancing_strategy: useLoadBalancing ? 'round_robin' : 'round_robin',
-      total_contacts: telefones.length
-    })
+    // Criar campanha temporária para tracking (usar supabase server-side autenticado)
+    const { data: campaign, error: campaignError } = await supabase
+      .from('waha_campaigns')
+      .insert({
+        user_id: user.id,
+        nome: `Disparo Rápido - ${new Date().toLocaleString()}`,
+        descricao: 'Disparo realizado via modal',
+        mensagem,
+        status: 'active',
+        delay_min: 1,
+        delay_max: 3,
+        messages_per_minute: 20,
+        enable_variations: enableVariations,
+        variation_count: messageVariations?.length || 0,
+        load_balancing_strategy: useLoadBalancing ? 'round_robin' : 'round_robin',
+        total_contacts: telefones.length,
+        sent_messages: 0,
+        failed_messages: 0,
+        pending_messages: telefones.length
+      })
+      .select()
+      .single()
 
-    // Adicionar contatos à campanha
-    const contacts = telefones.map((phone: string) => ({ phone_number: phone }))
-    await WahaDispatchService.addContactsToCampaign(campaign.id, contacts)
+    if (campaignError) {
+      console.error('Erro ao criar campanha WAHA:', campaignError)
+      return NextResponse.json({ error: 'Erro ao criar campanha WAHA' }, { status: 500 })
+    }
+
+    // Adicionar contatos à campanha (usar supabase autenticado)
+    const contacts = telefones.map((phone: string) => ({ campaign_id: campaign.id, phone_number: phone }))
+    const { error: contactsError } = await supabase
+      .from('waha_campaign_contacts')
+      .insert(contacts)
+
+    if (contactsError) {
+      console.error('Erro ao criar contatos da campanha WAHA:', contactsError)
+      return NextResponse.json({ error: 'Erro ao adicionar contatos à campanha WAHA' }, { status: 500 })
+    }
 
     // Resultados
     const results = {
@@ -232,25 +251,30 @@ export async function POST(request: NextRequest) {
           results.sent++
           
           // Registrar disparo no banco
-          await WahaDispatchService.createDispatch({
-            campaign_id: campaign.id,
-            user_id: user.id,
-            waha_server_id: selectedSess.serverId,
-            session_name: selectedSess.sessionName,
-            mensagem: message,
-            variation_index: variationIndex,
-            status: 'sent',
-            sent_at: new Date().toISOString(),
-            success: true,
-          })
+          await supabase
+            .from('waha_dispatches')
+            .insert({
+              campaign_id: campaign.id,
+              user_id: user.id,
+              waha_server_id: selectedSess.serverId,
+              session_name: selectedSess.sessionName,
+              mensagem: message,
+              variation_index: variationIndex,
+              status: 'sent',
+              sent_at: new Date().toISOString(),
+              success: true,
+            })
 
           // Atualizar estatísticas da sessão
-          await WahaDispatchService.updateSessionStats(
-            selectedSess.serverId,
-            selectedSess.sessionName,
-            user.id,
-            { total_sent: 1 }
-          )
+          await supabase
+            .from('waha_session_stats')
+            .upsert({
+              waha_server_id: selectedSess.serverId,
+              session_name: selectedSess.sessionName,
+              user_id: user.id,
+              total_sent: 1,
+              last_activity: new Date().toISOString()
+            })
         } else {
           results.failed++
           results.errors.push(`Erro ao enviar para ${phone}: falha no envio humanizado`)
@@ -295,11 +319,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Atualizar estatísticas da campanha
-    await WahaDispatchService.updateCampaign(campaign.id, {
-      sent_messages: results.sent,
-      failed_messages: results.failed,
-      status: results.failed === 0 ? 'completed' : 'completed'
-    }, user.id)
+    await supabase
+      .from('waha_campaigns')
+      .update({
+        sent_messages: results.sent,
+        failed_messages: results.failed,
+        pending_messages: Math.max(0, (telefones.length - results.sent - results.failed)),
+        status: 'completed'
+      })
+      .eq('id', campaign.id)
+      .eq('user_id', user.id)
 
     return NextResponse.json({
       success: true,
