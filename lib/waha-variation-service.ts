@@ -63,9 +63,8 @@ export class WahaVariationService {
         prompt: defaultPrompt
       }
     } catch (error) {
-      // Tentar fallbacks de modelo
+      // Tentar fallback: 2.5-pro (não usar 1.5)
       try {
-        // 1º fallback: 2.5-pro
         const fb25 = ai.getGenerativeModel({ model: 'gemini-2.5-pro' })
         const result = await fb25.generateContent(defaultPrompt)
         const response = await result.response
@@ -78,23 +77,8 @@ export class WahaVariationService {
           prompt: defaultPrompt
         }
       } catch (fallbackError) {
-        try {
-          // 2º fallback: 1.5-pro
-          const fb15 = ai.getGenerativeModel({ model: 'gemini-1.5-pro' })
-          const result = await fb15.generateContent(defaultPrompt)
-          const response = await result.response
-          const text = response.text()
-          const variations = this.parseVariations(text, request.count, request.originalMessage)
-          return {
-            variations,
-            originalMessage: request.originalMessage,
-            generatedAt: new Date().toISOString(),
-            prompt: defaultPrompt
-          }
-        } catch (fb2Error) {
-          console.error('Erro ao gerar variações com Gemini (fallbacks):', fb2Error)
-          throw new Error(`Falha ao gerar variações: ${fb2Error instanceof Error ? fb2Error.message : 'Erro desconhecido'}`)
-        }
+        console.error('Erro ao gerar variações com Gemini (fallback 2.5-pro):', fallbackError)
+        throw new Error(`Falha ao gerar variações: ${fallbackError instanceof Error ? fallbackError.message : 'Erro desconhecido'}`)
       }
     }
   }
@@ -118,7 +102,7 @@ export class WahaVariationService {
       .filter(w => w.length > 3 && !['para','com','como','mais','pois','esse','essa','isso','esta','este','uma','umas','uns','entre','sobre','apenas','ainda','agora','hoje','amanha','tambem','porque','quando','onde','qual','quais','quem','seu','sua','seus','suas','nosso','nossa','nossos','nossas'].includes(w))
     const originalWords = originalMessage ? new Set(splitWords(originalMessage)) : new Set<string>()
 
-    const isHeadingOrGroup = (s: string) => /^(#{1,6}\s|[-*]\s|\d+\.|grupo\s*\d+[:]?|secao\s*\d+[:]?)/i.test(s)
+    const isHeadingOrGroup = (s: string) => /^(#{1,6}\s|[-*]\s|\d+\.|grupo\s*\d+[:]?|secao\s*\d+[:]?|varia(c|ç)ao\s*\d+[:]?|link\s+para\s+usar\s+em\s+todas\s+as\s+mensagens)/i.test(s)
     
     for (const line of lines) {
       // Remove numeração (1., 2., - , etc.)
@@ -175,7 +159,41 @@ export class WahaVariationService {
       }
     }
 
-    return uniqueVariations
+    // Pós-processamento: limpar markdown/meta e garantir URL da original (quando existir)
+    const originalUrls = originalMessage ? Array.from(originalMessage.matchAll(/https?:\/\/\S+/gi)).map(m => m[0]) : []
+    const primaryUrl = originalUrls[0]
+
+    const cleaned = uniqueVariations.map(v => {
+      // Remover linhas meta como "O link em todas as variações é: ..."
+      const withoutMetaLines = v
+        .split('\n')
+        .filter(line => !/^\s*(o\s+link|link\s+para\s+usar)\b/i.test(line))
+        .join(' ')
+
+      // Remover marcações markdown e rótulos de variação
+      let s = withoutMetaLines
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/`([^`]+)`/g, '$1')
+        .replace(/^\s*varia(c|ç)ao\s*\d+[:]?\s*/gi, '')
+        .replace(/^\s*#+\s*/gm, '')
+        .replace(/^\s*[-*]\s*/gm, '')
+        .trim()
+
+      // Garantir presença da URL original
+      if (primaryUrl && !s.includes(primaryUrl)) {
+        s = `${s} ${primaryUrl}`.trim()
+      }
+
+      // Garantir presença do aviso obrigatório
+      const responsibility = 'Jogue com responsabilidade'
+      if (!new RegExp(responsibility, 'i').test(s)) {
+        s = `${s} ${responsibility}`.trim()
+      }
+
+      return s
+    }).filter(s => s.length > 0)
+
+    return cleaned
   }
 
   // Validação de mensagem para variações
