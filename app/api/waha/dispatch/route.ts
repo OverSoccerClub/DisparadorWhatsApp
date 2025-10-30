@@ -242,18 +242,74 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        const sendText = async (text: string) => {
-          const resp = await fetch(`${selectedSess.apiUrl}/api/${encodeURIComponent(selectedSess.sessionName)}/sendText`, {
-            method: 'POST',
-            headers: {
-              'X-Api-Key': selectedSess.apiKey,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ chatId: `${phone}@c.us`, text })
+        // Criar registro inicial em 'sending' para este destinatário
+        const startTime = Date.now()
+        const { data: createdDispatch } = await supabase
+          .from('waha_dispatches')
+          .insert({
+            campaign_id: campaign.id,
+            user_id: user.id,
+            waha_server_id: selectedSess.serverId,
+            session_name: selectedSess.sessionName,
+            mensagem: message,
+            variation_index: variationIndex,
+            status: 'sending'
           })
-          let data: any = null
-          try { data = await resp.json() } catch {}
-          return { ok: resp.ok && (data?.sent === true || data?.success === true), data }
+          .select()
+          .single()
+
+        const currentDispatchId = createdDispatch?.id
+
+        const sendText = async (text: string) => {
+          const jid = `${phone.replace(/\D/g, '')}@c.us`
+          const base = selectedSess.apiUrl.replace(/\/$/, '')
+          const session = encodeURIComponent(selectedSess.sessionName)
+          const endpoints = [
+            // Padrão da doc: corpo inclui session
+            `${base}/api/sendText`,
+            `${base}/api/${session}/sendText`,
+            `${base}/api/${session}/chat/sendText`,
+            `${base}/api/${session}/messages/sendText`
+          ]
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'X-Api-Key': selectedSess.apiKey || ''
+          }
+          if (selectedSess.apiKey) headers['Authorization'] = `Bearer ${selectedSess.apiKey}`
+
+          const bodies = [
+            // Doc oficial: { session, chatId, text }
+            { session: selectedSess.sessionName, chatId: jid, text },
+            { chatId: jid, text },
+            { chatId: jid, message: text },
+            { jid, text }
+          ]
+
+          let lastResp: Response | null = null
+          let lastData: any = null
+          for (const url of endpoints) {
+            for (const body of bodies) {
+              try {
+                const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) })
+                lastResp = resp
+                try { lastData = await resp.json() } catch { lastData = null }
+                if (resp.ok && (lastData?.sent === true || lastData?.success === true)) {
+                  return { ok: true, data: lastData }
+                }
+              } catch (e) {
+                lastData = { error: e instanceof Error ? e.message : 'network_error' }
+              }
+            }
+          }
+          // Log detalhado para diagnóstico
+          console.error('WAHA sendText falhou', {
+            apiUrl: base,
+            session: selectedSess.sessionName,
+            phone: jid,
+            lastStatus: lastResp ? lastResp.status : 'no_response',
+            lastData
+          })
+          return { ok: false, data: lastData }
         }
 
         let lastOk = false
@@ -290,20 +346,19 @@ export async function POST(request: NextRequest) {
           results.sent++
           await postProgress('markSent')
           
-          // Registrar disparo no banco
-          await supabase
-            .from('waha_dispatches')
-            .insert({
-              campaign_id: campaign.id,
-              user_id: user.id,
-              waha_server_id: selectedSess.serverId,
-              session_name: selectedSess.sessionName,
-              mensagem: message,
-              variation_index: variationIndex,
-              status: 'sent',
-              sent_at: new Date().toISOString(),
-              success: true,
-            })
+          // Atualizar registro para 'sent'
+          if (currentDispatchId) {
+            await supabase
+              .from('waha_dispatches')
+              .update({
+                status: 'sent',
+                sent_at: new Date().toISOString(),
+                success: true,
+                response_time_ms: Date.now() - startTime
+              })
+              .eq('id', currentDispatchId)
+              .eq('user_id', user.id)
+          }
 
           // Atualizar estatísticas da sessão
           await supabase
@@ -320,20 +375,19 @@ export async function POST(request: NextRequest) {
           results.errors.push(`Erro ao enviar para ${phone}: falha no envio humanizado`)
           await postProgress('markFailed')
           
-          // Registrar falha no banco (supabase server-side)
-          await supabase
-            .from('waha_dispatches')
-            .insert({
-              campaign_id: campaign.id,
-              user_id: user.id,
-              waha_server_id: selectedSess.serverId,
-              session_name: selectedSess.sessionName,
-              mensagem: message,
-              variation_index: variationIndex,
-              status: 'failed',
-              success: false,
-              error_message: 'Falha no envio humanizado'
-            })
+          // Atualizar registro para 'failed'
+          if (currentDispatchId) {
+            await supabase
+              .from('waha_dispatches')
+              .update({
+                status: 'failed',
+                success: false,
+                error_message: 'Falha no envio humanizado',
+                response_time_ms: Date.now() - startTime
+              })
+              .eq('id', currentDispatchId)
+              .eq('user_id', user.id)
+          }
         }
 
         // Delay entre destinatários para evitar rate limiting
@@ -347,20 +401,21 @@ export async function POST(request: NextRequest) {
         results.errors.push(`Erro de conexão para ${phone}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
         await postProgress('markFailed')
         
-        // Registrar erro no banco (supabase server-side)
+        // Atualizar último registro 'sending' (se existente) para 'failed'
         await supabase
           .from('waha_dispatches')
-          .insert({
-            campaign_id: campaign.id,
-            user_id: user.id,
-            waha_server_id: selectedSess.serverId,
-            session_name: selectedSess.sessionName,
-            mensagem: message,
-            variation_index: variationIndex,
+          .update({
             status: 'failed',
             success: false,
             error_message: error instanceof Error ? error.message : 'Erro de conexão'
           })
+          .eq('campaign_id', campaign.id)
+          .eq('user_id', user.id)
+          .eq('session_name', selectedSess.sessionName)
+          .eq('mensagem', message)
+          .eq('variation_index', variationIndex)
+          .eq('status', 'sending')
+          .order('created_at', { ascending: false })
       }
     }
 
