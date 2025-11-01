@@ -32,6 +32,7 @@ import LoadingOverlay from './LoadingOverlay'
 import SuccessModal from './SuccessModal'
 import InstanceMonitor from './InstanceMonitorBackground'
 import WahaServersManager from './WahaServersManager'
+import TelegramBotsManager from './TelegramBotsManager'
 import { useAuth } from '@/lib/hooks/useAuth'
 import PageHeader from './PageHeader'
 
@@ -1337,6 +1338,9 @@ export default function ConfiguracoesPage() {
 
       {/* Configuração do WAHA - Múltiplos Servidores */}
       <WahaServersManager userId={currentUser?.id || ''} />
+
+      {/* Gerenciamento de Bots do Telegram */}
+      <TelegramBotsManager userId={currentUser?.id || ''} />
 
       {/* Gerenciamento de Instâncias */}
       <div className="card p-6">

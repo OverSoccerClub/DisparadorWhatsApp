@@ -20,6 +20,9 @@ import toast from 'react-hot-toast'
 import DisparoModal from './DisparoModal'
 import ConfirmModal from './ConfirmModal'
 import WahaDispatchModal from './WahaDispatchModal'
+import TelegramDispatchModal from './TelegramDispatchModal'
+import ChipMaturationModal from './ChipMaturationModal'
+import { useScheduledMaturationMonitor } from '@/hooks/useScheduledMaturationMonitor'
 
 export default function DisparosPage() {
   const [disparos, setDisparos] = useState<Disparo[]>([])
@@ -28,9 +31,11 @@ export default function DisparosPage() {
   const [statusFilter, setStatusFilter] = useState<'todos' | 'pendente' | 'enviado' | 'entregue' | 'falhou' | 'cancelado'>('todos')
   const [showDisparoModal, setShowDisparoModal] = useState(false)
   const [showWahaModal, setShowWahaModal] = useState(false)
+  const [showTelegramModal, setShowTelegramModal] = useState(false)
+  const [showMaturation, setShowMaturation] = useState(false)
   const [loading, setLoading] = useState(false)
   const [clientes, setClientes] = useState<Cliente[]>([])
-  const [dispatchMethod, setDispatchMethod] = useState<'evolution' | 'waha'>('evolution')
+  const [dispatchMethod, setDispatchMethod] = useState<'evolution' | 'waha' | 'telegram'>('evolution')
   const [dateFilters, setDateFilters] = useState({
     dataInicio: '',
     dataFim: '',
@@ -48,6 +53,26 @@ export default function DisparosPage() {
     message: '',
     onConfirm: () => {}
   })
+  
+  // Monitor de agendamentos de maturação (global)
+  const { setCallbacks } = useScheduledMaturationMonitor()
+  
+  // Configurar callbacks para quando maturação iniciar
+  useEffect(() => {
+    setCallbacks({
+      onMaturationStart: (maturationId: string, runInBackground: boolean) => {
+        // Disparar evento customizado para que o modal possa ouvir
+        window.dispatchEvent(new CustomEvent('maturation-start', {
+          detail: { maturationId, runInBackground }
+        }))
+        
+        // Se usuário escolheu acompanhar e modal não está aberto, abrir modal
+        if (!runInBackground && !showMaturation) {
+          setShowMaturation(true)
+        }
+      }
+    })
+  }, [setCallbacks, showMaturation])
 
   // Carregar dados da API
   const loadDisparos = async (page = 1, search = '', status = 'todos', dataInicio = '', dataFim = '', tipoData = 'created_at') => {
@@ -230,7 +255,7 @@ export default function DisparosPage() {
           </div>
         </div>
         <div className="flex space-x-3">
-          {/* Seletor de método de envio (Evolution x WAHA) */}
+          {/* Seletor de método de envio (Evolution x WAHA x Telegram) */}
           <div className="hidden lg:flex items-center bg-secondary-100 rounded-lg overflow-hidden">
             <button
               type="button"
@@ -248,6 +273,14 @@ export default function DisparosPage() {
             >
               WAHA
             </button>
+            <button
+              type="button"
+              onClick={() => setDispatchMethod('telegram')}
+              className={`px-3 py-2 text-sm font-medium ${dispatchMethod === 'telegram' ? 'bg-white text-primary-700' : 'text-secondary-700'}`}
+              title="Telegram Bot API"
+            >
+              Telegram
+            </button>
           </div>
           <button
             onClick={handleRefresh}
@@ -258,9 +291,19 @@ export default function DisparosPage() {
             Atualizar
           </button>
           <button
+            onClick={() => setShowMaturation(true)}
+            className="btn btn-ghost btn-md"
+            title="Maturação de Chips"
+          >
+            <ClockIcon className="h-4 w-4 mr-2" />
+            Maturação de Chips
+          </button>
+          <button
             onClick={() => {
               if (dispatchMethod === 'waha') {
                 setShowWahaModal(true)
+              } else if (dispatchMethod === 'telegram') {
+                setShowTelegramModal(true)
               } else {
                 setShowDisparoModal(true)
               }
@@ -268,7 +311,7 @@ export default function DisparosPage() {
             className="btn btn-primary btn-md"
           >
             <PlusIcon className="h-4 w-4 mr-2" />
-            Novo Disparo ({dispatchMethod === 'waha' ? 'WAHA' : 'Evolution'})
+            Novo Disparo ({dispatchMethod === 'waha' ? 'WAHA' : dispatchMethod === 'telegram' ? 'Telegram' : 'Evolution'})
           </button>
         </div>
       </div>
@@ -594,6 +637,20 @@ export default function DisparosPage() {
         }}
         clientes={clientes}
       />
+
+      {/* Modal de Disparo Telegram */}
+      <TelegramDispatchModal
+        isOpen={showTelegramModal}
+        onClose={() => {
+          setShowTelegramModal(false)
+          // Recarregar disparos após fechar modal (se aplicável)
+          loadDisparos(pagination.page, searchTerm, statusFilter, dateFilters.dataInicio, dateFilters.dataFim, dateFilters.tipoData)
+        }}
+        clientes={clientes}
+      />
+
+      {/* Modal de Maturação de Chips */}
+      <ChipMaturationModal isOpen={showMaturation} onClose={() => setShowMaturation(false)} />
 
       {/* Modal de Confirmação */}
       <ConfirmModal

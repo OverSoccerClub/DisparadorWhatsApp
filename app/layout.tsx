@@ -7,6 +7,8 @@ import NotificationProvider from '@/components/NotificationProvider'
 import ChunkErrorHandler from '@/components/ChunkErrorHandler'
 import GlobalLoading from '@/components/GlobalLoading'
 import { AuthProvider } from '@/lib/hooks/useAuth'
+import PendingMaturationChecker from '@/components/PendingMaturationChecker'
+import BackgroundMaturationWidget from '@/components/BackgroundMaturationWidget'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -30,7 +32,9 @@ export default function RootLayout({
         <ChunkErrorHandler />
         <AuthProvider>
           <NotificationProvider>
+            <PendingMaturationChecker />
             {children}
+            <BackgroundMaturationWidget />
             <Footer />
           </NotificationProvider>
         </AuthProvider>

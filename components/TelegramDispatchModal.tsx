@@ -15,10 +15,10 @@ import {
   DevicePhoneMobileIcon,
   BoltIcon,
   ExclamationTriangleIcon,
-  SignalIcon
+  SignalIcon,
+  PaperClipIcon
 } from '@heroicons/react/24/outline'
 import { Cliente } from '@/lib/supabase'
-import { formatPhoneNumber, validatePhoneNumber } from '@/lib/utils'
 import { useAuth } from '@/lib/hooks/useAuth'
 import toast from 'react-hot-toast'
 import TimeControl from './TimeControl'
@@ -26,29 +26,28 @@ import { detectMessageType, generateTypedVariations } from '@/lib/messageVariati
 import VariationsGenerationOverlay from './VariationsGenerationOverlay'
 import { useRealtimeProgress } from '@/hooks/useRealtimeProgress'
 
-interface WahaDispatchModalProps {
+interface TelegramDispatchModalProps {
   isOpen: boolean
   onClose: () => void
   clientes: Cliente[]
 }
 
-interface WahaSession {
-  serverId: string
-  serverName: string
-  sessionName: string
-  status: string
-  avatar?: string
-  phoneNumber?: string
-  connectedAt?: string
+interface TelegramBot {
+  id: string
+  nome: string
+  botToken: string
+  botUsername?: string
+  numeroRemetente?: string
+  status: 'active' | 'inactive'
 }
 
-export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDispatchModalProps) {
+export default function TelegramDispatchModal({ isOpen, onClose, clientes }: TelegramDispatchModalProps) {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<'clientes' | 'novos'>('clientes')
   const [selectedClientes, setSelectedClientes] = useState<string[]>([])
-  const [novosNumeros, setNovosNumeros] = useState<string>('')
-  const [wahaSessions, setWahaSessions] = useState<WahaSession[]>([])
-  const [selectedSession, setSelectedSession] = useState<string>('')
+  const [novosChatIds, setNovosChatIds] = useState<string>('')
+  const [telegramBots, setTelegramBots] = useState<TelegramBot[]>([])
+  const [selectedBot, setSelectedBot] = useState<string>('')
   const [useLoadBalancing, setUseLoadBalancing] = useState<boolean>(false)
   const [mensagem, setMensagem] = useState('')
   const [previewMode, setPreviewMode] = useState(false)
@@ -59,9 +58,9 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
   const [aiLoading, setAiLoading] = useState(false)
   const [variationsPreview, setVariationsPreview] = useState<string[]>([])
   const [genStatus, setGenStatus] = useState<'generating' | 'success' | 'error'>('generating')
-  const [sessionId] = useState(() => `waha_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
+  const [sessionId] = useState(() => `telegram_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
   const realtime = useRealtimeProgress(sessionId)
-  const [sendLogs, setSendLogs] = useState<Array<{ ts: number; phone?: string; instance?: string; message?: string; status?: 'sending'|'sent'|'failed' }>>([])
+  const [sendLogs, setSendLogs] = useState<Array<{ ts: number; chatId?: string; bot?: string; message?: string; status?: 'sending'|'sent'|'failed' }>>([])
   const [showDetails, setShowDetails] = useState(false)
 
   // Atualizar logs quando o progresso mudar
@@ -71,13 +70,14 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
     if (p.currentPhone || p.currentMessage) {
       setSendLogs(prev => [...prev, {
         ts: Date.now(),
-        phone: p.currentPhone,
-        instance: p.currentInstance,
+        chatId: p.currentPhone,
+        bot: p.currentInstance,
         message: p.currentMessage,
         status: 'sending'
       }].slice(-100))
     }
   }, [realtime.progress?.currentPhone, realtime.progress?.currentMessage, realtime.progress?.currentInstance])
+  
   const inferredType = detectMessageType(mensagem || '')
   const [timeControlConfig, setTimeControlConfig] = useState<{
     delayMinutes: number
@@ -93,17 +93,17 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
     autoCalculate: true
   })
 
-  // Carregar sessões WAHA quando o modal abrir
+  // Carregar bots do Telegram quando o modal abrir
   useEffect(() => {
     if (isOpen) {
-      loadWahaSessions()
+      loadTelegramBots()
     }
   }, [isOpen])
 
-  const loadWahaSessions = async () => {
+  const loadTelegramBots = async () => {
     try {
-      console.log('🔄 Carregando sessões WAHA...')
-      const response = await fetch('/api/waha/sessions/all', {
+      console.log('🔄 Carregando bots do Telegram...')
+      const response = await fetch('/api/telegram/bots', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -113,36 +113,42 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
       
       if (response.ok) {
         const data = await response.json()
-        console.log('📊 Sessões WAHA carregadas:', data)
+        console.log('📊 Bots do Telegram carregados:', data)
         
         if (data.success) {
-          const workingSessions = data.sessions.filter((session: any) => {
-            const s = String(session.status || '').toUpperCase()
-            return s === 'WORKING' || s === 'CONNECTED' || s === 'OPEN' || s === 'READY' || s === 'AUTHENTICATED'
-          })
+          // Mapear os dados da API para o formato esperado
+          const mappedBots: TelegramBot[] = (data.bots || []).map((bot: any) => ({
+            id: bot.id,
+            nome: bot.nome,
+            botToken: bot.botToken,
+            botUsername: bot.botUsername,
+            numeroRemetente: bot.numeroRemetente,
+            status: bot.status
+          }))
           
-          setWahaSessions(data.sessions)
+          const activeBots = mappedBots.filter((bot: TelegramBot) => bot.status === 'active')
+          setTelegramBots(mappedBots)
           
           // Configurar modo de distribuição
-          if (workingSessions.length > 0) {
-            if (!selectedSession) {
-              setSelectedSession(`${workingSessions[0].serverId}:${workingSessions[0].sessionName}`)
+          if (activeBots.length > 0) {
+            if (!selectedBot) {
+              setSelectedBot(activeBots[0].id)
             }
             setUseLoadBalancing(false)
           } else {
             setUseLoadBalancing(true)
-            setSelectedSession('')
+            setSelectedBot('')
           }
         }
       } else {
-        console.error('❌ Erro ao carregar sessões WAHA:', response.status)
+        console.error('❌ Erro ao carregar bots do Telegram:', response.status)
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar sessões WAHA:', error)
+      console.error('❌ Erro ao carregar bots do Telegram:', error)
     }
   }
 
-  const caracteresRestantes = 1600 - mensagem.length
+  const caracteresRestantes = 4096 - mensagem.length
   const isMensagemValida = mensagem.length > 0 && caracteresRestantes >= 0
 
   const handleSelectCliente = (clienteId: string) => {
@@ -173,16 +179,14 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
     }
   }
 
-  const processarNumeros = (texto: string): string[] => {
+  const processarChatIds = (texto: string): string[] => {
     return texto
       .split(/[,\n]/)
-      .map(num => num.trim())
-      .filter(num => num.length > 0)
-      .map(num => formatPhoneNumber(num))
-      .filter(num => validatePhoneNumber(num))
+      .map(id => id.trim())
+      .filter(id => id.length > 0 && /^-?\d+$/.test(id))
   }
 
-  const numerosProcessados = processarNumeros(novosNumeros)
+  const chatIdsProcessados = processarChatIds(novosChatIds)
 
   const handlePreview = () => {
     if (!isMensagemValida) {
@@ -200,7 +204,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
 
     const totalDestinatarios = activeTab === 'clientes' 
       ? selectedClientes.length 
-      : numerosProcessados.length
+      : chatIdsProcessados.length
 
     if (totalDestinatarios === 0) {
       toast.error('Selecione destinatários primeiro')
@@ -258,13 +262,13 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
       return
     }
 
-    if (activeTab === 'novos' && numerosProcessados.length === 0) {
-      toast.error('Digite pelo menos um número válido')
+    if (activeTab === 'novos' && chatIdsProcessados.length === 0) {
+      toast.error('Digite pelo menos um Chat ID válido')
       return
     }
 
-    if (!selectedSession && !useLoadBalancing) {
-      toast.error('Selecione uma sessão WAHA ou habilite o balanceamento automático')
+    if (!selectedBot && !useLoadBalancing) {
+      toast.error('Selecione um bot do Telegram ou habilite o balanceamento automático')
       return
     }
 
@@ -273,24 +277,27 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
     try {
       const totalDestinatarios = activeTab === 'clientes' 
         ? selectedClientes.length 
-        : numerosProcessados.length
+        : chatIdsProcessados.length
 
-      // Preparar telefones para envio
-      const telefones = activeTab === 'clientes' 
+      // Preparar chat IDs para envio
+      // Para Telegram, vamos precisar do chat_id de cada cliente
+      // Por enquanto, vamos usar o telefone como identificador
+      const chatIds = activeTab === 'clientes' 
         ? selectedClientes.map(id => {
             const cliente = (clientes || []).find(c => c.id === id)
+            // Assumindo que o chat_id pode estar armazenado no cliente ou usar telefone
             return cliente?.telefone || ''
-          }).filter(telefone => telefone)
-        : numerosProcessados
+          }).filter(chatId => chatId)
+        : chatIdsProcessados
 
       // Preparar dados do disparo
       const dispatchData = {
-        telefones,
+        chatIds,
         mensagem,
         messageVariations: enableVariations && variationsPreview.length > 0 ? variationsPreview : undefined,
         user_id: user?.id,
         useLoadBalancing,
-        selectedSession: useLoadBalancing ? null : selectedSession,
+        selectedBot: useLoadBalancing ? null : selectedBot,
         enableVariations,
         timeControl: {
           delayMinutes: timeControlConfig.delayMinutes,
@@ -298,13 +305,12 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
           totalTimeHours: timeControlConfig.totalTimeHours,
           totalTimeMinutes: timeControlConfig.totalTimeMinutes
         },
-        humanizeConversation: true // Adicionado para habilitar a conversão humana
-        ,
+        humanizeConversation: true,
         sessionId
       }
 
-      // Enviar via API WAHA
-      const response = await fetch('/api/waha/dispatch', {
+      // Enviar via API Telegram
+      const response = await fetch('/api/telegram/dispatch', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -320,15 +326,15 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
           ? ` com ${variationsPreview.length} variações diferentes` 
           : ''
         
-        const sessionText = useLoadBalancing 
-          ? ` distribuído(s) entre ${wahaSessions.filter(s => s.status === 'WORKING').length} sessão(ões) WAHA` 
-          : ` via sessão específica`
+        const botText = useLoadBalancing 
+          ? ` distribuído(s) entre ${telegramBots.filter(b => b.status === 'active').length} bot(s) do Telegram` 
+          : ` via bot específico`
 
-        toast.success(`${totalDestinatarios} mensagem(ns) enviada(s) com sucesso${variationText}${sessionText}!`)
+        toast.success(`${totalDestinatarios} mensagem(ns) enviada(s) com sucesso${variationText}${botText}!`)
         
         // Reset form
         setSelectedClientes([])
-        setNovosNumeros('')
+        setNovosChatIds('')
         setMensagem('')
         setPreviewMode(false)
         setVariationsPreview([])
@@ -363,10 +369,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
     return mensagem
   }
 
-  const workingSessions = wahaSessions.filter(s => {
-    const st = String(s.status || '').toUpperCase()
-    return st === 'WORKING' || st === 'CONNECTED' || st === 'OPEN' || st === 'READY' || st === 'AUTHENTICATED'
-  })
+  const activeBots = telegramBots.filter(b => b.status === 'active')
 
   if (!isOpen) return null
 
@@ -402,7 +405,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                   {realtime.progress.currentPhone && (
                     <div className="mt-2 text-xs text-secondary-700 flex items-center gap-2">
                       <DevicePhoneMobileIcon className="h-4 w-4 text-secondary-500" />
-                      <span className="font-medium">{realtime.progress.currentPhone}</span>
+                      <span className="font-medium">Chat ID: {realtime.progress.currentPhone}</span>
                       {realtime.progress.currentInstance && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-secondary-50 text-secondary-700 border border-secondary-200">
                           <SignalIcon className="h-3 w-3" /> {realtime.progress.currentInstance}
@@ -432,28 +435,6 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                 </div>
               </div>
 
-              {/* Coluna 3: Fluxo de etapas (saudação -> cumprimento -> principal -> opt-out) */}
-              {realtime.progress.currentMessage && (
-                <div className="mt-3">
-                  <div className="text-xs text-secondary-500 mb-1">Etapas</div>
-                  <div className="flex items-center gap-2 text-xs">
-                    {['Saudação','Como vai?','Mensagem','Opt-out'].map((label, idx) => {
-                      const m = (realtime.progress.currentMessage || '').toLowerCase()
-                      const active = (idx === 0 && /olá|oi|bom dia|boa tarde|boa noite|e aí/.test(m))
-                        || (idx === 1 && /como vai\??/.test(m))
-                        || (idx === 2 && !( /como vai\??|não deseja|nao deseja/.test(m)))
-                        || (idx === 3 && /(não deseja|nao deseja).+n[ãa]o/.test(m))
-                      return (
-                        <span key={label} className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border ${active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-secondary-50 text-secondary-600 border-secondary-200'}`}>
-                          {active ? <CheckCircleIcon className="h-3.5 w-3.5" /> : <ClockIcon className="h-3.5 w-3.5" />}
-                          {label}
-                        </span>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
               {/* Lista sucinta das últimas mensagens */}
               {sendLogs.length > 0 && (
                 <div className="mt-3 max-h-32 overflow-y-auto text-xs text-secondary-700 divide-y divide-secondary-100">
@@ -461,8 +442,8 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                     <div key={idx} className="py-1.5 flex items-center justify-between">
                       <div className="truncate mr-2">
                         <span className="text-secondary-500 mr-1">{new Date(e.ts).toLocaleTimeString()}</span>
-                        <span className="font-medium">{e.phone}</span>
-                        {e.instance && <span className="ml-1 text-secondary-500">({e.instance})</span>}
+                        <span className="font-medium">{e.chatId}</span>
+                        {e.bot && <span className="ml-1 text-secondary-500">({e.bot})</span>}
                         {e.message && <span className="ml-2 truncate">- {e.message.substring(0, 90)}...</span>}
                       </div>
                       <span className={`ml-2 ${e.status === 'failed' ? 'text-red-600' : e.status === 'sent' ? 'text-green-600' : 'text-blue-600'}`}>
@@ -512,8 +493,8 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                       <div className="flex-1 min-w-0">
                         <div className="text-xs text-secondary-500">{new Date(e.ts).toLocaleString()}</div>
                         <div className="mt-0.5 text-sm text-secondary-900 truncate">
-                          <span className="font-medium">{e.phone}</span>
-                          {e.instance && <span className="ml-2 text-secondary-600">({e.instance})</span>}
+                          <span className="font-medium">Chat ID: {e.chatId}</span>
+                          {e.bot && <span className="ml-2 text-secondary-600">({e.bot})</span>}
                         </div>
                         {e.message && (
                           <div className="mt-1 text-sm text-secondary-700 whitespace-pre-wrap break-words">
@@ -537,16 +518,18 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
           </div>
         </div>
       )}
+
       {/* Overlay de geração de variações */}
       <VariationsGenerationOverlay
         open={aiLoading}
         status={genStatus}
         details={{
-          totalVariations: (activeTab === 'clientes' ? selectedClientes.length : numerosProcessados.length) || 0,
+          totalVariations: (activeTab === 'clientes' ? selectedClientes.length : chatIdsProcessados.length) || 0,
           generatedVariations: variationsPreview.length,
           messageType: inferredType
         }}
       />
+
       <div className="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         <div className="fixed inset-0 bg-secondary-500 bg-opacity-75 transition-opacity" onClick={onClose} />
 
@@ -556,15 +539,15 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
-                  <DevicePhoneMobileIcon className="h-5 w-5 text-primary-600" />
+                  <PaperClipIcon className="h-5 w-5 text-primary-600" />
                 </div>
                 <div>
                   <h3 className="text-lg font-medium text-secondary-900 flex items-center">
-                    <DevicePhoneMobileIcon className="h-5 w-5 mr-2 text-primary-600" />
-                    Disparo de Mensagens WhatsApp (WAHA)
+                    <PaperClipIcon className="h-5 w-5 mr-2 text-primary-600" />
+                    Disparo de Mensagens Telegram
                   </h3>
                   <p className="text-sm text-secondary-500">
-                    Envie mensagens para clientes cadastrados ou novos números via WAHA
+                    Envie mensagens para clientes cadastrados ou novos Chat IDs via Telegram
                   </p>
                 </div>
               </div>
@@ -600,38 +583,38 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                 }`}
               >
                 <PhoneIcon className="h-5 w-5 mr-2" />
-                Novos Números
+                Novos Chat IDs
               </button>
             </nav>
           </div>
 
-          {/* Informações das Sessões WAHA */}
+          {/* Informações dos Bots do Telegram */}
           <div className="px-6 py-3 bg-blue-50 border-b border-blue-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   <span className="text-sm font-medium text-green-700">
-                    {workingSessions.length} sessão(ões) conectada(s)
+                    {activeBots.length} bot(s) ativo(s)
                   </span>
                 </div>
-                {wahaSessions.length - workingSessions.length > 0 && (
+                {telegramBots.length - activeBots.length > 0 && (
                   <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                     <span className="text-sm font-medium text-red-700">
-                      {wahaSessions.length - workingSessions.length} desconectada(s)
+                      {telegramBots.length - activeBots.length} inativo(s)
                     </span>
                   </div>
                 )}
               </div>
               <div className="text-xs text-blue-600">
-                Sistema: WAHA
+                Sistema: Telegram Bot API
               </div>
             </div>
-            {workingSessions.length === 0 && (
+            {activeBots.length === 0 && (
               <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded-md">
                 <p className="text-sm text-yellow-800">
-                  ⚠️ Nenhuma sessão WAHA conectada. Configure uma sessão em Sessões WAHA.
+                  ⚠️ Nenhum bot do Telegram configurado. Configure um bot em Configurações.
                 </p>
               </div>
             )}
@@ -680,13 +663,13 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-secondary-700 mb-2">
-                    Números de Telefone
+                    Chat IDs do Telegram
                   </label>
                   <div className="space-y-3">
                     <textarea
-                      value={novosNumeros}
-                      onChange={(e) => setNovosNumeros(e.target.value)}
-                      placeholder="Digite os números separados por vírgula ou quebra de linha:&#10;5511999999999&#10;5511888888888&#10;5511777777777"
+                      value={novosChatIds}
+                      onChange={(e) => setNovosChatIds(e.target.value)}
+                      placeholder="Digite os Chat IDs separados por vírgula ou quebra de linha:&#10;123456789&#10;987654321&#10;-1001234567890"
                       className="input h-32 resize-none"
                     />
                     <div className="flex items-center space-x-4">
@@ -696,10 +679,10 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                           accept=".csv"
                           onChange={handleFileUpload}
                           className="hidden"
-                          id="csv-upload"
+                          id="csv-upload-telegram"
                         />
                         <label
-                          htmlFor="csv-upload"
+                          htmlFor="csv-upload-telegram"
                           className="btn btn-secondary btn-sm cursor-pointer"
                         >
                           <DocumentArrowUpIcon className="h-4 w-4 mr-2" />
@@ -707,7 +690,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                         </label>
                       </div>
                       <div className="text-sm text-secondary-600">
-                        {numerosProcessados.length} número(s) válido(s)
+                        {chatIdsProcessados.length} Chat ID(s) válido(s)
                       </div>
                     </div>
                   </div>
@@ -748,11 +731,11 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
               {previewMode ? (
                 <div className="border border-secondary-200 rounded-md p-4 bg-secondary-50">
                   <div className="flex items-center mb-2">
-                    <div className="w-8 h-8 bg-success-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">W</span>
+                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">T</span>
                     </div>
                     <div className="ml-3">
-                      <div className="text-sm font-medium text-secondary-900">WhatsApp</div>
+                      <div className="text-sm font-medium text-secondary-900">Telegram</div>
                       <div className="text-xs text-secondary-500">agora</div>
                     </div>
                   </div>
@@ -770,37 +753,67 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
               )}
             </div>
 
-            {/* Seleção de Sessão WAHA */}
-            <div className="space-y-4">
+            {/* Seleção de Bot do Telegram */}
+            <div className="space-y-4 mt-6">
               <div>
                 <label className="block text-sm font-medium text-secondary-700 mb-2">
-                  Sessão WAHA
+                  Bot do Telegram (Remetente)
                 </label>
                 <div className="flex items-center space-x-2 mb-2">
                   <span className="text-xs text-secondary-500">
-                    {workingSessions.length} de {wahaSessions.length} sessões conectadas
+                    {activeBots.length} de {telegramBots.length} bot(s) ativo(s)
                   </span>
                 </div>
+                
+                {/* Filtro por número remetente (se houver bots com número) */}
+                {activeBots.some(b => b.numeroRemetente) && (
+                  <div className="mb-3">
+                    <label className="block text-xs font-medium text-secondary-600 mb-1">
+                      Filtrar por Número Remetente (opcional)
+                    </label>
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          const bot = activeBots.find(b => b.numeroRemetente === e.target.value)
+                          if (bot) {
+                            setSelectedBot(bot.id)
+                            setUseLoadBalancing(false)
+                          }
+                        }
+                      }}
+                      className="input text-xs"
+                    >
+                      <option value="">Todos os bots</option>
+                      {activeBots
+                        .filter(b => b.numeroRemetente)
+                        .map(bot => (
+                          <option key={bot.numeroRemetente} value={bot.numeroRemetente}>
+                            {bot.numeroRemetente} - {bot.nome}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                )}
 
                 {/* Modo de Distribuição */}
                 <div className="space-y-3">
-                  {/* Opção 1: Sessão Específica */}
+                  {/* Opção 1: Bot Específico */}
                   <div className="flex items-center space-x-3">
                     <input
                       type="radio"
-                      id="specific-session"
-                      name="distribution-mode"
+                      id="specific-bot"
+                      name="distribution-mode-telegram"
                       checked={!useLoadBalancing}
                       onChange={() => {
                         setUseLoadBalancing(false)
-                        if (workingSessions.length > 0) {
-                          setSelectedSession(`${workingSessions[0].serverId}:${workingSessions[0].sessionName}`)
+                        if (activeBots.length > 0) {
+                          setSelectedBot(activeBots[0].id)
                         }
                       }}
                       className="text-primary-600 focus:ring-primary-500"
                     />
-                    <label htmlFor="specific-session" className="text-sm text-secondary-700">
-                      Usar sessão específica
+                    <label htmlFor="specific-bot" className="text-sm text-secondary-700">
+                      Usar bot específico
                     </label>
                   </div>
 
@@ -808,43 +821,44 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                   <div className="flex items-center space-x-3">
                     <input
                       type="radio"
-                      id="load-balancing"
-                      name="distribution-mode"
+                      id="load-balancing-telegram"
+                      name="distribution-mode-telegram"
                       checked={useLoadBalancing}
                       onChange={() => {
                         setUseLoadBalancing(true)
-                        setSelectedSession('')
+                        setSelectedBot('')
                       }}
                       className="text-primary-600 focus:ring-primary-500"
                     />
-                    <label htmlFor="load-balancing" className="text-sm text-secondary-700">
-                      Balanceamento automático entre sessões
+                    <label htmlFor="load-balancing-telegram" className="text-sm text-secondary-700">
+                      Balanceamento automático entre bots
                     </label>
                   </div>
                 </div>
 
-                {/* Seletor de Sessão (só aparece se não for modo aleatório) */}
+                {/* Seletor de Bot (só aparece se não for modo aleatório) */}
                 {!useLoadBalancing && (
                   <div className="mt-3">
                     <select
-                      value={selectedSession}
-                      onChange={(e) => setSelectedSession(e.target.value)}
+                      value={selectedBot}
+                      onChange={(e) => setSelectedBot(e.target.value)}
                       className="input"
                     >
-                      <option value="">Selecione uma sessão</option>
-                      {workingSessions.map(session => (
+                      <option value="">Selecione um bot</option>
+                      {activeBots.map(bot => (
                         <option 
-                          key={`${session.serverId}:${session.sessionName}`}
-                          value={`${session.serverId}:${session.sessionName}`}
+                          key={bot.id}
+                          value={bot.id}
                         >
-                          {session.serverName} - {session.sessionName}
-                          {session.phoneNumber && ` (${session.phoneNumber})`}
+                          {bot.nome}
+                          {bot.botUsername && ` (@${bot.botUsername})`}
+                          {bot.numeroRemetente && ` - ${bot.numeroRemetente}`}
                         </option>
                       ))}
                     </select>
-                    {workingSessions.length === 0 && (
+                    {activeBots.length === 0 && (
                       <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
-                        ⚠️ Nenhuma sessão conectada. Conecte uma sessão em Sessões WAHA ou use o balanceamento automático.
+                        ⚠️ Nenhum bot ativo. Configure um bot em Configurações ou use o balanceamento automático.
                       </div>
                     )}
                   </div>
@@ -856,7 +870,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                     <div className="flex items-center">
                       <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
                       <p className="text-xs text-blue-700">
-                        As mensagens serão distribuídas automaticamente entre todas as sessões conectadas
+                        As mensagens serão distribuídas automaticamente entre todos os bots ativos
                       </p>
                     </div>
                   </div>
@@ -867,8 +881,8 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
             {/* Controle de Tempo */}
             <div className="mt-6">
               <TimeControl
-                totalDestinatarios={activeTab === 'clientes' ? selectedClientes.length : numerosProcessados.length}
-                totalInstancias={workingSessions.length}
+                totalDestinatarios={activeTab === 'clientes' ? selectedClientes.length : chatIdsProcessados.length}
+                totalInstancias={activeBots.length}
                 onConfigChange={setTimeControlConfig}
                 disabled={loading}
                 messageType={inferredType}
@@ -941,23 +955,23 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                   <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
-                      id="useAI"
+                      id="useAI-telegram"
                       checked={useAI}
                       onChange={(e) => setUseAI(e.target.checked)}
                       className="rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
                     />
-                    <label htmlFor="useAI" className="text-sm text-secondary-700">
+                    <label htmlFor="useAI-telegram" className="text-sm text-secondary-700">
                       Variações por IA (Gemini)
                     </label>
                   </div>
                   <input
                     type="checkbox"
-                    id="enableVariations"
+                    id="enableVariations-telegram"
                     checked={enableVariations}
                     onChange={(e) => setEnableVariations(e.target.checked)}
                     className="rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
                   />
-                  <label htmlFor="enableVariations" className="text-sm text-secondary-700">
+                  <label htmlFor="enableVariations-telegram" className="text-sm text-secondary-700">
                     Ativar variações automáticas
                   </label>
                 </div>
@@ -991,3 +1005,4 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
     </div>
   )
 }
+

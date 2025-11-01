@@ -25,29 +25,12 @@ const nextConfig = {
     dangerouslyAllowSVG: false,
   },
   
-  // Configurações de webpack para corrigir problemas de chunking do Supabase
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      // Desabilitar splitChunks para evitar problemas com vendor-chunks do Supabase
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: false,
-      }
-      
-      // Garantir que @supabase/ssr seja resolvido corretamente
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        '@supabase/ssr': require.resolve('@supabase/ssr'),
-      }
-    }
-    
-    return config
-  },
+  // Removido override de webpack para estabilizar o build
   
-  // Configurações experimentais para performance
+  // Configurações experimentais para performance (simplificadas para estabilidade)
   experimental: {
     optimizeCss: true,
-    optimizePackageImports: ['@heroicons/react', 'lucide-react'],
+    // optimizePackageImports removido temporariamente para evitar quebras de chunk
   },
   
   // Headers de segurança e performance
@@ -74,32 +57,7 @@ const nextConfig = {
           },
         ],
       },
-      {
-        source: '/_next/static/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-          {
-            key: 'Content-Type',
-            value: 'application/javascript',
-          },
-        ],
-      },
-      {
-        source: '/_next/static/css/(.*)',
-        headers: [
-          {
-            key: 'Content-Type',
-            value: 'text/css',
-          },
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
+      // Deixar o Next gerenciar Content-Type de assets estáticos
       {
         source: '/static/(.*)',
         headers: [

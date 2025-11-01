@@ -5,6 +5,8 @@ import { WahaVariationService } from '@/lib/waha-variation-service'
 import { generateTypedVariations } from '@/lib/messageVariations'
 
 export async function POST(request: NextRequest) {
+  // Ler body apenas uma vez para evitar "Body is unusable"
+  const rawBody = await request.json().catch(() => null)
   try {
     const cookieStore = cookies()
     const supabase = createServerClient(
@@ -25,7 +27,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Usuário não autenticado' }, { status: 401 })
     }
 
-    const body = await request.json()
+    if (!rawBody) {
+      return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
+    }
     const { 
       originalMessage, 
       prompt, 
@@ -33,7 +37,7 @@ export async function POST(request: NextRequest) {
       language = 'português brasileiro',
       tone = 'profissional e amigável',
       maxLength = 500
-    } = body
+    } = rawBody
 
     if (!originalMessage) {
       return NextResponse.json({ error: 'Mensagem original é obrigatória' }, { status: 400 })
@@ -63,9 +67,9 @@ export async function POST(request: NextRequest) {
     console.error('Erro ao gerar variações (IA):', error)
     // Fallback local sem IA para não bloquear o fluxo
     try {
-      const body = await request.json()
-      const originalMessage: string = body.originalMessage
-      const count: number = body.count || 3
+      if (!rawBody || !rawBody.originalMessage) throw new Error('Body ausente no fallback')
+      const originalMessage: string = rawBody.originalMessage
+      const count: number = rawBody.count || 3
 
       const primaryUrl = (originalMessage.match(/https?:\/\/\S+/i) || [])[0]
       const responsibility = 'Jogue com responsabilidade'

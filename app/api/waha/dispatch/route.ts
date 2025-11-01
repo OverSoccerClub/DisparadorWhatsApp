@@ -267,9 +267,13 @@ export async function POST(request: NextRequest) {
           const endpoints = [
             // Padrão da doc: corpo inclui session
             `${base}/api/sendText`,
+            // Variante com session como querystring
+            `${base}/api/sendText?session=${session}`,
             `${base}/api/${session}/sendText`,
             `${base}/api/${session}/chat/sendText`,
-            `${base}/api/${session}/messages/sendText`
+            `${base}/api/${session}/messages/sendText`,
+            // Tentativas adicionais por compatibilidade
+            `${base}/api/chats/${encodeURIComponent(jid)}/sendText?session=${session}`
           ]
           const headers: Record<string, string> = {
             'Content-Type': 'application/json',
