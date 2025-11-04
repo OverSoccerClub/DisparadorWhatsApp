@@ -5,6 +5,19 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [0.1.3] - 2025-01-XX
+
+### Limpeza
+- Removidos todos os arquivos de teste (test-*.js, debug-*.js, check-*.js)
+- Removidas pastas de teste (app/test-css, app/test-instance-generator, app/test-modal)
+- Removidos logs de debug excessivos, mantendo apenas logs de erro importantes
+- Removido handler GET de debug da rota de restart
+
+### Melhorias
+- Atualização automática do status de sessão após restart
+- Sistema de polling para verificar mudanças de status após restart
+- Limpeza de código para produção
+
 ## [0.1.2] - 2025-11-01
 
 ### Adicionado

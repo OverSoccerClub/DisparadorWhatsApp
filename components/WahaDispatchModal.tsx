@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { 
   XMarkIcon,
   UserGroupIcon,
@@ -63,21 +63,68 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
   const realtime = useRealtimeProgress(sessionId)
   const [sendLogs, setSendLogs] = useState<Array<{ ts: number; phone?: string; instance?: string; message?: string; status?: 'sending'|'sent'|'failed' }>>([])
   const [showDetails, setShowDetails] = useState(false)
+  // Remover duplicatas visuais (mesmo phone+message) para não parecer que enviou várias vezes
+  const visibleLogs = useMemo(() => {
+    const seen = new Set<string>()
+    // Considerar do mais recente para o mais antigo
+    const reversed = sendLogs.slice().reverse()
+    const filtered = reversed.filter(e => {
+      const key = `${e.phone || ''}|${(e.message || '').trim()}`
+      if (!e.phone || !e.message) return true
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    // Voltar para ordem cronológica crescente onde necessário
+    return filtered.reverse()
+  }, [sendLogs])
 
-  // Atualizar logs quando o progresso mudar
+  // Atualizar logs com dados precisos do servidor
   useEffect(() => {
     const p = realtime.progress
     if (!p) return
-    if (p.currentPhone || p.currentMessage) {
-      setSendLogs(prev => [...prev, {
-        ts: Date.now(),
-        phone: p.currentPhone,
-        instance: p.currentInstance,
-        message: p.currentMessage,
-        status: 'sending'
-      }].slice(-100))
+    
+    // Usar logs precisos do servidor se disponíveis (mais fiel)
+    if (p.messageLogs && Array.isArray(p.messageLogs) && p.messageLogs.length > 0) {
+      const preciseLogs = p.messageLogs.map(log => ({
+        ts: log.timestamp,
+        phone: log.phone,
+        instance: log.instance,
+        message: log.message,
+        status: log.status === 'sent' ? 'sent' : 'failed'
+      }))
+      
+      // Remover duplicatas baseadas em timestamp + phone + message
+      const uniqueLogs = preciseLogs.filter((log, idx, self) => 
+        idx === self.findIndex(l => 
+          l.ts === log.ts && 
+          l.phone === log.phone && 
+          l.message === log.message
+        )
+      )
+      
+      setSendLogs(uniqueLogs.slice(-100)) // Manter últimos 100
+    } else if (p.currentPhone || p.currentMessage) {
+      // Fallback: usar progresso atual (menos preciso)
+      setSendLogs(prev => {
+        // Evitar duplicatas
+        const lastLog = prev[prev.length - 1]
+        if (lastLog && 
+            lastLog.phone === p.currentPhone && 
+            lastLog.message === p.currentMessage &&
+            Date.now() - lastLog.ts < 5000) {
+          return prev // Não adicionar duplicata
+        }
+        return [...prev, {
+          ts: Date.now(),
+          phone: p.currentPhone,
+          instance: p.currentInstance,
+          message: p.currentMessage,
+          status: 'sending'
+        }].slice(-100)
+      })
     }
-  }, [realtime.progress?.currentPhone, realtime.progress?.currentMessage, realtime.progress?.currentInstance])
+  }, [realtime.progress?.messageLogs, realtime.progress?.currentPhone, realtime.progress?.currentMessage, realtime.progress?.currentInstance])
   const inferredType = detectMessageType(mensagem || '')
   const [timeControlConfig, setTimeControlConfig] = useState<{
     delayMinutes: number
@@ -275,7 +322,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
         ? selectedClientes.length 
         : numerosProcessados.length
 
-      // Preparar telefones para envio
+      // Preparar telefones e informações de clientes para envio
       const telefones = activeTab === 'clientes' 
         ? selectedClientes.map(id => {
             const cliente = (clientes || []).find(c => c.id === id)
@@ -283,9 +330,21 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
           }).filter(telefone => telefone)
         : numerosProcessados
 
+      // Preparar mapeamento de telefone -> nome do cliente (para personalização)
+      const clientesMap = activeTab === 'clientes' 
+        ? selectedClientes.reduce((acc, id) => {
+            const cliente = (clientes || []).find(c => c.id === id)
+            if (cliente?.telefone && cliente?.nome) {
+              acc[cliente.telefone] = cliente.nome
+            }
+            return acc
+          }, {} as Record<string, string>)
+        : {}
+
       // Preparar dados do disparo
       const dispatchData = {
         telefones,
+        clientesMap, // Mapa telefone -> nome para personalização
         mensagem,
         messageVariations: enableVariations && variationsPreview.length > 0 ? variationsPreview : undefined,
         user_id: user?.id,
@@ -370,6 +429,52 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
 
   if (!isOpen) return null
 
+  // Componente de cronômetro para próxima mensagem (igual ao da maturação)
+  function NextMessageTimer({ nextMessageAt }: { nextMessageAt: number }) {
+    const [timeRemaining, setTimeRemaining] = useState<number>(0)
+
+    useEffect(() => {
+      if (!nextMessageAt || nextMessageAt <= 0) return
+      
+      const updateTimer = () => {
+        const now = Date.now()
+        const remaining = Math.max(0, nextMessageAt - now)
+        setTimeRemaining(remaining)
+      }
+
+      updateTimer() // Atualizar imediatamente
+      const interval = setInterval(updateTimer, 1000) // Atualizar a cada segundo
+
+      return () => clearInterval(interval)
+    }, [nextMessageAt])
+
+    const totalSeconds = Math.floor(timeRemaining / 1000)
+    const minutes = Math.floor(totalSeconds / 60)
+    const displaySeconds = totalSeconds % 60
+
+    if (timeRemaining <= 0) {
+      return (
+        <div className="flex items-center gap-1 text-xs text-blue-500">
+          <ClockIcon className="h-4 w-4" />
+          <span>Enviando...</span>
+        </div>
+      )
+    }
+
+    // Se for menos de 1 minuto, mostrar apenas segundos (ex: "43s")
+    // Se for 1 minuto ou mais, mostrar minutos e segundos (ex: "1m 30s")
+    const displayText = minutes > 0 
+      ? `${minutes}m ${displaySeconds}s`
+      : `${displaySeconds}s`
+
+    return (
+      <div className="flex items-center gap-1 text-xs text-blue-600 font-medium">
+        <ClockIcon className="h-4 w-4" />
+        <span>{displayText}</span>
+      </div>
+    )
+  }
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Barra de progresso de envio */}
@@ -399,14 +504,48 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                       </span>
                     )}
                   </div>
-                  {realtime.progress.currentPhone && (
-                    <div className="mt-2 text-xs text-secondary-700 flex items-center gap-2">
-                      <DevicePhoneMobileIcon className="h-4 w-4 text-secondary-500" />
-                      <span className="font-medium">{realtime.progress.currentPhone}</span>
-                      {realtime.progress.currentInstance && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-secondary-50 text-secondary-700 border border-secondary-200">
-                          <SignalIcon className="h-3 w-3" /> {realtime.progress.currentInstance}
-                        </span>
+                  {/* Conversa Atual - Layout igual ao da maturação */}
+                  {(realtime.progress.currentPhone || realtime.progress.currentInstance) && (
+                    <div className="mt-3 p-3 bg-white rounded-lg border border-primary-200">
+                      <div className="text-xs font-semibold text-secondary-700 mb-2 flex items-center justify-between">
+                        <span>Conversa Atual</span>
+                        {/* SEMPRE mostrar o ícone de tempo e cronômetro */}
+                        <div className="flex items-center gap-1">
+                          {typeof realtime.progress.nextMessageAt === 'number' && realtime.progress.nextMessageAt > Date.now() ? (
+                            <NextMessageTimer nextMessageAt={realtime.progress.nextMessageAt} />
+                          ) : (
+                            <>
+                              <ClockIcon className="h-4 w-4 text-secondary-500 flex-shrink-0" />
+                              <span className="text-xs text-secondary-500 whitespace-nowrap">Calculando tempo...</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm mb-2">
+                        {/* Sessão/Instância que está enviando */}
+                        {realtime.progress.currentInstance && (
+                          <>
+                            <div className="px-2 py-1 bg-primary-100 text-primary-700 rounded font-medium">
+                              {realtime.progress.currentInstance}
+                            </div>
+                            <span className="text-secondary-400">→</span>
+                          </>
+                        )}
+                        {/* Destinatário */}
+                        {realtime.progress.currentPhone && (
+                          <div className="px-2 py-1 bg-secondary-100 text-secondary-700 rounded font-medium">
+                            {realtime.progress.currentPhone}
+                          </div>
+                        )}
+                      </div>
+                      {/* Mensagem atual enviada */}
+                      {realtime.progress.currentMessage && (
+                        <div className="mt-2 p-2 bg-blue-50 border-l-2 border-blue-300 rounded text-xs">
+                          <div className="text-secondary-600 mb-1 font-medium">Mensagem enviada:</div>
+                          <div className="text-secondary-700 italic">
+                            "{realtime.progress.currentMessage.length > 150 ? realtime.progress.currentMessage.substring(0, 150) + '...' : realtime.progress.currentMessage}"
+                          </div>
+                        </div>
                       )}
                     </div>
                   )}
@@ -455,9 +594,9 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
               )}
 
               {/* Lista sucinta das últimas mensagens */}
-              {sendLogs.length > 0 && (
+              {visibleLogs.length > 0 && (
                 <div className="mt-3 max-h-32 overflow-y-auto text-xs text-secondary-700 divide-y divide-secondary-100">
-                  {sendLogs.slice(-6).reverse().map((e, idx) => (
+                  {visibleLogs.slice(-6).reverse().map((e, idx) => (
                     <div key={idx} className="py-1.5 flex items-center justify-between">
                       <div className="truncate mr-2">
                         <span className="text-secondary-500 mr-1">{new Date(e.ts).toLocaleTimeString()}</span>
@@ -477,13 +616,13 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
         </div>
       )}
 
-      {/* Modal de Detalhes dos Envios */}
+      {/* Modal de Detalhes dos Envios - Layout igual ao da maturação */}
       {showDetails && (
         <div className="fixed inset-0 z-[10000]">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowDetails(false)} />
           <div className="absolute inset-0 flex items-center justify-center p-4">
             <div className="w-full max-w-3xl bg-white rounded-lg shadow-xl overflow-hidden">
-              <div className="px-5 py-4 border-b border-secondary-200 flex items-center justify-between">
+              <div className="px-5 py-4 border-b border-secondary-200 flex items-center justify-between bg-gradient-to-r from-primary-50 to-primary-100">
                 <div className="flex items-center gap-2">
                   <PaperAirplaneIcon className="h-5 w-5 text-primary-600" />
                   <h4 className="text-sm font-semibold text-secondary-900">Detalhes dos Envios</h4>
@@ -493,44 +632,136 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                 </button>
               </div>
               <div className="p-4">
-                <div className="text-xs text-secondary-600 mb-2">
-                  {realtime.progress ? (
-                    <>
-                      Total: <span className="font-medium">{realtime.progress.totalMessages}</span> •
-                      <span className="ml-1"> Enviados: <span className="font-medium text-green-700">{realtime.progress.sentMessages}</span></span> •
-                      <span className="ml-1"> Falhas: <span className="font-medium text-red-700">{realtime.progress.failedMessages}</span></span> •
-                      <span className="ml-1"> Restantes: <span className="font-medium">{Math.max(0, (realtime.progress.totalMessages - (realtime.progress.sentMessages || 0) - (realtime.progress.failedMessages || 0)))}</span></span>
-                    </>
-                  ) : 'Coletando dados...'}
-                </div>
-                <div className="max-h-[60vh] overflow-y-auto divide-y divide-secondary-100">
-                  {sendLogs.length === 0 && (
-                    <div className="py-6 text-center text-sm text-secondary-600">Sem eventos ainda.</div>
-                  )}
-                  {sendLogs.slice().reverse().map((e, idx) => (
-                    <div key={idx} className="py-3 flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs text-secondary-500">{new Date(e.ts).toLocaleString()}</div>
-                        <div className="mt-0.5 text-sm text-secondary-900 truncate">
-                          <span className="font-medium">{e.phone}</span>
-                          {e.instance && <span className="ml-2 text-secondary-600">({e.instance})</span>}
-                        </div>
-                        {e.message && (
-                          <div className="mt-1 text-sm text-secondary-700 whitespace-pre-wrap break-words">
-                            {e.message}
-                          </div>
+                {/* Estatísticas */}
+                {realtime.progress && (
+                  <div className="mb-4 p-3 bg-secondary-50 rounded-lg border border-secondary-200">
+                    <div className="text-xs text-secondary-600 flex flex-wrap items-center gap-2">
+                      <span>Total: <span className="font-medium">{realtime.progress.totalMessages}</span></span>
+                      <span>•</span>
+                      <span>Enviados: <span className="font-medium text-green-700">{realtime.progress.sentMessages}</span></span>
+                      <span>•</span>
+                      <span>Falhas: <span className="font-medium text-red-700">{realtime.progress.failedMessages}</span></span>
+                      <span>•</span>
+                      <span>Restantes: <span className="font-medium">{Math.max(0, (realtime.progress.totalMessages - (realtime.progress.sentMessages || 0) - (realtime.progress.failedMessages || 0)))}</span></span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Conversa Atual - Layout igual ao da maturação */}
+                {realtime.progress && (realtime.progress.currentPhone || realtime.progress.currentInstance) && (
+                  <div className="mb-4 p-3 bg-white rounded-lg border border-primary-200">
+                    <div className="text-xs font-semibold text-secondary-700 mb-2 flex items-center justify-between">
+                      <span>Conversa Atual</span>
+                      {/* SEMPRE mostrar o ícone de tempo e cronômetro */}
+                      <div className="flex items-center gap-1">
+                        {typeof realtime.progress.nextMessageAt === 'number' && realtime.progress.nextMessageAt > Date.now() ? (
+                          <NextMessageTimer nextMessageAt={realtime.progress.nextMessageAt} />
+                        ) : (
+                          <>
+                            <ClockIcon className="h-4 w-4 text-secondary-500 flex-shrink-0" />
+                            <span className="text-xs text-secondary-500 whitespace-nowrap">Calculando tempo...</span>
+                          </>
                         )}
                       </div>
-                      <div className="w-20 text-right text-xs">
-                        <span className={e.status === 'failed' ? 'text-red-600' : e.status === 'sent' ? 'text-green-600' : 'text-blue-600'}>
-                          {e.status || 'sending'}
-                        </span>
-                      </div>
                     </div>
-                  ))}
+                    <div className="flex items-center gap-2 text-sm mb-2">
+                      {/* Sessão/Instância que está enviando */}
+                      {realtime.progress.currentInstance && (
+                        <>
+                          <div className="px-2 py-1 bg-primary-100 text-primary-700 rounded font-medium">
+                            {realtime.progress.currentInstance}
+                          </div>
+                          <span className="text-secondary-400">→</span>
+                        </>
+                      )}
+                      {/* Destinatário */}
+                      {realtime.progress.currentPhone && (
+                        <div className="px-2 py-1 bg-secondary-100 text-secondary-700 rounded font-medium">
+                          {realtime.progress.currentPhone}
+                        </div>
+                      )}
+                    </div>
+                    {/* Mensagem atual enviada */}
+                    {realtime.progress.currentMessage && (
+                      <div className="mt-2 p-2 bg-blue-50 border-l-2 border-blue-300 rounded text-xs">
+                        <div className="text-secondary-600 mb-1 font-medium">Mensagem enviada:</div>
+                        <div className="text-secondary-700 italic">
+                          "{realtime.progress.currentMessage.length > 150 ? realtime.progress.currentMessage.substring(0, 150) + '...' : realtime.progress.currentMessage}"
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Histórico de Envios - Layout igual ao da maturação */}
+                <div className="bg-white rounded-lg border border-secondary-200 p-3 max-h-[60vh] overflow-y-auto">
+                  <div className="text-xs font-semibold text-secondary-700 mb-2 flex items-center justify-between">
+                    <span>Histórico de Envios</span>
+                    <span className="text-secondary-500 font-normal">
+                      {sendLogs.length} evento{sendLogs.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                  {visibleLogs.length === 0 && (
+                      <div className="py-6 text-center text-sm text-secondary-600">Sem eventos ainda.</div>
+                    )}
+                  {visibleLogs.slice().reverse().slice(0, 100).map((e, idx) => {
+                      // Determinar tipo baseado no status
+                      const logType = e.status === 'failed' ? 'error' : 
+                                     e.status === 'sent' ? 'message' : 
+                                     e.status === 'sending' ? 'info' : 'info'
+                      
+                      return (
+                        <div 
+                          key={idx} 
+                          className={`text-xs p-2 rounded border-l-2 ${
+                            logType === 'message' ? 'bg-green-50 border-green-300' :
+                            logType === 'error' ? 'bg-red-50 border-red-300' :
+                            logType === 'info' ? 'bg-blue-50 border-blue-300' :
+                            'bg-secondary-50 border-secondary-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className="text-secondary-400 font-mono text-[10px]">
+                              {new Date(e.ts).toLocaleTimeString()}
+                            </span>
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                              logType === 'error' ? 'bg-red-100 text-red-700' :
+                              logType === 'message' ? 'bg-green-100 text-green-700' :
+                              logType === 'info' ? 'bg-blue-100 text-blue-700' :
+                              'bg-secondary-100 text-secondary-700'
+                            }`}>
+                              {e.status === 'sent' ? 'enviado' : e.status === 'failed' ? 'erro' : e.status || 'enviando'}
+                            </span>
+                            {e.phone && (
+                              <span className="text-secondary-600 font-medium">
+                                {e.phone}
+                              </span>
+                            )}
+                            {e.instance && (
+                              <span className="text-secondary-500 text-[10px]">
+                                ({e.instance})
+                              </span>
+                            )}
+                            {/* Cronômetro para próxima mensagem (apenas no primeiro item se estiver aguardando) */}
+                            {realtime.progress?.nextMessageAt && typeof realtime.progress.nextMessageAt === 'number' && realtime.progress.nextMessageAt > Date.now() && idx === 0 && (
+                              <span className="ml-auto">
+                                <NextMessageTimer nextMessageAt={realtime.progress.nextMessageAt} />
+                              </span>
+                            )}
+                          </div>
+                          {e.message && (
+                            <div className={`mt-1 ${logType === 'error' ? 'text-red-700 font-medium' : 'text-secondary-700 italic'}`}>
+                              "{e.message.length > 150 ? e.message.substring(0, 150) + '...' : e.message}"
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
-              <div className="px-5 py-3 border-t border-secondary-200 flex items-center justify-end">
+              <div className="px-5 py-3 border-t border-secondary-200 flex items-center justify-end bg-secondary-50">
                 <button onClick={() => setShowDetails(false)} className="btn btn-secondary btn-sm">Fechar</button>
               </div>
             </div>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Store para manter o progresso em memória (em produção, use Redis ou banco de dados)
-const progressStore = new Map<string, {
+interface ProgressEntry {
   totalMessages: number
   sentMessages: number
   failedMessages: number
@@ -11,7 +11,17 @@ const progressStore = new Map<string, {
   progress: number
   status: 'sending' | 'success' | 'error'
   startTime: number
-}>()
+  nextMessageAt?: number // Timestamp para próxima mensagem (para cronômetro)
+  messageLogs: Array<{ // Logs precisos de cada mensagem enviada
+    phone: string
+    message: string
+    instance: string
+    status: 'sent' | 'failed'
+    timestamp: number
+  }>
+}
+
+const progressStore = new Map<string, ProgressEntry>()
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -32,7 +42,8 @@ export async function GET(request: NextRequest) {
     success: true,
     progress: {
       ...progress,
-      estimatedTime: calculateEstimatedTime(progress)
+      estimatedTime: calculateEstimatedTime(progress),
+      messageLogs: progress.messageLogs || [] // Incluir logs precisos
     }
   })
 }
@@ -54,7 +65,8 @@ export async function POST(request: NextRequest) {
           failedMessages: 0,
           progress: 0,
           status: 'sending',
-          startTime: Date.now()
+          startTime: Date.now(),
+          messageLogs: []
         })
         break
 
@@ -65,8 +77,40 @@ export async function POST(request: NextRequest) {
             ...current,
             currentMessage: data.message,
             currentPhone: data.phone,
-            currentInstance: data.instance
+            currentInstance: data.instance,
+            nextMessageAt: data.nextMessageAt // Timestamp para próxima mensagem
           })
+        }
+        break
+
+      case 'logMessage':
+        // Registrar mensagem enviada com precisão (após envio bem-sucedido)
+        const logEntry = progressStore.get(sessionId)
+        if (logEntry) {
+          const newLog = {
+            phone: data.phone,
+            message: data.message,
+            instance: data.instance,
+            status: data.status || 'sent',
+            timestamp: data.timestamp || Date.now()
+          }
+          
+          // Verificar se já existe log idêntico (evitar duplicatas)
+          const isDuplicate = logEntry.messageLogs.some(log => 
+            log.phone === newLog.phone &&
+            log.message === newLog.message &&
+            Math.abs(log.timestamp - newLog.timestamp) < 5000 // Mesma mensagem em até 5 segundos = duplicata
+          )
+          
+          // Adicionar apenas se não for duplicata
+          if (!isDuplicate) {
+            logEntry.messageLogs.push(newLog)
+            // Manter apenas os últimos 500 logs
+            if (logEntry.messageLogs.length > 500) {
+              logEntry.messageLogs = logEntry.messageLogs.slice(-500)
+            }
+            progressStore.set(sessionId, logEntry)
+          }
         }
         break
 

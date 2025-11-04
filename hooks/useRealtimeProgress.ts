@@ -1,5 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 
+export interface MessageLog {
+  phone: string
+  message: string
+  instance: string
+  status: 'sent' | 'failed'
+  timestamp: number
+}
+
 export interface RealtimeProgress {
   totalMessages: number
   sentMessages: number
@@ -10,6 +18,8 @@ export interface RealtimeProgress {
   progress: number
   status: 'sending' | 'success' | 'error'
   estimatedTime?: string
+  nextMessageAt?: number // Timestamp para próxima mensagem (para cronômetro)
+  messageLogs?: MessageLog[] // Logs precisos de cada mensagem enviada
 }
 
 export function useRealtimeProgress(sessionId: string | null) {

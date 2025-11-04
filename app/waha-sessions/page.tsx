@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Header from '@/components/Header'
 import PageHeader from '@/components/PageHeader'
 import Sidebar from '@/components/Sidebar'
@@ -45,26 +45,45 @@ export default function WahaSessionsPage() {
   const [creatingSession, setCreatingSession] = useState(false)
   const [qrPollingInterval, setQrPollingInterval] = useState<NodeJS.Timeout | null>(null)
   const [connectionDetected, setConnectionDetected] = useState<boolean>(false)
+  const [qrAutoRefreshTimer, setQrAutoRefreshTimer] = useState<NodeJS.Timeout | null>(null)
+  const [qrCountdown, setQrCountdown] = useState<number>(25)
+  const [qrCodeGenerating, setQrCodeGenerating] = useState<boolean>(false) // Mutex para evitar gerações simultâneas
+  const [qrAutoRefreshPaused, setQrAutoRefreshPaused] = useState<boolean>(false) // Pausar atualização automática
   const [servers, setServers] = useState<Array<{ id: string; name: string }>>([])
   const [selectedServerId, setSelectedServerId] = useState<string>('')
   const [unifiedMode, setUnifiedMode] = useState<boolean>(true)
   const [failedAvatars, setFailedAvatars] = useState<Set<string>>(new Set())
+  const [restartingSession, setRestartingSession] = useState<string | null>(null)
+  const [loadingSessions, setLoadingSessions] = useState(false)
+  const restartPollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    if (user) {
-      loadServers()
-      // Carregar sessões iniciais
+    if (!user) return
+
+    let interval: NodeJS.Timeout | null = null
+    
+    const loadInitialData = async () => {
+      await loadServers()
       if (unifiedMode) {
         loadAllSessions()
+      } else if (selectedServerId) {
+        loadSessions(selectedServerId)
       }
-      const interval = setInterval(() => {
-        if (unifiedMode) {
-          loadAllSessions()
-        } else if (selectedServerId) {
-          loadSessions(selectedServerId)
-        }
-      }, 5000)
-      return () => clearInterval(interval)
+    }
+
+    loadInitialData()
+
+    // Configurar polling apenas após carregar dados iniciais
+    interval = setInterval(() => {
+      if (unifiedMode) {
+        loadAllSessions()
+      } else if (selectedServerId) {
+        loadSessions(selectedServerId)
+      }
+    }, 5000)
+
+    return () => {
+      if (interval) clearInterval(interval)
     }
   }, [user, unifiedMode, selectedServerId])
 
@@ -107,15 +126,17 @@ export default function WahaSessionsPage() {
   }
 
   const loadAllSessions = async () => {
+    // Prevenir múltiplas chamadas simultâneas
+    if (loadingSessions) {
+      return
+    }
+
     try {
-      console.log('🔄 Carregando sessões de todos os servidores...')
+      setLoadingSessions(true)
       const response = await fetch('/api/waha/sessions/all')
       const data = await response.json()
       
-      console.log('📊 Resposta da API:', data)
-      
       if (data.success) {
-        console.log('✅ Sessões carregadas:', data.sessions?.length || 0)
         const newSessions = data.sessions || []
         setSessions(newSessions)
         // Limpar avatares falhados que não existem mais nas novas sessões
@@ -130,6 +151,7 @@ export default function WahaSessionsPage() {
       console.error('❌ Erro ao carregar sessões unificadas:', e)
     } finally {
       setLoading(false)
+      setLoadingSessions(false)
     }
   }
 
@@ -143,38 +165,63 @@ export default function WahaSessionsPage() {
         const session = data.session
         const status: string = (session.status || '').toUpperCase()
         const hasMeId = !!session.me?.id
-        const isConnected = ['WORKING', 'CONNECTED', 'READY', 'AUTHENTICATED'].includes(status) || (hasMeId && status !== 'SCAN_QR_CODE')
+        const hasPhoneNumber = !!session.phoneNumber || !!session.me?.id // phoneNumber pode estar em me.id também
+        const hasPushName = !!session.me?.pushName
+        
+        // Verificar múltiplas condições de conexão
+        // Status WORKING indica conexão estabelecida
+        const isConnectedByStatus = ['WORKING', 'CONNECTED', 'READY', 'AUTHENTICATED'].includes(status)
+        // Se tem me.id e não está em SCAN_QR_CODE ou STARTING, está conectado
+        const isConnectedByMe = hasMeId && status !== 'SCAN_QR_CODE' && status !== 'STARTING' && status !== 'STOPPED'
+        // Se tem phoneNumber e não está escaneando QR, está conectado
+        const isConnectedByPhone = hasPhoneNumber && status !== 'SCAN_QR_CODE' && status !== 'STARTING'
+        
+        // Considerar conectado se qualquer uma das condições for verdadeira
+        const isConnected = isConnectedByStatus || isConnectedByMe || isConnectedByPhone
 
-        // Logs de debug
-        console.log('[WAHA] checkSessionStatus', { sessionName, status, hasMeId, isConnected })
-
-        // Se detectou conectado por status conhecido ou presença de me.id, finalizar
-        if (isConnected && qrCodeData?.session === sessionName && !connectionDetected) {
-          console.log('✅ WhatsApp conectado! Fechando QR Code...')
+        // Se detectou conectado e há QR code aberto para esta sessão
+        if (isConnected) {
+          // Verificar se é a sessão do QR code atual ou se não há QR code aberto (conexão já estabelecida)
+          const shouldClose = qrCodeData?.session === sessionName || !qrCodeData
           
-          // Marcar como detectado para evitar múltiplos toasts
-          setConnectionDetected(true)
-          
-          // Parar o polling IMEDIATAMENTE para evitar loop
-          if (qrPollingInterval) {
-            clearInterval(qrPollingInterval)
-            setQrPollingInterval(null)
+          if (shouldClose && !connectionDetected) {
+            
+            // Marcar como detectado para evitar múltiplos toasts
+            setConnectionDetected(true)
+            
+            // Parar o polling IMEDIATAMENTE para evitar loop
+            if (qrPollingInterval) {
+              clearInterval(qrPollingInterval)
+              setQrPollingInterval(null)
+            }
+            
+            // Parar cronômetro de atualização automática
+            stopQrAutoRefresh()
+            
+            // Fechar QR Code se estiver aberto
+            if (qrCodeData) {
+              setQrCodeData(null)
+            }
+            
+            // Resetar estados
+            setQrAutoRefreshPaused(false)
+            setQrCodeGenerating(false)
+            
+            // Atualizar lista de sessões imediatamente
+            if (unifiedMode) {
+              loadAllSessions()
+            } else if (selectedServerId) {
+              loadSessions(selectedServerId)
+            }
+            
+            // Mostrar toast de sucesso
+            toast.success('✅ WhatsApp conectado com sucesso!', {
+              duration: 4000,
+              icon: '🎉'
+            })
+            
+            return true // Indica que a conexão foi detectada
           }
-          
-          // Fechar QR Code
-          setQrCodeData(null)
-          
-          // Atualizar lista de sessões
-          if (unifiedMode) {
-            loadAllSessions()
-          } else if (selectedServerId) {
-            loadSessions(selectedServerId)
-          }
-          
-          // Mostrar toast apenas uma vez
-          toast.success('WhatsApp conectado com sucesso!')
-          
-          return true // Indica que a conexão foi detectada
         }
         
         return false // Não detectou conexão ainda
@@ -187,13 +234,21 @@ export default function WahaSessionsPage() {
 
   // Iniciar polling para verificar conexão
   const startQrPolling = (sessionName: string, serverId: string) => {
+    // Limpar intervalo anterior se existir
     if (qrPollingInterval) {
       clearInterval(qrPollingInterval)
+      setQrPollingInterval(null)
     }
     
     // Resetar estado de conexão detectada
     setConnectionDetected(false)
     
+    // Verificar imediatamente ao iniciar (para detectar conexões já estabelecidas)
+    checkSessionStatus(sessionName, serverId).catch(err => {
+      console.error('Erro na verificação inicial:', err)
+    })
+    
+    // Iniciar polling a cada 2 segundos (mais frequente para detectar mais rápido)
     const interval = setInterval(async () => {
       const connected = await checkSessionStatus(sessionName, serverId)
       
@@ -201,9 +256,8 @@ export default function WahaSessionsPage() {
       if (connected) {
         clearInterval(interval)
         setQrPollingInterval(null)
-        console.log('🛑 Polling parado - conexão detectada')
       }
-    }, 3000) // Verificar a cada 3 segundos
+    }, 2000) // Verificar a cada 2 segundos para detecção mais rápida
     
     setQrPollingInterval(interval)
   }
@@ -220,8 +274,109 @@ export default function WahaSessionsPage() {
   useEffect(() => {
     return () => {
       stopQrPolling()
+      if (qrAutoRefreshTimer) {
+        clearInterval(qrAutoRefreshTimer)
+        setQrAutoRefreshTimer(null)
+      }
+      // Limpar polling de restart
+      if (restartPollingIntervalRef.current) {
+        clearInterval(restartPollingIntervalRef.current)
+        restartPollingIntervalRef.current = null
+      }
     }
-  }, [])
+  }, [qrAutoRefreshTimer])
+
+  // Iniciar cronômetro de atualização automática do QR code (25 segundos)
+  // QR codes do WhatsApp expiram em ~20 segundos, mas alguns podem durar até 30 segundos
+  // Usamos 25 segundos para dar tempo suficiente para escanear sem ser muito agressivo
+  const startQrAutoRefresh = (sessionName: string, serverId: string, delay: number = 0) => {
+    // Limpar timer anterior se existir
+    if (qrAutoRefreshTimer) {
+      clearInterval(qrAutoRefreshTimer)
+      setQrAutoRefreshTimer(null)
+    }
+    
+    // Se estiver pausado, não iniciar
+    if (qrAutoRefreshPaused) {
+      return
+    }
+    
+    // Aguardar delay antes de iniciar (se fornecido)
+    if (delay > 0) {
+      setTimeout(() => {
+        if (!qrAutoRefreshPaused) {
+          startQrAutoRefresh(sessionName, serverId, 0)
+        }
+      }, delay)
+      return
+    }
+    
+    // Resetar contador para 25 segundos
+    setQrCountdown(25)
+    
+    // Criar novo timer que decrementa a cada segundo
+    const countdownInterval = setInterval(() => {
+      // Verificar se está pausado durante a contagem
+      if (qrAutoRefreshPaused) {
+        clearInterval(countdownInterval)
+        setQrAutoRefreshTimer(null)
+        return
+      }
+      
+      setQrCountdown((prev) => {
+        if (prev <= 1) {
+          // Quando chegar a 0, gerar novo QR code e reiniciar cronômetro
+          clearInterval(countdownInterval)
+          setQrAutoRefreshTimer(null)
+          
+          // Verificar novamente se está pausado antes de gerar
+          if (qrAutoRefreshPaused) {
+            return 25
+          }
+          
+          // Verificar se já não está gerando (evitar duplicação) usando função de estado
+          setQrCodeGenerating((currentlyGenerating) => {
+            if (!currentlyGenerating && !qrAutoRefreshPaused) {
+              handleGetQrCode(sessionName, serverId, false)
+            } else {
+            }
+            return currentlyGenerating
+          })
+          return 25 // Resetar contador
+        }
+        return prev - 1
+      })
+    }, 1000)
+    
+    setQrAutoRefreshTimer(countdownInterval)
+  }
+
+  // Parar cronômetro de atualização automática
+  const stopQrAutoRefresh = () => {
+    if (qrAutoRefreshTimer) {
+      clearInterval(qrAutoRefreshTimer)
+      setQrAutoRefreshTimer(null)
+    }
+    setQrCountdown(25)
+    setQrAutoRefreshPaused(false)
+  }
+
+  // Pausar/Retomar atualização automática
+  const toggleQrAutoRefresh = () => {
+    setQrAutoRefreshPaused(!qrAutoRefreshPaused)
+    if (!qrAutoRefreshPaused) {
+      // Pausar
+      if (qrAutoRefreshTimer) {
+        clearInterval(qrAutoRefreshTimer)
+        setQrAutoRefreshTimer(null)
+      }
+    } else {
+      // Retomar - reiniciar cronômetro se houver QR code ativo
+      if (qrCodeData) {
+        startQrAutoRefresh(qrCodeData.session, qrCodeData.serverId || '')
+      }
+    }
+  }
 
   // Formatar número de telefone brasileiro
   const formatPhoneNumber = (phoneNumber: string) => {
@@ -274,6 +429,8 @@ export default function WahaSessionsPage() {
           setQrCodeData({ session: newSessionName, qr: data.qr, serverId: selectedServerId })
           // Iniciar polling para detectar conexão
           startQrPolling(newSessionName, selectedServerId)
+          // Iniciar cronômetro de atualização automática (25 segundos)
+          startQrAutoRefresh(newSessionName, selectedServerId, 10000) // Delay de 10s para dar tempo de escanear
         }
       } else {
         toast.error(data.error || 'Erro ao criar sessão')
@@ -310,47 +467,198 @@ export default function WahaSessionsPage() {
     }
   }
 
-  const handleGetQrCode = async (sessionName: string, serverId?: string) => {
+  const handleGetQrCode = async (sessionName: string, serverId?: string, showLoading: boolean = true) => {
+    // Mutex: evitar gerações simultâneas
+    if (qrCodeGenerating) {
+      return
+    }
+    
+    try {
+      setQrCodeGenerating(true)
+      
+      const targetServerId = serverId || selectedServerId
+      if (!targetServerId) {
+        toast.error('Servidor não identificado')
+        setQrCodeGenerating(false)
+        return
+      }
+      
+      if (showLoading) {
+        toast.loading('Gerando QR Code...', { id: 'qr-loading' })
+      }
+      
+      const response = await fetch(`/api/waha/sessions/${sessionName}/qr?serverId=${encodeURIComponent(targetServerId)}`)
+      const data = await response.json()
+
+      if (showLoading) {
+        toast.dismiss('qr-loading')
+      }
+
+      if (data.success && data.qr) {
+        // Validar se o QR code não está vazio ou inválido
+        const qrString = typeof data.qr === 'string' ? data.qr : ''
+        if (!qrString || qrString.length < 50) {
+          console.error('❌ QR Code inválido recebido:', qrString?.substring(0, 50))
+          toast.error('QR Code inválido recebido. Tente novamente.')
+          setQrCodeGenerating(false)
+          return
+        }
+        
+        
+        // NÃO modificar o QR code - usar exatamente como recebido
+        const qrCodeToUse = data.qr
+        
+        
+        // Resetar estado de conexão detectada ao gerar novo QR code
+        setConnectionDetected(false)
+        
+        // Atualizar o QR code no estado (forçar re-render da imagem)
+        setQrCodeData({ session: sessionName, qr: qrCodeToUse, serverId: targetServerId })
+        
+        // SEMPRE reiniciar polling ao gerar novo QR code para garantir detecção
+        startQrPolling(sessionName, targetServerId)
+        
+        // Reiniciar cronômetro de atualização automática (25 segundos)
+        // Aguardar 10 segundos antes de iniciar o cronômetro para dar tempo suficiente de escanear o QR atual
+        // Isso garante que o usuário tenha pelo menos 10 segundos para escanear antes do primeiro countdown iniciar
+        startQrAutoRefresh(sessionName, targetServerId, showLoading ? 10000 : 5000)
+        
+        if (showLoading) {
+          toast.success('QR Code gerado com sucesso! Escaneie rapidamente.')
+        } else {
+          // Log silencioso para atualizações automáticas
+        }
+      } else {
+        const errorMsg = data.error || 'QR Code não disponível'
+        toast.error(errorMsg, { duration: 5000 })
+        
+        // Se o erro sugerir reiniciar, oferecer essa opção
+        if (errorMsg.includes('reiniciar') || errorMsg.includes('não está pronta')) {
+          const shouldRestart = confirm('A sessão pode precisar ser reiniciada. Deseja tentar reiniciar agora?')
+          if (shouldRestart) {
+            try {
+              toast.loading('Reiniciando sessão...', { id: 'restart-loading' })
+              const restartResponse = await fetch(`/api/waha/sessions/${sessionName}/restart?serverId=${encodeURIComponent(targetServerId)}`, {
+                method: 'POST'
+              })
+              const restartData = await restartResponse.json()
+              toast.dismiss('restart-loading')
+              
+              if (restartData.success) {
+                toast.success('Sessão reiniciada. Aguarde 3 segundos e tente gerar o QR Code novamente.')
+                // Aguardar e tentar novamente
+                setTimeout(() => {
+                  handleGetQrCode(sessionName, targetServerId, false)
+                }, 3000)
+              } else {
+                toast.error(restartData.error || 'Erro ao reiniciar sessão')
+              }
+            } catch (restartError) {
+              toast.dismiss('restart-loading')
+              console.error('Erro ao reiniciar sessão:', restartError)
+              toast.error('Erro ao reiniciar sessão')
+            }
+          }
+        }
+      }
+    } catch (error) {
+      if (showLoading) {
+        toast.dismiss('qr-loading')
+      }
+      console.error('Erro ao obter QR Code:', error)
+      toast.error('Erro ao obter QR Code. Verifique se o servidor WAHA está online.', { duration: 5000 })
+    } finally {
+      setQrCodeGenerating(false)
+    }
+  }
+
+  const handleRestartSession = async (sessionName: string, serverId?: string) => {
+    // Prevenir múltiplas chamadas simultâneas
+    if (restartingSession === sessionName) {
+      return
+    }
+
     try {
       const targetServerId = serverId || selectedServerId
       if (!targetServerId) {
         toast.error('Servidor não identificado')
         return
       }
+
+      setRestartingSession(sessionName)
+      toast.loading('Reiniciando sessão...', { id: 'restart-session' })
       
-      const response = await fetch(`/api/waha/sessions/${sessionName}/qr?serverId=${encodeURIComponent(targetServerId)}`)
-      const data = await response.json()
-
-      if (data.success && data.qr) {
-        setQrCodeData({ session: sessionName, qr: data.qr, serverId: targetServerId })
-        // Iniciar polling para detectar conexão
-        startQrPolling(sessionName, targetServerId)
-      } else {
-        toast.error(data.error || 'QR Code não disponível')
-      }
-    } catch (error) {
-      console.error('Erro ao obter QR Code:', error)
-      toast.error('Erro ao obter QR Code')
-    }
-  }
-
-  const handleRestartSession = async (sessionName: string) => {
-    try {
-      const response = await fetch(`/api/waha/sessions/${sessionName}/restart?serverId=${encodeURIComponent(selectedServerId)}`, {
-        method: 'POST'
+      const url = `/api/waha/sessions/${encodeURIComponent(sessionName)}/restart?serverId=${encodeURIComponent(targetServerId)}`
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       })
 
-      const data = await response.json()
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Erro desconhecido')
+        console.error('[RESTART] Erro na resposta:', errorText)
+        toast.dismiss('restart-session')
+        setRestartingSession(null)
+        toast.error(`Erro ${response.status}: ${errorText || response.statusText}`)
+        return
+      }
+
+      const data = await response.json().catch(() => ({ success: false, error: 'Resposta inválida' }))
+      
+      toast.dismiss('restart-session')
+      setRestartingSession(null)
 
       if (data.success) {
         toast.success('Sessão reiniciada com sucesso!')
-        loadSessions()
+        
+        // Recarregar imediatamente para ver o status atualizado
+        if (unifiedMode) {
+          loadAllSessions()
+        } else if (selectedServerId) {
+          loadSessions(selectedServerId)
+        }
+        
+        // Aguardar um pouco e recarregar novamente para garantir que o status foi atualizado
+        setTimeout(() => {
+          if (unifiedMode) {
+            loadAllSessions()
+          } else if (selectedServerId) {
+            loadSessions(selectedServerId)
+          }
+        }, 3000)
+        
+        // Polling adicional para verificar mudanças de status (até 5 tentativas)
+        let pollCount = 0
+        const maxPolls = 5
+        const pollInterval = setInterval(() => {
+          pollCount++
+          
+          if (unifiedMode) {
+            loadAllSessions()
+          } else if (selectedServerId) {
+            loadSessions(selectedServerId)
+          }
+          
+          // Parar após maxPolls tentativas ou se a sessão mudou de status
+          if (pollCount >= maxPolls) {
+            clearInterval(pollInterval)
+          }
+        }, 2000) // Verificar a cada 2 segundos
+        
+        // Limpar o polling após 15 segundos (segurança)
+        setTimeout(() => {
+          clearInterval(pollInterval)
+        }, 15000)
       } else {
         toast.error(data.error || 'Erro ao reiniciar sessão')
       }
     } catch (error) {
-      console.error('Erro ao reiniciar sessão:', error)
-      toast.error('Erro ao reiniciar sessão')
+      toast.dismiss('restart-session')
+      setRestartingSession(null)
+      console.error('[RESTART] Erro ao reiniciar sessão:', error)
+      toast.error('Erro ao reiniciar sessão: ' + (error instanceof Error ? error.message : String(error)))
     }
   }
 
@@ -490,6 +798,21 @@ export default function WahaSessionsPage() {
                       </div>
                     </div>
 
+                    {/* Botão de reiniciar para sessões com erro */}
+                    {(session.status === 'FAILED' || session.status === 'STOPPED') && session.serverId && (
+                      <div className="mt-4">
+                        <button
+                          onClick={() => handleRestartSession(session.name, session.serverId!)}
+                          disabled={restartingSession === session.name}
+                          className="w-full btn btn-primary btn-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Reiniciar sessão"
+                        >
+                          <ArrowPathIcon className={`h-4 w-4 ${restartingSession === session.name ? 'animate-spin' : ''}`} />
+                          {restartingSession === session.name ? 'Reiniciando...' : 'Reiniciar Sessão'}
+                        </button>
+                      </div>
+                    )}
+
                     {session.me ? (
                       <div className="mb-4 p-3 bg-secondary-50 rounded-lg">
                         <div className="flex items-center space-x-3">
@@ -544,7 +867,7 @@ export default function WahaSessionsPage() {
                       
                       {session.status === 'WORKING' ? (
                         <button
-                          onClick={() => handleRestartSession(session.name)}
+                          onClick={() => handleRestartSession(session.name, session.serverId)}
                           className="flex-1 btn btn-secondary btn-sm"
                         >
                           <ArrowPathIcon className="h-4 w-4 mr-1" />
@@ -613,22 +936,114 @@ export default function WahaSessionsPage() {
       {/* Modal QR Code */}
       {qrCodeData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
+          <div className="bg-white rounded-lg max-w-2xl w-full p-6">
             <h2 className="text-xl font-semibold text-secondary-900 mb-4">
               QR Code - {qrCodeData.session}
             </h2>
             
-            <div className="mb-4 flex justify-center">
-              <img 
-                src={qrCodeData.qr} 
-                alt="QR Code" 
-                className="w-64 h-64 border-2 border-secondary-200 rounded-lg"
-              />
+            <div className="mb-4 flex flex-col items-center">
+              <div className="relative bg-white p-4 rounded-lg border-2 border-gray-200 shadow-xl">
+                <img 
+                  key={qrCodeData.qr.substring(0, 100)} // Key baseada no conteúdo do QR para forçar reload apenas quando mudar
+                  src={qrCodeData.qr} 
+                  alt="QR Code" 
+                  id="qr-code-image"
+                  className="border-4 border-black rounded-lg bg-white"
+                  style={{ 
+                    imageRendering: 'auto', // Mudado de 'crisp-edges' para 'auto' para melhor qualidade
+                    width: '450px',
+                    height: '450px',
+                    minWidth: '450px',
+                    minHeight: '450px',
+                    objectFit: 'contain', // Manter proporções e qualidade
+                    display: 'block',
+                    backgroundColor: '#ffffff', // Fundo branco sólido
+                    padding: '12px', // Padding interno para melhor contraste
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                  }}
+                  onLoad={() => {
+                    console.log('✅ QR Code imagem carregada com sucesso')
+                  }}
+                  onError={(e) => {
+                    console.error('❌ Erro ao carregar imagem do QR code:', {
+                      srcLength: qrCodeData.qr?.length,
+                      srcPreview: qrCodeData.qr?.substring(0, 100),
+                      isDataUrl: qrCodeData.qr?.startsWith('data:'),
+                      error: e
+                    })
+                    toast.error('Erro ao exibir QR Code. Tentando atualizar...')
+                    // Tentar atualizar após 2 segundos
+                    setTimeout(() => {
+                      if (qrCodeData) {
+                        handleGetQrCode(qrCodeData.session, qrCodeData.serverId, false)
+                      }
+                    }, 2000)
+                  }}
+                />
+              </div>
+              <button
+                onClick={() => {
+                  // Criar link de download do QR code
+                  const img = document.getElementById('qr-code-image') as HTMLImageElement
+                  if (img && img.src) {
+                    const link = document.createElement('a')
+                    link.download = `qr-code-${qrCodeData.session}-${Date.now()}.png`
+                    link.href = img.src
+                    link.click()
+                    toast.success('QR Code baixado!')
+                  }
+                }}
+                className="mt-3 text-xs px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 font-medium rounded-md transition-colors"
+              >
+                📥 Baixar QR Code (para escanear de outra tela)
+              </button>
             </div>
 
-            <p className="text-sm text-secondary-600 mb-4 text-center">
-              Escaneie este QR Code com o WhatsApp do seu celular
-            </p>
+            <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-800 font-medium mb-2 text-center">
+                📱 Como escanear:
+              </p>
+              <ul className="text-xs text-blue-700 space-y-1 text-left">
+                <li>• Abra o WhatsApp no seu celular</li>
+                <li>• Vá em Configurações → Aparelhos conectados → Conectar um aparelho</li>
+                <li>• Aponte a câmera para o QR Code acima</li>
+                <li>• Mantenha uma distância adequada (nem muito perto, nem muito longe)</li>
+                <li>• Certifique-se de que há boa iluminação</li>
+              </ul>
+            </div>
+            
+            {/* Cronômetro de atualização automática */}
+            <div className="mb-4 p-3 bg-warning-50 rounded-lg border border-warning-200">
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <ClockIcon className="h-4 w-4 text-warning-700" />
+                <span className="text-sm font-medium text-warning-800">
+                  {qrAutoRefreshPaused ? (
+                    <span className="text-secondary-600">Atualização automática pausada</span>
+                  ) : (
+                    <>
+                      Novo QR code em: <span className="font-bold">{qrCountdown}s</span>
+                    </>
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-center mb-2">
+                <button
+                  onClick={toggleQrAutoRefresh}
+                  className="text-xs px-3 py-1 rounded-md bg-warning-100 hover:bg-warning-200 text-warning-800 font-medium transition-colors"
+                >
+                  {qrAutoRefreshPaused ? '▶️ Retomar Atualização' : '⏸️ Pausar Atualização'}
+                </button>
+              </div>
+              <p className="text-xs text-warning-600 mt-1 text-center">
+                {qrAutoRefreshPaused 
+                  ? 'Atualização automática pausada. Clique em "Retomar" para continuar.'
+                  : 'O QR code será atualizado automaticamente a cada 25 segundos para garantir que sempre esteja válido'
+                }
+              </p>
+              <p className="text-xs text-warning-700 mt-1 text-center font-semibold">
+                ⚠️ Escaneie rapidamente! QR codes expiram em ~20-30 segundos
+              </p>
+            </div>
             
             <div className="mb-4 p-3 bg-primary-50 rounded-lg">
               <div className="flex items-center justify-center">
@@ -644,8 +1059,11 @@ export default function WahaSessionsPage() {
               <button
                 onClick={() => {
                   stopQrPolling()
+                  stopQrAutoRefresh()
                   setQrCodeData(null)
                   setConnectionDetected(false)
+                  setQrAutoRefreshPaused(false) // Resetar estado de pausa
+                  setQrCodeGenerating(false) // Resetar mutex
                 }}
                 className="flex-1 btn btn-secondary btn-md"
               >
@@ -654,6 +1072,8 @@ export default function WahaSessionsPage() {
               <button
                 onClick={() => {
                   if (qrCodeData) {
+                    // Resetar cronômetro ao atualizar manualmente (delay de 10s para dar tempo de escanear)
+                    startQrAutoRefresh(qrCodeData.session, qrCodeData.serverId || '', 10000)
                     handleGetQrCode(qrCodeData.session, qrCodeData.serverId)
                   }
                 }}

@@ -40,8 +40,10 @@ export function useScheduledMaturationMonitor() {
   const checkedScheduleIdsRef = useRef<Set<string>>(new Set())
   const notifiedUpcomingSchedulesRef = useRef<Set<string>>(new Set())
   const userChoiceRef = useRef<Map<string, 'acompanhar' | 'background'>>(new Map())
-  const rateLimitBackoffRef = useRef<number>(10000) // Intervalo inicial: 10 segundos
+  const rateLimitBackoffRef = useRef<number>(30000) // Intervalo inicial: 30 segundos (reduzir requisições)
   const consecutiveErrorsRef = useRef<number>(0)
+  // Evitar sobreposição de verificações (mutex simples)
+  const inFlightRef = useRef<boolean>(false)
   
   // Callbacks que podem ser definidos externamente para abrir modal, etc
   const callbacksRef = useRef<{
@@ -54,10 +56,15 @@ export function useScheduledMaturationMonitor() {
     
     const scheduleNextCheck = (delay: number) => {
       if (checkInterval) clearInterval(checkInterval)
-      checkInterval = setInterval(checkScheduledMaturations, delay)
+      // Adicionar jitter aleatório (±10%) para evitar picos sincronizados
+      const jitter = Math.floor(delay * 0.1 * (Math.random() * 2 - 1))
+      const nextDelay = Math.max(5000, delay + jitter)
+      checkInterval = setInterval(checkScheduledMaturations, nextDelay)
     }
     
     const checkScheduledMaturations = async () => {
+      if (inFlightRef.current) return // Ainda processando; não sobrepor
+      inFlightRef.current = true
       try {
         // 1. Verificar agendamentos próximos (vão iniciar em breve - 5 segundos a 1 minuto)
         const upcomingRes = await fetch('/api/maturacao/execute-scheduled?checkUpcoming=true')
@@ -80,10 +87,10 @@ export function useScheduledMaturationMonitor() {
         if (upcomingRes.ok) {
           const previousBackoff = rateLimitBackoffRef.current
           consecutiveErrorsRef.current = 0
-          rateLimitBackoffRef.current = 10000 // Resetar para 10s
+          rateLimitBackoffRef.current = 30000 // Resetar para 30s
           
           // Só redefinir intervalo se o backoff foi alterado
-          if (previousBackoff !== 10000) {
+          if (previousBackoff !== 30000) {
             scheduleNextCheck(rateLimitBackoffRef.current)
           }
         }
@@ -161,7 +168,7 @@ export function useScheduledMaturationMonitor() {
             consecutiveErrorsRef.current++
             rateLimitBackoffRef.current = Math.min(
               rateLimitBackoffRef.current * 2,
-              60000 // Máximo: 1 minuto
+              120000 // Máximo: 2 minutos (aumentado para reduzir requisições)
             )
             
             // Reiniciar intervalo com backoff
@@ -193,7 +200,7 @@ export function useScheduledMaturationMonitor() {
             consecutiveErrorsRef.current++
             rateLimitBackoffRef.current = Math.min(
               rateLimitBackoffRef.current * 2,
-              60000 // Máximo: 1 minuto
+              120000 // Máximo: 2 minutos (aumentado para reduzir requisições)
             )
             
             // Reiniciar intervalo com backoff
@@ -286,11 +293,13 @@ export function useScheduledMaturationMonitor() {
         }
       } catch (error) {
         // Erro silencioso
+      } finally {
+        inFlightRef.current = false
       }
     }
     
-    // Verificar a cada 10 segundos inicialmente (ajustado para evitar rate limit)
-    // O intervalo será aumentado automaticamente se houver rate limit (backoff exponencial)
+    // Verificar a cada 30 segundos inicialmente (ajustado para evitar rate limit)
+    // O intervalo será aumentado automaticamente se houver rate limit (backoff exponencial até 2 minutos)
     scheduleNextCheck(rateLimitBackoffRef.current)
     checkScheduledMaturations() // Verificar imediatamente
     

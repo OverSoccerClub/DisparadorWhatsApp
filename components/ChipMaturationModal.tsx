@@ -497,43 +497,43 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
         }
       } else {
         // Execução imediata (código original)
-        const id = `maturation_${Date.now()}_${Math.random().toString(36).slice(2,8)}`
-        setMaturationId(id)
-        console.log('[FRONTEND] MaturationId gerado:', id)
-        
-        const payload = {
-          sessions: selected,
-          cadenceSeconds,
-          messageTemplates,
-          numberOfRounds,
-          minutesPerRound,
+      const id = `maturation_${Date.now()}_${Math.random().toString(36).slice(2,8)}`
+      setMaturationId(id)
+      console.log('[FRONTEND] MaturationId gerado:', id)
+      
+      const payload = {
+        sessions: selected,
+        cadenceSeconds,
+        messageTemplates,
+        numberOfRounds,
+        minutesPerRound,
           pauseMinutesBetweenRounds,
-          maturationId: id
-        }
-        
-        console.log('[FRONTEND] Enviando requisição:', payload)
-        
-        const res = await fetch('/api/maturacao/start', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        })
-        
-        console.log('[FRONTEND] Resposta recebida:', {
-          ok: res.ok,
-          status: res.status,
-          statusText: res.statusText
-        })
-        
-        const data = await res.json()
-        console.log('[FRONTEND] Dados da resposta:', data)
-        
-        if (!(res.ok && data.success)) {
-          console.error('[FRONTEND] Erro ao iniciar maturação:', data)
-          alert('Erro ao iniciar maturação: ' + (data.error || 'Erro desconhecido'))
-          setMaturationId(null)
-        } else {
-          console.log('[FRONTEND] Maturação iniciada com sucesso!')
+        maturationId: id
+      }
+      
+      console.log('[FRONTEND] Enviando requisição:', payload)
+      
+      const res = await fetch('/api/maturacao/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      
+      console.log('[FRONTEND] Resposta recebida:', {
+        ok: res.ok,
+        status: res.status,
+        statusText: res.statusText
+      })
+      
+      const data = await res.json()
+      console.log('[FRONTEND] Dados da resposta:', data)
+      
+      if (!(res.ok && data.success)) {
+        console.error('[FRONTEND] Erro ao iniciar maturação:', data)
+        alert('Erro ao iniciar maturação: ' + (data.error || 'Erro desconhecido'))
+        setMaturationId(null)
+      } else {
+        console.log('[FRONTEND] Maturação iniciada com sucesso!')
           
           // Se foi iniciada em background, disparar evento para o widget
           if (runInBackground && id) {
@@ -744,7 +744,7 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
     <div className="fixed inset-0 z-[10500]">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="w-full max-w-4xl bg-white rounded-lg shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="w-full max-w-7xl bg-white rounded-lg shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
           <div className="px-5 py-4 border-b border-secondary-200 flex items-center justify-between bg-gradient-to-r from-primary-50 to-primary-100">
             <div className="flex items-center gap-2">
               <SparklesIcon className="h-6 w-6 text-primary-600" />
@@ -757,10 +757,12 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
               <XMarkIcon className="h-5 w-5" />
             </button>
           </div>
-          <div className="p-5 space-y-5 overflow-y-auto flex-1">
-            {/* Seção de Seleção de Sessões */}
-            <div>
-              <div className="text-sm font-semibold text-secondary-900 flex items-center gap-2 mb-2">
+          <div className="p-6 space-y-6 overflow-y-auto flex-1">
+            {/* Grid Principal: Seleção de Sessões e Configurações */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Seção de Seleção de Sessões - Coluna Esquerda */}
+              <div className="lg:col-span-1">
+                <div className="text-sm font-semibold text-secondary-900 flex items-center gap-2 mb-3">
                 <DevicePhoneMobileIcon className="h-5 w-5 text-primary-600" /> Selecionar Sessões WAHA
                 {selected.length > 0 && (
                   <span className="ml-2 px-2 py-0.5 bg-primary-100 text-primary-700 rounded-full text-xs font-medium">
@@ -768,7 +770,7 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                   </span>
                 )}
               </div>
-              <div className="mt-2 max-h-48 overflow-y-auto border border-secondary-200 rounded-lg bg-secondary-50">
+                <div className="max-h-64 overflow-y-auto border border-secondary-200 rounded-lg bg-secondary-50">
                 {sessions.map((s) => {
                   const key = `${s.serverId}:${s.sessionName}`
                   const isSelected = selected.includes(key)
@@ -808,7 +810,7 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                 )}
               </div>
               {selected.length > 0 && (
-                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <div className="flex items-start gap-2">
                     <InformationCircleIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                     <div className="text-xs text-blue-800">
@@ -828,8 +830,12 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
               )}
             </div>
 
-            {/* Configurações de Rodadas e Tempo */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Configurações de Rodadas e Tempo - Coluna Direita (2 colunas) */}
+              <div className="lg:col-span-2">
+                <div className="text-sm font-semibold text-secondary-900 flex items-center gap-2 mb-3">
+                  <ClockIcon className="h-5 w-5 text-primary-600" /> Configurações de Tempo
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-secondary-50 p-4 rounded-lg border border-secondary-200">
                 <label className="block text-sm font-semibold text-secondary-900 mb-2 flex items-center gap-2">
                   <ClockIcon className="h-5 w-5 text-primary-600" /> Número de Rodadas
@@ -920,74 +926,81 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                   </div>
                 </div>
               </div>
+                </div>
+              </div>
             </div>
             
-            {/* Delay Mínimo Entre Mensagens (mantido) */}
-            <div className="bg-secondary-50 p-4 rounded-lg border border-secondary-200">
-              <label className="block text-sm font-semibold text-secondary-900 mb-2 flex items-center gap-2">
-                <ClockIcon className="h-5 w-5 text-primary-600" /> Delay Mínimo Entre Mensagens
-              </label>
-              <div className="flex items-center gap-2">
-                <input 
-                  type="number" 
-                  className="input flex-1" 
-                  min={60} 
-                  max={600} 
-                  value={cadenceSeconds} 
-                  onChange={e => setCadenceSeconds(Math.max(60, parseInt(e.target.value || '60')))} 
-                />
-                <span className="text-sm font-medium text-secondary-600">seg</span>
-              </div>
-              <p className="text-xs text-secondary-500 mt-2">
-                Delay mínimo obrigatório: <span className="font-semibold">60 segundos (1 minuto)</span>. O sistema randomiza entre 1-3 minutos para cada mensagem.
-              </p>
-            </div>
-
-            {/* Templates de Mensagem */}
-            <div className="bg-secondary-50 p-4 rounded-lg border border-secondary-200">
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-semibold text-secondary-900 flex items-center gap-2">
-                  <ChatBubbleLeftRightIcon className="h-5 w-5 text-primary-600" /> Templates de Mensagens
+            {/* Delay e Templates lado a lado */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Delay Mínimo Entre Mensagens */}
+              <div className="bg-secondary-50 p-4 rounded-lg border border-secondary-200">
+                <label className="block text-sm font-semibold text-secondary-900 mb-2 flex items-center gap-2">
+                  <ClockIcon className="h-5 w-5 text-primary-600" /> Delay Mínimo Entre Mensagens
                 </label>
-                <button
-                  onClick={() => setShowPreview(!showPreview)}
-                  className="text-xs text-primary-600 hover:text-primary-700 font-medium"
-                >
-                  {showPreview ? 'Ocultar' : 'Ver'} Preview
-                </button>
-              </div>
-              <textarea 
-                className="input h-32 resize-none font-mono text-sm" 
-                value={messageTemplates} 
-                onChange={e => setMessageTemplates(e.target.value)}
-                placeholder="Digite uma mensagem por linha. Cada linha será usada como variação."
-              />
-              <p className="text-xs text-secondary-600 mt-2">
-                <span className="font-semibold">Dica:</span> Digite uma mensagem por linha. O sistema selecionará aleatoriamente entre elas. 
-                Use {'{{nome}}'} para incluir o nome da sessão destinatária.
-              </p>
-              {showPreview && previewMessages.length > 0 && (
-                <div className="mt-4 p-3 bg-white rounded border border-primary-200">
-                  <p className="text-xs font-semibold text-secondary-700 mb-2">Preview de Mensagens:</p>
-                  <div className="space-y-3">
-                    {previewMessages.map((p, idx) => (
-                      <div key={idx} className="text-xs border-l-4 border-l-primary-500 pl-2">
-                        <div className="font-medium text-secondary-900 mb-1">
-                          {p.from} → {p.to}
-                        </div>
-                        <div className="text-secondary-700 space-y-1">
-                          <div className="italic">"{p.greeting}"</div>
-                          <div>"{p.message}"</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="number" 
+                    className="input flex-1" 
+                    min={60} 
+                    max={600} 
+                    value={cadenceSeconds} 
+                    onChange={e => setCadenceSeconds(Math.max(60, parseInt(e.target.value || '60')))} 
+                  />
+                  <span className="text-sm font-medium text-secondary-600">seg</span>
                 </div>
-              )}
+                <p className="text-xs text-secondary-500 mt-2">
+                  Delay mínimo obrigatório: <span className="font-semibold">60 segundos (1 minuto)</span>. O sistema randomiza entre 1-3 minutos para cada mensagem.
+                </p>
+              </div>
+
+              {/* Templates de Mensagem */}
+              <div className="bg-secondary-50 p-4 rounded-lg border border-secondary-200">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-semibold text-secondary-900 flex items-center gap-2">
+                    <ChatBubbleLeftRightIcon className="h-5 w-5 text-primary-600" /> Templates de Mensagens
+                  </label>
+                  <button
+                    onClick={() => setShowPreview(!showPreview)}
+                    className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                  >
+                    {showPreview ? 'Ocultar' : 'Ver'} Preview
+                  </button>
+                </div>
+                <textarea 
+                  className="input h-32 resize-none font-mono text-sm" 
+                  value={messageTemplates} 
+                  onChange={e => setMessageTemplates(e.target.value)}
+                  placeholder="Digite uma mensagem por linha. Cada linha será usada como variação."
+                />
+                <p className="text-xs text-secondary-600 mt-2">
+                  <span className="font-semibold">Dica:</span> Digite uma mensagem por linha. O sistema selecionará aleatoriamente entre elas. 
+                  Use {'{{nome}}'} para incluir o nome da sessão destinatária.
+                </p>
+                {showPreview && previewMessages.length > 0 && (
+                  <div className="mt-4 p-3 bg-white rounded border border-primary-200">
+                    <p className="text-xs font-semibold text-secondary-700 mb-2">Preview de Mensagens:</p>
+                    <div className="space-y-3">
+                      {previewMessages.map((p, idx) => (
+                        <div key={idx} className="text-xs border-l-4 border-l-primary-500 pl-2">
+                          <div className="font-medium text-secondary-900 mb-1">
+                            {p.from} → {p.to}
+                          </div>
+                          <div className="text-secondary-700 space-y-1">
+                            <div className="italic">"{p.greeting}"</div>
+                            <div>"{p.message}"</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Agendamento */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border-2 border-blue-200">
+            {/* Agendamento e Lista de Agendamentos lado a lado */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Agendamento */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border-2 border-blue-200">
               <div className="flex items-center justify-between mb-3">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -1068,10 +1081,10 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                   Marque esta opção para agendar a maturação em vez de executá-la imediatamente.
                 </p>
               )}
-            </div>
-            
-            {/* Lista de Agendamentos */}
-            <div className="bg-secondary-50 p-4 rounded-lg border border-secondary-200">
+              </div>
+              
+              {/* Lista de Agendamentos */}
+              <div className="bg-secondary-50 p-4 rounded-lg border border-secondary-200">
               <div className="flex items-center justify-between mb-3">
                 <label className="flex items-center gap-2 cursor-pointer" onClick={() => setShowSchedulesList(!showSchedulesList)}>
                   <CalendarIcon className="h-5 w-5 text-primary-600" />
@@ -1188,9 +1201,10 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                   )}
                 </div>
               )}
+              </div>
             </div>
             
-            {/* Status em Tempo Real */}
+            {/* Status em Tempo Real - Largura Completa */}
             {maturationId && (
               <div className="bg-gradient-to-br from-primary-50 to-secondary-50 border-2 border-primary-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
@@ -1221,13 +1235,13 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                         Background
                       </button>
                     )}
-                    <button
-                      onClick={handleStop}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded text-xs font-medium transition-colors"
-                    >
-                      <StopIcon className="h-4 w-4" />
-                      Parar
-                    </button>
+                  <button
+                    onClick={handleStop}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded text-xs font-medium transition-colors"
+                  >
+                    <StopIcon className="h-4 w-4" />
+                    Parar
+                  </button>
                   </div>
                 </div>
 

@@ -340,7 +340,7 @@ export async function POST(request: NextRequest) {
         
         console.log('[MATURACAO] ✓ Todas as sessões têm apiUrl e apiKey configurados')
 
-        // Função para verificar status da sessão antes de enviar
+        // Função para verificar status da sessão antes de enviar e reiniciar se necessário
         const checkSessionStatus = async (sess: WahaSession): Promise<boolean> => {
           try {
             const sessionName = sess.sessionName || sess.name || 'default'
@@ -361,12 +361,55 @@ export async function POST(request: NextRequest) {
               const sessionData = await statusRes.json().catch(() => null)
               if (sessionData) {
                 const status = String(sessionData.status || '').toUpperCase()
+                
+                // Se está em estado válido, retornar true
                 if (status === 'WORKING' || status === 'CONNECTED' || status === 'OPEN' || status === 'READY' || status === 'AUTHENTICATED') {
                   return true
-                } else {
-                  console.warn(`[SENDTEXT] Sessão ${sessionName} está com status ${status}, não é WORKING`)
+                }
+                
+                // Se está FAILED ou STOPPED, tentar reiniciar automaticamente
+                if (status === 'FAILED' || status === 'STOPPED') {
+                  console.warn(`[SENDTEXT] Sessão ${sessionName} está com status ${status}, tentando reiniciar...`)
+                  
+                  try {
+                    const restartUrl = `${base}/api/${encodeURIComponent(sessionName)}/restart`
+                    const restartRes = await fetch(restartUrl, {
+                      method: 'POST',
+                      headers
+                    })
+                    
+                    if (restartRes.ok) {
+                      console.log(`[SENDTEXT] ✅ Sessão ${sessionName} reiniciada com sucesso, aguardando inicialização...`)
+                      // Aguardar 5 segundos para a sessão inicializar
+                      await new Promise(resolve => setTimeout(resolve, 5000))
+                      
+                      // Verificar novamente o status após reiniciar
+                      const statusRes2 = await fetch(statusUrl, { headers })
+                      if (statusRes2.ok) {
+                        const sessionData2 = await statusRes2.json().catch(() => null)
+                        if (sessionData2) {
+                          const status2 = String(sessionData2.status || '').toUpperCase()
+                          if (status2 === 'WORKING' || status2 === 'CONNECTED' || status2 === 'OPEN' || status2 === 'READY' || status2 === 'AUTHENTICATED') {
+                            console.log(`[SENDTEXT] ✅ Sessão ${sessionName} está funcionando após reinício`)
+                            return true
+                          }
+                        }
+                      }
+                    } else {
+                      const restartError = await restartRes.json().catch(() => ({ error: 'Erro desconhecido' }))
+                      console.error(`[SENDTEXT] ❌ Falha ao reiniciar sessão ${sessionName}:`, restartError)
+                    }
+                  } catch (restartError) {
+                    console.error(`[SENDTEXT] ❌ Erro ao tentar reiniciar sessão ${sessionName}:`, restartError)
+                  }
+                  
+                  // Se chegou aqui, reinício falhou ou não funcionou
                   return false
                 }
+                
+                // Outros status (STARTING, SCAN_QR_CODE, etc)
+                console.warn(`[SENDTEXT] Sessão ${sessionName} está com status ${status}, não é WORKING`)
+                return false
               }
             }
             // Se não conseguir verificar, assumir que está OK
@@ -434,16 +477,22 @@ export async function POST(request: NextRequest) {
             hasApiKey: !!sess.apiKey
           })
           
-          // Lista exaustiva de endpoints e payloads (mesma lógica do waha/dispatch/route.ts)
-          const endpoints = [
-            `${base}/api/sendText`,
-            `${base}/api/sendText?session=${session}`,
-            `${base}/api/${session}/sendText`,
-            `${base}/api/${session}/chat/sendText`,
-            `${base}/api/${session}/messages/sendText`,
-            `${base}/api/chats/${encodeURIComponent(jid)}/sendText?session=${session}`
-          ]
+          // Simular digitação humana antes de enviar
+          try {
+            const { simulateHumanTyping } = await import('@/lib/waha-typing-simulator')
+            await simulateHumanTyping({
+              apiUrl: base,
+              sessionName,
+              apiKey: sess.apiKey,
+              chatId: jid,
+              messageLength: text.length
+            })
+          } catch (error) {
+            // Se falhar, continuar mesmo assim (não bloquear o envio)
+            console.log(`[SENDTEXT] Aviso: Não foi possível simular digitação, continuando envio`)
+          }
           
+          // Usar APENAS o endpoint padrão que funciona (mesma lógica do waha/dispatch/route.ts)
           const headers: Record<string,string> = { 
             'Content-Type': 'application/json',
             'X-Api-Key': sess.apiKey || '' 
@@ -452,90 +501,71 @@ export async function POST(request: NextRequest) {
             headers['Authorization'] = `Bearer ${sess.apiKey}`
           }
           
-          // Diferentes formatos de payload para compatibilidade
-          const bodies = [
-            { session: sessionName, chatId: jid, text },
-            { chatId: jid, text },
-            { chatId: jid, message: text },
-            { jid, text },
-            { phone: phoneClean, text },
-            { to: jid, text }
-          ]
-          
-          let lastError: any = null
-          let lastResp: Response | null = null
-          
-          for (const url of endpoints) {
-            for (const body of bodies) {
-              try {
-                console.log(`[SENDTEXT] Tentando: ${url}`, { bodyKeys: Object.keys(body) })
-                
-                const r = await fetch(url, { 
-                  method: 'POST', 
-                  headers, 
-                  body: JSON.stringify(body) 
-                })
-                
-                lastResp = r
-                let d: any = null
-                try { 
-                  const text = await r.text()
-                  if (text) {
-                    try {
-                      d = JSON.parse(text)
-                    } catch {
-                      d = { rawResponse: text }
-                    }
-                  }
-                } catch (e) {
-                  console.log(`[SENDTEXT] Erro ao ler resposta:`, e)
-                }
-                
-                console.log(`[SENDTEXT] Resposta:`, {
-                  url,
-                  status: r.status,
-                  ok: r.ok,
-                  statusText: r.statusText,
-                  data: d
-                })
-                
-                // Múltiplos indicadores de sucesso
-                if (r.ok && (
-                  d?.sent === true || 
-                  d?.success === true || 
-                  d?.messageId || 
-                  d?.id ||
-                  (d && !d.error && !d.message)
-                )) {
-                  console.log(`[SENDTEXT] ✓ Mensagem enviada com sucesso via ${url}`)
-                  return true
-                } else {
-                  lastError = { 
-                    url, 
-                    status: r.status, 
-                    statusText: r.statusText, 
-                    data: d,
-                    body: body
-                  }
-                }
-              } catch (e) {
-                console.error(`[SENDTEXT] Exceção ao tentar ${url}:`, e)
-                lastError = { 
-                  url, 
-                  error: e instanceof Error ? e.message : String(e),
-                  stack: e instanceof Error ? e.stack : undefined
-                }
-              }
-            }
+          // Endpoint padrão que funciona no WAHA
+          const primaryAttempt = {
+            url: `${base}/api/sendText`,
+            body: { session: sessionName, chatId: jid, text }
           }
           
-          console.error(`[SENDTEXT] ✗ Falha ao enviar mensagem após ${endpoints.length * bodies.length} tentativas:`, {
-            lastError,
-            lastResponse: lastResp ? {
-              status: lastResp.status,
-              statusText: lastResp.statusText
-            } : null
-          })
+          // Tentar APENAS UMA vez o endpoint padrão
+          try {
+            console.log(`[SENDTEXT] Tentando: ${primaryAttempt.url}`, { bodyKeys: Object.keys(primaryAttempt.body) })
+            
+            const resp = await fetch(primaryAttempt.url, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify(primaryAttempt.body)
+            })
+            
+            // Verificar resposta
+            if (resp.ok && resp.status === 200) {
+              let responseData: any = null
+              try {
+                responseData = await resp.json()
+              } catch {
+                // Se não conseguir parsear JSON mas status é 200, considerar sucesso
+                responseData = { sent: true }
+              }
+              
+              // Verificar se realmente enviou
+              const isSuccess = responseData?.sent === true ||
+                                responseData?.success === true ||
+                                responseData?.messageId ||
+                                responseData?.id ||
+                                (responseData === null && resp.status === 200) ||
+                                resp.status === 200
+              
+              if (isSuccess) {
+                console.log(`[SENDTEXT] ✓ Mensagem enviada com sucesso via ${primaryAttempt.url}`)
+                return true
+              }
+            }
+            
+            // Se chegou aqui, falhou - tentar ler resposta para debug
+            let errorData: any = null
+            try {
+              const text = await resp.text()
+              if (text) {
+                try {
+                  errorData = JSON.parse(text)
+                } catch {
+                  errorData = { rawResponse: text }
+                }
+              }
+            } catch (e) {
+              // Ignorar erro ao ler resposta
+            }
+            
+            console.error(`[SENDTEXT] ✗ Falha ao enviar mensagem:`, {
+              url: primaryAttempt.url,
+              status: resp.status,
+              statusText: resp.statusText,
+              data: errorData
+            })
+          } catch (e) {
+            console.error(`[SENDTEXT] ✗ Exceção ao enviar mensagem:`, e)
+          }
+          
           return false
         }
 
@@ -632,10 +662,20 @@ export async function POST(request: NextRequest) {
             })
             addToHistory(from, to, message)
             return message
-          } catch (error) {
+          } catch (error: any) {
             console.error('[MATURACAO] Erro ao gerar saudação com IA:', error)
-            // Fallback simples
-            return `Oi ${name}!`
+            // Fallback mais variado baseado no contexto
+            const fallbacks = [
+              `Oi ${name}!`,
+              `Olá ${name}!`,
+              `E aí ${name}!`,
+              `Fala ${name}!`,
+              `Oi ${name}, tudo bem?`
+            ]
+            const fallback = fallbacks[Math.floor(Math.random() * fallbacks.length)]
+            console.log(`[MATURACAO] Usando fallback para saudação: "${fallback}"`)
+            addToHistory(from, to, fallback)
+            return fallback
           }
         }
         
@@ -652,10 +692,20 @@ export async function POST(request: NextRequest) {
             })
             addToHistory(from, to, message)
             return message
-          } catch (error) {
+          } catch (error: any) {
             console.error('[MATURACAO] Erro ao gerar mensagem intermediária com IA:', error)
-            // Fallback simples
-            return 'Como você está?'
+            // Fallback variado
+            const fallbacks = [
+              'Como você está?',
+              'Tudo bem?',
+              'E aí, como vai?',
+              'Tudo certo?',
+              'Como está?'
+            ]
+            const fallback = fallbacks[Math.floor(Math.random() * fallbacks.length)]
+            console.log(`[MATURACAO] Usando fallback para mensagem intermediária: "${fallback}"`)
+            addToHistory(from, to, fallback)
+            return fallback
           }
         }
         

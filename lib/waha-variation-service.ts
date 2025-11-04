@@ -38,6 +38,11 @@ export class WahaVariationService {
     const preferredModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
     let model = ai.getGenerativeModel({ model: preferredModel })
 
+    // Extrair links da mensagem original para preservá-los
+    const urlRegex = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/gi
+    const originalUrls = [...new Set((request.originalMessage.match(urlRegex) || []))]
+    const messageWithoutLinks = request.originalMessage.replace(urlRegex, '[link]')
+
     // Prompt padrão se não fornecido
     const defaultPrompt = request.prompt || 
       `Crie ${request.count} variações da seguinte mensagem para WhatsApp, mantendo o mesmo significado e objetivo, mas com palavras e estruturas diferentes. 
@@ -45,8 +50,9 @@ export class WahaVariationService {
       Idioma: ${request.language || 'português brasileiro'}
       Tom: ${request.tone || 'profissional e amigável'}
       Máximo de caracteres por variação: ${request.maxLength || 500}
+      IMPORTANTE: A mensagem original contém links que devem ser preservados em TODAS as variações. Você pode usar [link] como placeholder, mas os links serão adicionados automaticamente depois.
 
-      Mensagem original: "${request.originalMessage}"`
+      Mensagem original: "${messageWithoutLinks}"`
 
     try {
       let result = await model.generateContent(defaultPrompt)
@@ -159,9 +165,9 @@ export class WahaVariationService {
       }
     }
 
-    // Pós-processamento: limpar markdown/meta e garantir URL da original (quando existir)
-    const originalUrls = originalMessage ? Array.from(originalMessage.matchAll(/https?:\/\/\S+/gi)).map(m => m[0]) : []
-    const primaryUrl = originalUrls[0]
+    // Pós-processamento: limpar markdown/meta e garantir TODOS os links da original (quando existirem)
+    // IMPORTANTE: Preservar TODOS os links, não apenas o primeiro
+    const originalUrls = originalMessage ? [...new Set(Array.from(originalMessage.matchAll(/https?:\/\/[^\s<>"{}|\\^`\[\]]+/gi)).map(m => m[0]))] : []
 
     const cleaned = uniqueVariations.map(v => {
       // Remover linhas meta como "O link em todas as variações é: ..."
@@ -179,9 +185,20 @@ export class WahaVariationService {
         .replace(/^\s*[-*]\s*/gm, '')
         .trim()
 
-      // Garantir presença da URL original
-      if (primaryUrl && !s.includes(primaryUrl)) {
-        s = `${s} ${primaryUrl}`.trim()
+      // Garantir presença de TODOS os links originais (não apenas o primeiro)
+      // Comparação case-insensitive e normalizada para garantir preservação
+      if (originalUrls.length > 0) {
+        const variationLinks = [...new Set(Array.from(s.matchAll(/https?:\/\/[^\s<>"{}|\\^`\[\]]+/gi)).map(m => m[0].trim()))]
+        // Comparar normalizado (lowercase, trimmed) para detectar links mesmo com diferenças sutis
+        const normalizedVariationLinks = variationLinks.map(l => l.toLowerCase().trim())
+        const missingLinks = originalUrls.filter(originalUrl => {
+          const normalized = originalUrl.toLowerCase().trim()
+          return !normalizedVariationLinks.some(vl => vl === normalized || vl.startsWith(normalized) || normalized.startsWith(vl))
+        })
+        if (missingLinks.length > 0) {
+          // Adicionar todos os links que estão faltando
+          s = `${s} ${missingLinks.join(' ')}`.trim()
+        }
       }
 
       // Garantir presença do aviso obrigatório

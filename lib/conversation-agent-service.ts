@@ -174,29 +174,51 @@ Gere APENAS a mensagem, sem explicações ou comentários adicionais.`
         break
     }
 
-    try {
-      const result = await model.generateContent(prompt)
-      const response = await result.response
-      let text = response.text().trim()
+    // Retry com backoff exponencial para erros 503 (overloaded)
+    const maxRetries = 3
+    let lastError: any = null
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const result = await model.generateContent(prompt)
+        const response = await result.response
+        let text = response.text().trim()
 
-      // Limpar a resposta removendo citações, explicações ou metadados
-      text = text
-        .split('\n')[0] // Pegar apenas a primeira linha (mensagem principal)
-        .replace(/^["']|["']$/g, '') // Remover aspas no início/fim
-        .replace(/^(mensagem|resposta|saudação):\s*/i, '') // Remover prefixos
-        .trim()
+        // Limpar a resposta removendo citações, explicações ou metadados
+        text = text
+          .split('\n')[0] // Pegar apenas a primeira linha (mensagem principal)
+          .replace(/^["']|["']$/g, '') // Remover aspas no início/fim
+          .replace(/^(mensagem|resposta|saudação):\s*/i, '') // Remover prefixos
+          .trim()
 
-      // Fallback se a mensagem estiver vazia ou muito curta
-      if (!text || text.length < 5) {
-        return this.getFallbackMessage(messageType, to)
+        // Se chegou aqui, sucesso!
+        return text
+
+      } catch (error: any) {
+        lastError = error
+        
+        // Verificar se é erro 503 (overloaded) ou erro de rede
+        const isOverloaded = error?.status === 503 || 
+                            error?.statusText === 'Service Unavailable' ||
+                            error?.message?.includes('overloaded') ||
+                            error?.message?.includes('503')
+        
+        // Se não for erro 503 ou se já tentou todas as vezes, lançar erro
+        if (!isOverloaded || attempt === maxRetries - 1) {
+          throw error
+        }
+        
+        // Calcular backoff exponencial: 2s, 4s, 8s
+        const backoffMs = Math.min(2000 * Math.pow(2, attempt), 8000)
+        console.log(`[ConversationAgent] Gemini sobrecarregado (503), tentando novamente em ${backoffMs}ms (tentativa ${attempt + 1}/${maxRetries})`)
+        
+        await new Promise(resolve => setTimeout(resolve, backoffMs))
       }
-
-      return text
-    } catch (error) {
-      console.error('[ConversationAgent] Erro ao gerar mensagem contextual:', error)
-      // Fallback para mensagem simples
-      return this.getFallbackMessage(messageType, to)
     }
+    
+    // Se chegou aqui, todas as tentativas falharam
+    // Lançar erro para ser capturado pelo catch externo
+    throw lastError
   }
 
   /**

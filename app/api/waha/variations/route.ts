@@ -71,15 +71,31 @@ export async function POST(request: NextRequest) {
       const originalMessage: string = rawBody.originalMessage
       const count: number = rawBody.count || 3
 
-      const primaryUrl = (originalMessage.match(/https?:\/\/\S+/i) || [])[0]
+      // Extrair TODOS os links da mensagem original (obrigatório preservar todos)
+      const urlRegex = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/gi
+      const originalUrls = [...new Set((originalMessage.match(urlRegex) || []))]
       const responsibility = 'Jogue com responsabilidade'
 
       let variations = generateTypedVariations(originalMessage, count)
-      // Garantir link e responsabilidade
+      // Garantir TODOS os links e responsabilidade em cada variação
+      // Comparação case-insensitive e normalizada para garantir preservação
       variations = variations.map(v => {
         let s = v
-        if (primaryUrl && !s.includes(primaryUrl)) s = `${s} ${primaryUrl}`.trim()
-        if (!new RegExp(responsibility, 'i').test(s)) s = `${s} ${responsibility}`.trim()
+        // Verificar quais links estão faltando na variação (comparação normalizada)
+        const variationUrls = [...new Set((v.match(urlRegex) || []).map(u => u.trim()))]
+        const normalizedVariationUrls = variationUrls.map(u => u.toLowerCase().trim())
+        const missingLinks = originalUrls.filter(originalUrl => {
+          const normalized = originalUrl.toLowerCase().trim()
+          return !normalizedVariationUrls.some(vu => vu === normalized || vu.startsWith(normalized) || normalized.startsWith(vu))
+        })
+        // Adicionar todos os links que estão faltando
+        if (missingLinks.length > 0) {
+          s = `${s} ${missingLinks.join(' ')}`.trim()
+        }
+        // Garantir aviso de responsabilidade
+        if (!new RegExp(responsibility, 'i').test(s)) {
+          s = `${s} ${responsibility}`.trim()
+        }
         return s
       })
 

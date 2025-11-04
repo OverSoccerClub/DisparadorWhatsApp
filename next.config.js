@@ -33,6 +33,9 @@ const nextConfig = {
     // optimizePackageImports removido temporariamente para evitar quebras de chunk
   },
   
+  // Forçar App Router (evitar confusão com Pages Router)
+  // Não há configuração específica necessária - o Next.js detecta automaticamente pela estrutura app/
+  
   // Headers de segurança e performance
   async headers() {
     return [

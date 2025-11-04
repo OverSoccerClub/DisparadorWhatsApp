@@ -40,7 +40,7 @@ async function getWahaConfigForUser(serverId: string) {
 // GET - Obter detalhes de uma sessão
 export async function GET(
   request: NextRequest,
-  { params }: { params: { sessionName: string } }
+  { params }: { params: Promise<{ sessionName: string }> | { sessionName: string } }
 ) {
   try {
     const url = new URL(request.url)
@@ -49,7 +49,8 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'serverId é obrigatório' }, { status: 400 })
     }
     const config = await getWahaConfigForUser(serverId)
-    const sessionName = params.sessionName
+    const resolvedParams = params instanceof Promise ? await params : params
+    const sessionName = resolvedParams.sessionName
 
     const response = await fetch(`${config.apiUrl}/api/sessions/${sessionName}`, {
       headers: {
@@ -83,7 +84,7 @@ export async function GET(
 // DELETE - Excluir uma sessão
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { sessionName: string } }
+  { params }: { params: Promise<{ sessionName: string }> | { sessionName: string } }
 ) {
   try {
     const url = new URL(request.url)
@@ -92,7 +93,8 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'serverId é obrigatório' }, { status: 400 })
     }
     const config = await getWahaConfigForUser(serverId)
-    const sessionName = params.sessionName
+    const resolvedParams = params instanceof Promise ? await params : params
+    const sessionName = resolvedParams.sessionName
 
     const response = await fetch(`${config.apiUrl}/api/sessions/${sessionName}`, {
       method: 'DELETE',

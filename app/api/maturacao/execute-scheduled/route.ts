@@ -13,14 +13,31 @@ export async function POST(request: NextRequest) {
   try {
     // Autenticar como sistema (pode usar uma API key ou token especial)
     // Por enquanto, vamos usar autenticação normal mas pode ser melhorado
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
+    const response = new NextResponse()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                response.cookies.set({
+                  name,
+                  value,
+                  ...options,
+                  sameSite: 'lax',
+                  httpOnly: true,
+                  secure: process.env.NODE_ENV === 'production'
+                })
+              })
+            } catch (error) {
+              // Silenciar erro de cookies se não for possível definir
+            }
           },
         },
       }
@@ -183,14 +200,31 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const scheduleId = searchParams.get('scheduleId')
     
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
+    const response = new NextResponse()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                response.cookies.set({
+                  name,
+                  value,
+                  ...options,
+                  sameSite: 'lax',
+                  httpOnly: true,
+                  secure: process.env.NODE_ENV === 'production'
+                })
+              })
+            } catch (error) {
+              // Silenciar erro de cookies se não for possível definir
+            }
           },
         },
       }
