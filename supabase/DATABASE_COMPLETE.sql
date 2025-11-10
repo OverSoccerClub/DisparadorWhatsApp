@@ -1,7 +1,7 @@
 -- ============================================================================
 -- DISPARADOR WHATSAPP - SCHEMA COMPLETO DO BANCO DE DADOS
 -- Execute este SQL em um servidor Supabase limpo
--- Versão: 2.0 - Completa e Otimizada
+-- Versão: 2.2 - Com Sistema de Disparos WAHA Completo
 -- ============================================================================
 
 -- ============================================================================
@@ -180,33 +180,75 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_evolution_instances_user_instance ON publi
 COMMENT ON TABLE public.evolution_instances IS 'Instâncias WhatsApp da Evolution API';
 
 -- ============================================================================
--- 8. TABELA: waha_config
--- Armazena configuração global do WAHA (WhatsApp HTTP API)
+-- 8. TABELA: waha_servers (NOVA - Múltiplos Servidores WAHA)
+-- Armazena múltiplos servidores WAHA por usuário
 -- ============================================================================
 
-CREATE TABLE IF NOT EXISTS public.waha_config (
-    id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+CREATE TABLE IF NOT EXISTS public.waha_servers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    nome VARCHAR(255) NOT NULL,
     api_url TEXT NOT NULL,
     api_key TEXT,
+    descricao TEXT,
+    ativo BOOLEAN DEFAULT true,
     webhook_url TEXT,
     webhook_secret TEXT,
     timeout INTEGER DEFAULT 30,
     retry_attempts INTEGER DEFAULT 3,
     rate_limit INTEGER DEFAULT 100,
-    enable_auto_reconnect BOOLEAN DEFAULT true,
-    enable_qr_code BOOLEAN DEFAULT true,
-    enable_presence BOOLEAN DEFAULT true,
+    prioridade INTEGER DEFAULT 0,
+    max_sessions INTEGER DEFAULT 10,
+    sessions_ativas INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Índice
-CREATE INDEX IF NOT EXISTS idx_waha_config_id ON public.waha_config(id);
+-- Índices
+CREATE INDEX IF NOT EXISTS idx_waha_servers_user_id ON public.waha_servers(user_id);
+CREATE INDEX IF NOT EXISTS idx_waha_servers_ativo ON public.waha_servers(ativo) WHERE ativo = true;
+CREATE INDEX IF NOT EXISTS idx_waha_servers_prioridade ON public.waha_servers(prioridade DESC);
 
-COMMENT ON TABLE public.waha_config IS 'Configuração global do WAHA (WhatsApp HTTP API)';
+-- Constraint para evitar URLs duplicadas por usuário
+CREATE UNIQUE INDEX IF NOT EXISTS idx_waha_servers_user_url ON public.waha_servers(user_id, api_url);
+
+COMMENT ON TABLE public.waha_servers IS 'Múltiplos servidores WAHA por usuário';
+COMMENT ON COLUMN public.waha_servers.prioridade IS 'Prioridade de uso (maior = mais prioritário)';
+COMMENT ON COLUMN public.waha_servers.max_sessions IS 'Máximo de sessões permitidas neste servidor';
+COMMENT ON COLUMN public.waha_servers.sessions_ativas IS 'Número atual de sessões ativas';
 
 -- ============================================================================
--- 9. DESABILITAR RLS (Row Level Security)
+-- 9. TABELA: waha_sessions (NOVA - Sessões WAHA por Servidor)
+-- Armazena sessões WhatsApp de cada servidor WAHA
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS public.waha_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    waha_server_id UUID REFERENCES public.waha_servers(id) ON DELETE CASCADE NOT NULL,
+    session_name VARCHAR(255) NOT NULL,
+    status VARCHAR(50) DEFAULT 'disconnected' CHECK (status IN ('connected', 'disconnected', 'connecting', 'error', 'stopped')),
+    phone_number VARCHAR(20),
+    profile_name VARCHAR(255),
+    qr_code TEXT,
+    last_connected_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Índices
+CREATE INDEX IF NOT EXISTS idx_waha_sessions_user_id ON public.waha_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_waha_sessions_server_id ON public.waha_sessions(waha_server_id);
+CREATE INDEX IF NOT EXISTS idx_waha_sessions_status ON public.waha_sessions(status);
+CREATE INDEX IF NOT EXISTS idx_waha_sessions_session_name ON public.waha_sessions(session_name);
+
+-- Constraint para evitar sessões duplicadas por servidor
+CREATE UNIQUE INDEX IF NOT EXISTS idx_waha_sessions_server_session ON public.waha_sessions(waha_server_id, session_name);
+
+COMMENT ON TABLE public.waha_sessions IS 'Sessões WhatsApp em servidores WAHA';
+
+-- ============================================================================
+-- 10. DESABILITAR RLS (Row Level Security)
 -- Para simplicidade, desabilitamos RLS. Em produção, configure políticas adequadas.
 -- ============================================================================
 
@@ -216,10 +258,11 @@ ALTER TABLE public.disparos DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lotes_campanha DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.evolution_configs DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.evolution_instances DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.waha_config DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.waha_servers DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.waha_sessions DISABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
--- 10. PERMISSÕES
+-- 11. PERMISSÕES
 -- Conceder permissões necessárias
 -- ============================================================================
 
@@ -230,7 +273,8 @@ GRANT ALL ON public.disparos TO authenticated;
 GRANT ALL ON public.lotes_campanha TO authenticated;
 GRANT ALL ON public.evolution_configs TO authenticated;
 GRANT ALL ON public.evolution_instances TO authenticated;
-GRANT ALL ON public.waha_config TO authenticated;
+GRANT ALL ON public.waha_servers TO authenticated;
+GRANT ALL ON public.waha_sessions TO authenticated;
 
 -- Permissões para service_role (usado pelas APIs)
 GRANT ALL ON public.clientes TO service_role;
@@ -239,13 +283,14 @@ GRANT ALL ON public.disparos TO service_role;
 GRANT ALL ON public.lotes_campanha TO service_role;
 GRANT ALL ON public.evolution_configs TO service_role;
 GRANT ALL ON public.evolution_instances TO service_role;
-GRANT ALL ON public.waha_config TO service_role;
+GRANT ALL ON public.waha_servers TO service_role;
+GRANT ALL ON public.waha_sessions TO service_role;
 
--- Permissões para anon (usuários não autenticados - apenas leitura pública se necessário)
-GRANT SELECT ON public.waha_config TO anon;
+-- Permissões para anon
+GRANT SELECT ON public.waha_servers TO anon;
 
 -- ============================================================================
--- 11. FUNÇÕES ÚTEIS
+-- 12. FUNÇÕES ÚTEIS
 -- ============================================================================
 
 -- Função para atualizar updated_at automaticamente
@@ -288,9 +333,15 @@ CREATE TRIGGER update_evolution_instances_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION public.update_updated_at_column();
 
-DROP TRIGGER IF EXISTS update_waha_config_updated_at ON public.waha_config;
-CREATE TRIGGER update_waha_config_updated_at
-    BEFORE UPDATE ON public.waha_config
+DROP TRIGGER IF EXISTS update_waha_servers_updated_at ON public.waha_servers;
+CREATE TRIGGER update_waha_servers_updated_at
+    BEFORE UPDATE ON public.waha_servers
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_waha_sessions_updated_at ON public.waha_sessions;
+CREATE TRIGGER update_waha_sessions_updated_at
+    BEFORE UPDATE ON public.waha_sessions
     FOR EACH ROW
     EXECUTE FUNCTION public.update_updated_at_column();
 
@@ -333,15 +384,37 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- ============================================================================
--- 12. DADOS INICIAIS (OPCIONAL)
--- ============================================================================
+-- Função para obter servidor WAHA disponível (load balancing)
+CREATE OR REPLACE FUNCTION public.get_available_waha_server(user_uuid UUID)
+RETURNS TABLE (
+    id UUID,
+    nome VARCHAR(255),
+    api_url TEXT,
+    api_key TEXT,
+    sessions_ativas INTEGER,
+    max_sessions INTEGER
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        ws.id,
+        ws.nome,
+        ws.api_url,
+        ws.api_key,
+        ws.sessions_ativas,
+        ws.max_sessions
+    FROM public.waha_servers ws
+    WHERE ws.user_id = user_uuid
+      AND ws.ativo = true
+      AND ws.sessions_ativas < ws.max_sessions
+    ORDER BY 
+        ws.prioridade DESC,
+        (CAST(ws.sessions_ativas AS FLOAT) / NULLIF(ws.max_sessions, 0)) ASC
+    LIMIT 1;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Inserir configuração padrão do WAHA (opcional - pode ser configurado pela interface)
--- Descomente e ajuste conforme necessário:
--- INSERT INTO public.waha_config (id, api_url, api_key)
--- VALUES (1, 'https://seu-servidor-waha.com', '')
--- ON CONFLICT (id) DO NOTHING;
+COMMENT ON FUNCTION public.get_available_waha_server IS 'Retorna o servidor WAHA mais adequado com base em prioridade e carga';
 
 -- ============================================================================
 -- 13. VERIFICAÇÃO FINAL
@@ -349,7 +422,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Listar todas as tabelas criadas
 SELECT 
-    '✅ SCHEMA CRIADO COM SUCESSO!' as status,
+    '✅ SCHEMA V2.1 CRIADO COM SUCESSO!' as status,
     'Verificando tabelas criadas...' as acao;
 
 SELECT 
@@ -358,7 +431,7 @@ SELECT
     rowsecurity as rls_enabled
 FROM pg_tables 
 WHERE schemaname = 'public'
-  AND tablename IN ('clientes', 'campanhas', 'disparos', 'lotes_campanha', 'evolution_configs', 'evolution_instances', 'waha_config')
+  AND tablename IN ('clientes', 'campanhas', 'disparos', 'lotes_campanha', 'evolution_configs', 'evolution_instances', 'waha_servers', 'waha_sessions')
 ORDER BY tablename;
 
 -- Contar registros (deve ser 0 em banco novo)
@@ -383,11 +456,184 @@ UNION ALL
 SELECT 
     'evolution_instances' as tabela, COUNT(*) as total FROM public.evolution_instances
 UNION ALL
+-- ============================================================================
+-- 8. TABELAS DO SISTEMA DE DISPAROS WAHA
+-- Sistema completo de campanhas e disparos usando WAHA
+-- ============================================================================
+
+-- Tabela de campanhas WAHA
+CREATE TABLE IF NOT EXISTS public.waha_campaigns (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    nome VARCHAR(255) NOT NULL,
+    descricao TEXT,
+    mensagem TEXT NOT NULL,
+    status VARCHAR(50) DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'paused', 'completed', 'cancelled')),
+    
+    -- Configurações de timing
+    delay_min INTEGER DEFAULT 5,
+    delay_max INTEGER DEFAULT 15,
+    messages_per_minute INTEGER DEFAULT 10,
+    
+    -- Configurações de variação
+    enable_variations BOOLEAN DEFAULT false,
+    variation_prompt TEXT,
+    variation_count INTEGER DEFAULT 3,
+    
+    -- Configurações de balanceamento
+    load_balancing_strategy VARCHAR(50) DEFAULT 'round_robin' CHECK (load_balancing_strategy IN ('round_robin', 'least_connections', 'random')),
+    
+    -- Estatísticas
+    total_contacts INTEGER DEFAULT 0,
+    sent_messages INTEGER DEFAULT 0,
+    failed_messages INTEGER DEFAULT 0,
+    pending_messages INTEGER DEFAULT 0,
+    
+    -- Timestamps
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    started_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Tabela de contatos para campanhas WAHA
+CREATE TABLE IF NOT EXISTS public.waha_campaign_contacts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    campaign_id UUID NOT NULL REFERENCES public.waha_campaigns(id) ON DELETE CASCADE,
+    phone_number VARCHAR(20) NOT NULL,
+    nome VARCHAR(255),
+    status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'failed', 'skipped')),
+    error_message TEXT,
+    sent_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabela de disparos WAHA (execuções)
+CREATE TABLE IF NOT EXISTS public.waha_dispatches (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    campaign_id UUID NOT NULL REFERENCES public.waha_campaigns(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    
+    -- Sessão WAHA utilizada
+    waha_server_id UUID NOT NULL REFERENCES public.waha_servers(id) ON DELETE CASCADE,
+    session_name VARCHAR(255) NOT NULL,
+    
+    -- Configurações do disparo
+    mensagem TEXT NOT NULL,
+    variation_index INTEGER DEFAULT 0,
+    
+    -- Status e timing
+    status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'sending', 'sent', 'failed', 'cancelled')),
+    scheduled_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    sent_at TIMESTAMP WITH TIME ZONE,
+    response_time_ms INTEGER,
+    
+    -- Resultado
+    success BOOLEAN,
+    error_message TEXT,
+    whatsapp_message_id VARCHAR(255),
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabela de estatísticas de sessões WAHA
+CREATE TABLE IF NOT EXISTS public.waha_session_stats (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    waha_server_id UUID NOT NULL REFERENCES public.waha_servers(id) ON DELETE CASCADE,
+    session_name VARCHAR(255) NOT NULL,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    
+    -- Contadores
+    total_sent INTEGER DEFAULT 0,
+    total_failed INTEGER DEFAULT 0,
+    active_connections INTEGER DEFAULT 0,
+    
+    -- Timestamps
+    last_activity TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    UNIQUE(waha_server_id, session_name, user_id)
+);
+
+-- Índices para performance das tabelas WAHA
+CREATE INDEX IF NOT EXISTS idx_waha_campaigns_user_id ON public.waha_campaigns(user_id);
+CREATE INDEX IF NOT EXISTS idx_waha_campaigns_status ON public.waha_campaigns(status);
+CREATE INDEX IF NOT EXISTS idx_waha_campaign_contacts_campaign_id ON public.waha_campaign_contacts(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_waha_campaign_contacts_status ON public.waha_campaign_contacts(status);
+CREATE INDEX IF NOT EXISTS idx_waha_dispatches_campaign_id ON public.waha_dispatches(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_waha_dispatches_user_id ON public.waha_dispatches(user_id);
+CREATE INDEX IF NOT EXISTS idx_waha_dispatches_status ON public.waha_dispatches(status);
+CREATE INDEX IF NOT EXISTS idx_waha_dispatches_scheduled_at ON public.waha_dispatches(scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_waha_session_stats_user_id ON public.waha_session_stats(user_id);
+
+-- Triggers para updated_at das tabelas WAHA
+CREATE TRIGGER update_waha_campaigns_updated_at BEFORE UPDATE ON public.waha_campaigns FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_waha_session_stats_updated_at BEFORE UPDATE ON public.waha_session_stats FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- RLS Policies para tabelas WAHA
+ALTER TABLE public.waha_campaigns ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.waha_campaign_contacts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.waha_dispatches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.waha_session_stats ENABLE ROW LEVEL SECURITY;
+
+-- Policies para waha_campaigns
+CREATE POLICY "Users can view own waha campaigns" ON public.waha_campaigns FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own waha campaigns" ON public.waha_campaigns FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own waha campaigns" ON public.waha_campaigns FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own waha campaigns" ON public.waha_campaigns FOR DELETE USING (auth.uid() = user_id);
+
+-- Policies para waha_campaign_contacts
+CREATE POLICY "Users can view own waha campaign contacts" ON public.waha_campaign_contacts FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.waha_campaigns WHERE id = campaign_id AND user_id = auth.uid())
+);
+CREATE POLICY "Users can insert own waha campaign contacts" ON public.waha_campaign_contacts FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM public.waha_campaigns WHERE id = campaign_id AND user_id = auth.uid())
+);
+CREATE POLICY "Users can update own waha campaign contacts" ON public.waha_campaign_contacts FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM public.waha_campaigns WHERE id = campaign_id AND user_id = auth.uid())
+);
+CREATE POLICY "Users can delete own waha campaign contacts" ON public.waha_campaign_contacts FOR DELETE USING (
+    EXISTS (SELECT 1 FROM public.waha_campaigns WHERE id = campaign_id AND user_id = auth.uid())
+);
+
+-- Policies para waha_dispatches
+CREATE POLICY "Users can view own waha dispatches" ON public.waha_dispatches FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own waha dispatches" ON public.waha_dispatches FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own waha dispatches" ON public.waha_dispatches FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own waha dispatches" ON public.waha_dispatches FOR DELETE USING (auth.uid() = user_id);
+
+-- Policies para waha_session_stats
+CREATE POLICY "Users can view own waha session stats" ON public.waha_session_stats FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own waha session stats" ON public.waha_session_stats FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own waha session stats" ON public.waha_session_stats FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own waha session stats" ON public.waha_session_stats FOR DELETE USING (auth.uid() = user_id);
+
+COMMENT ON TABLE public.waha_campaigns IS 'Campanhas de disparo WhatsApp usando WAHA';
+COMMENT ON TABLE public.waha_campaign_contacts IS 'Contatos das campanhas WAHA';
+COMMENT ON TABLE public.waha_dispatches IS 'Histórico de disparos WAHA executados';
+COMMENT ON TABLE public.waha_session_stats IS 'Estatísticas de uso das sessões WAHA';
+
+-- ============================================================================
+-- 9. ATUALIZAÇÃO DAS ESTATÍSTICAS FINAIS
+-- ============================================================================
+
+-- Estatísticas atualizadas incluindo as novas tabelas WAHA
 SELECT 
-    'waha_config' as tabela, COUNT(*) as total FROM public.waha_config;
+    'waha_campaigns' as tabela, COUNT(*) as total FROM public.waha_campaigns
+UNION ALL
+SELECT 
+    'waha_campaign_contacts' as tabela, COUNT(*) as total FROM public.waha_campaign_contacts
+UNION ALL
+SELECT 
+    'waha_dispatches' as tabela, COUNT(*) as total FROM public.waha_dispatches
+UNION ALL
+SELECT 
+    'waha_session_stats' as tabela, COUNT(*) as total FROM public.waha_session_stats;
 
 SELECT 
-    '🎉 BANCO DE DADOS PRONTO PARA USO!' as status;
+    '🎉 BANCO DE DADOS V2.2 PRONTO!' as status,
+    'Agora com SISTEMA COMPLETO DE DISPAROS WAHA!' as novidade;
 
 -- ============================================================================
 -- FIM DO SCRIPT
