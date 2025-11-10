@@ -498,7 +498,6 @@ export default function WahaSessionsPage() {
         // Validar se o QR code não está vazio ou inválido
         const qrString = typeof data.qr === 'string' ? data.qr : ''
         if (!qrString || qrString.length < 50) {
-          console.error('❌ QR Code inválido recebido:', qrString?.substring(0, 50))
           toast.error('QR Code inválido recebido. Tente novamente.')
           setQrCodeGenerating(false)
           return
@@ -598,7 +597,6 @@ export default function WahaSessionsPage() {
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Erro desconhecido')
-        console.error('[RESTART] Erro na resposta:', errorText)
         toast.dismiss('restart-session')
         setRestartingSession(null)
         toast.error(`Erro ${response.status}: ${errorText || response.statusText}`)
@@ -936,43 +934,50 @@ export default function WahaSessionsPage() {
       {/* Modal QR Code */}
       {qrCodeData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full p-6">
-            <h2 className="text-xl font-semibold text-secondary-900 mb-4">
-              QR Code - {qrCodeData.session}
-            </h2>
+          <div className="bg-white rounded-lg max-w-lg w-full p-5">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-secondary-900">
+                QR Code - {qrCodeData.session}
+              </h2>
+              <button
+                onClick={() => {
+                  stopQrPolling()
+                  stopQrAutoRefresh()
+                  setQrCodeData(null)
+                  setConnectionDetected(false)
+                  setQrAutoRefreshPaused(false)
+                  setQrCodeGenerating(false)
+                }}
+                className="text-secondary-400 hover:text-secondary-600"
+              >
+                <XCircleIcon className="h-6 w-6" />
+              </button>
+            </div>
             
+            {/* QR Code - Reduzido e centralizado */}
             <div className="mb-4 flex flex-col items-center">
-              <div className="relative bg-white p-4 rounded-lg border-2 border-gray-200 shadow-xl">
+              <div className="relative bg-white p-3 rounded-lg border-2 border-gray-200 shadow-lg">
                 <img 
-                  key={qrCodeData.qr.substring(0, 100)} // Key baseada no conteúdo do QR para forçar reload apenas quando mudar
+                  key={qrCodeData.qr.substring(0, 100)}
                   src={qrCodeData.qr} 
                   alt="QR Code" 
                   id="qr-code-image"
-                  className="border-4 border-black rounded-lg bg-white"
+                  className="border-2 border-black rounded-lg bg-white"
                   style={{ 
-                    imageRendering: 'auto', // Mudado de 'crisp-edges' para 'auto' para melhor qualidade
-                    width: '450px',
-                    height: '450px',
-                    minWidth: '450px',
-                    minHeight: '450px',
-                    objectFit: 'contain', // Manter proporções e qualidade
+                    imageRendering: 'auto',
+                    width: '280px',
+                    height: '280px',
+                    minWidth: '280px',
+                    minHeight: '280px',
+                    objectFit: 'contain',
                     display: 'block',
-                    backgroundColor: '#ffffff', // Fundo branco sólido
-                    padding: '12px', // Padding interno para melhor contraste
-                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-                  }}
-                  onLoad={() => {
-                    console.log('✅ QR Code imagem carregada com sucesso')
+                    backgroundColor: '#ffffff',
+                    padding: '8px',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
                   }}
                   onError={(e) => {
-                    console.error('❌ Erro ao carregar imagem do QR code:', {
-                      srcLength: qrCodeData.qr?.length,
-                      srcPreview: qrCodeData.qr?.substring(0, 100),
-                      isDataUrl: qrCodeData.qr?.startsWith('data:'),
-                      error: e
-                    })
                     toast.error('Erro ao exibir QR Code. Tentando atualizar...')
-                    // Tentar atualizar após 2 segundos
                     setTimeout(() => {
                       if (qrCodeData) {
                         handleGetQrCode(qrCodeData.session, qrCodeData.serverId, false)
@@ -981,9 +986,57 @@ export default function WahaSessionsPage() {
                   }}
                 />
               </div>
+            </div>
+
+            {/* Status de conexão - Compacto */}
+            <div className="mb-3 p-2 bg-primary-50 rounded-lg border border-primary-200">
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary-600 mr-2"></div>
+                <span className="text-xs text-primary-700">Aguardando conexão automática...</span>
+              </div>
+            </div>
+
+            {/* Cronômetro e Controles - Reorganizado */}
+            <div className="mb-3 p-3 bg-warning-50 rounded-lg border border-warning-200">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  <ClockIcon className="h-4 w-4 text-warning-700" />
+                  <span className="text-xs font-medium text-warning-800">
+                    {qrAutoRefreshPaused ? (
+                      <span className="text-secondary-600">Pausado</span>
+                    ) : (
+                      <>Próximo QR em: <span className="font-bold">{qrCountdown}s</span></>
+                    )}
+                  </span>
+                </div>
+                <button
+                  onClick={toggleQrAutoRefresh}
+                  className="text-xs px-2 py-1 rounded bg-warning-100 hover:bg-warning-200 text-warning-800 font-medium transition-colors"
+                >
+                  {qrAutoRefreshPaused ? '▶️ Retomar' : '⏸️ Pausar'}
+                </button>
+              </div>
+              <p className="text-xs text-warning-600 text-center">
+                ⚠️ Escaneie rapidamente! QR codes expiram em ~20-30 segundos
+              </p>
+            </div>
+
+            {/* Instruções - Compactas */}
+            <div className="mb-4 p-2 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-xs text-blue-800 font-medium mb-1 text-center">
+                📱 Como escanear:
+              </p>
+              <ul className="text-xs text-blue-700 space-y-0.5 text-left">
+                <li>1. Abra WhatsApp → Configurações → Aparelhos conectados</li>
+                <li>2. Toque em "Conectar um aparelho"</li>
+                <li>3. Aponte a câmera para o QR Code acima</li>
+              </ul>
+            </div>
+
+            {/* Botões de Ação */}
+            <div className="flex space-x-2">
               <button
                 onClick={() => {
-                  // Criar link de download do QR code
                   const img = document.getElementById('qr-code-image') as HTMLImageElement
                   if (img && img.src) {
                     const link = document.createElement('a')
@@ -993,93 +1046,33 @@ export default function WahaSessionsPage() {
                     toast.success('QR Code baixado!')
                   }
                 }}
-                className="mt-3 text-xs px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 font-medium rounded-md transition-colors"
+                className="flex-1 btn btn-secondary btn-sm text-xs"
               >
-                📥 Baixar QR Code (para escanear de outra tela)
+                📥 Baixar
               </button>
-            </div>
-
-            <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-800 font-medium mb-2 text-center">
-                📱 Como escanear:
-              </p>
-              <ul className="text-xs text-blue-700 space-y-1 text-left">
-                <li>• Abra o WhatsApp no seu celular</li>
-                <li>• Vá em Configurações → Aparelhos conectados → Conectar um aparelho</li>
-                <li>• Aponte a câmera para o QR Code acima</li>
-                <li>• Mantenha uma distância adequada (nem muito perto, nem muito longe)</li>
-                <li>• Certifique-se de que há boa iluminação</li>
-              </ul>
-            </div>
-            
-            {/* Cronômetro de atualização automática */}
-            <div className="mb-4 p-3 bg-warning-50 rounded-lg border border-warning-200">
-              <div className="flex items-center justify-center space-x-2 mb-2">
-                <ClockIcon className="h-4 w-4 text-warning-700" />
-                <span className="text-sm font-medium text-warning-800">
-                  {qrAutoRefreshPaused ? (
-                    <span className="text-secondary-600">Atualização automática pausada</span>
-                  ) : (
-                    <>
-                      Novo QR code em: <span className="font-bold">{qrCountdown}s</span>
-                    </>
-                  )}
-                </span>
-              </div>
-              <div className="flex justify-center mb-2">
-                <button
-                  onClick={toggleQrAutoRefresh}
-                  className="text-xs px-3 py-1 rounded-md bg-warning-100 hover:bg-warning-200 text-warning-800 font-medium transition-colors"
-                >
-                  {qrAutoRefreshPaused ? '▶️ Retomar Atualização' : '⏸️ Pausar Atualização'}
-                </button>
-              </div>
-              <p className="text-xs text-warning-600 mt-1 text-center">
-                {qrAutoRefreshPaused 
-                  ? 'Atualização automática pausada. Clique em "Retomar" para continuar.'
-                  : 'O QR code será atualizado automaticamente a cada 25 segundos para garantir que sempre esteja válido'
-                }
-              </p>
-              <p className="text-xs text-warning-700 mt-1 text-center font-semibold">
-                ⚠️ Escaneie rapidamente! QR codes expiram em ~20-30 segundos
-              </p>
-            </div>
-            
-            <div className="mb-4 p-3 bg-primary-50 rounded-lg">
-              <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600 mr-2"></div>
-                <span className="text-sm text-primary-700">Aguardando conexão...</span>
-              </div>
-              <p className="text-xs text-primary-600 mt-1 text-center">
-                O sistema detectará automaticamente quando o WhatsApp conectar
-              </p>
-            </div>
-
-            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  if (qrCodeData) {
+                    startQrAutoRefresh(qrCodeData.session, qrCodeData.serverId || '', 10000)
+                    handleGetQrCode(qrCodeData.session, qrCodeData.serverId)
+                  }
+                }}
+                className="flex-1 btn btn-primary btn-sm text-xs"
+              >
+                🔄 Atualizar QR
+              </button>
               <button
                 onClick={() => {
                   stopQrPolling()
                   stopQrAutoRefresh()
                   setQrCodeData(null)
                   setConnectionDetected(false)
-                  setQrAutoRefreshPaused(false) // Resetar estado de pausa
-                  setQrCodeGenerating(false) // Resetar mutex
+                  setQrAutoRefreshPaused(false)
+                  setQrCodeGenerating(false)
                 }}
-                className="flex-1 btn btn-secondary btn-md"
+                className="flex-1 btn btn-secondary btn-sm text-xs"
               >
                 Fechar
-              </button>
-              <button
-                onClick={() => {
-                  if (qrCodeData) {
-                    // Resetar cronômetro ao atualizar manualmente (delay de 10s para dar tempo de escanear)
-                    startQrAutoRefresh(qrCodeData.session, qrCodeData.serverId || '', 10000)
-                    handleGetQrCode(qrCodeData.session, qrCodeData.serverId)
-                  }
-                }}
-                className="flex-1 btn btn-primary btn-md"
-              >
-                Atualizar QR
               </button>
             </div>
           </div>

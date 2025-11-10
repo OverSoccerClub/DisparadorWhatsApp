@@ -245,31 +245,18 @@ export default function AuthPage() {
               </button>
             </div>
           </form>
+        </div>
+      </div>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Conta padrão</span>
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <div className="bg-gray-50 p-4 rounded-md">
-                <p className="text-sm text-gray-600 mb-2">
-                  <strong>Usuário administrador:</strong>
-                </p>
-                <p className="text-sm text-gray-500">
-                  Email: <code className="bg-gray-200 px-1 rounded">admin@dispatcher.com</code>
-                </p>
-                <p className="text-sm text-gray-500">
-                  Senha: <code className="bg-gray-200 px-1 rounded">admin123</code>
-                </p>
-              </div>
-            </div>
-          </div>
+      {/* Informações de versão */}
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="text-center">
+          <p className="text-sm text-gray-600">
+            WhatsApp Dispatcher - Automação Inteligente
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            Versão v0.1.3
+          </p>
         </div>
       </div>
     </div>

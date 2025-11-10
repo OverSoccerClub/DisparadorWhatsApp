@@ -73,10 +73,23 @@ export async function GET(
       session
     })
   } catch (error) {
-    console.error('Erro ao buscar sessão WAHA:', error)
+    // Não expor detalhes de erro para o cliente
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
+    // Se for erro de autenticação ou servidor não encontrado, retornar erro genérico
+    if (errorMessage.includes('não autenticado') || errorMessage.includes('não encontrado')) {
+      return NextResponse.json({
+        success: false,
+        error: 'Erro ao buscar sessão. Verifique suas permissões.'
+      }, { status: 403 })
+    }
+    
+    // Log apenas no servidor, não expor para o cliente
+    console.error('[SESSION] Erro ao buscar sessão:', errorMessage)
+    
     return NextResponse.json({
       success: false,
-      error: 'Erro ao buscar sessão: ' + (error instanceof Error ? error.message : String(error))
+      error: 'Erro ao buscar sessão.'
     }, { status: 500 })
   }
 }

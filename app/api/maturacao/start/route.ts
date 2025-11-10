@@ -517,26 +517,29 @@ export async function POST(request: NextRequest) {
               body: JSON.stringify(primaryAttempt.body)
             })
             
-            // Verificar resposta
-            if (resp.ok && resp.status === 200) {
+            // Verificar resposta - aceitar 200 (OK) e 201 (Created) como sucesso
+            if (resp.ok && (resp.status === 200 || resp.status === 201)) {
               let responseData: any = null
               try {
                 responseData = await resp.json()
               } catch {
-                // Se não conseguir parsear JSON mas status é 200, considerar sucesso
+                // Se não conseguir parsear JSON mas status é 200/201, considerar sucesso
                 responseData = { sent: true }
               }
               
-              // Verificar se realmente enviou
+              // Verificar se realmente enviou - aceitar qualquer resposta com status 200/201
+              // ou que tenha indicadores de sucesso na resposta
               const isSuccess = responseData?.sent === true ||
                                 responseData?.success === true ||
                                 responseData?.messageId ||
                                 responseData?.id ||
-                                (responseData === null && resp.status === 200) ||
-                                resp.status === 200
+                                responseData?._data?.id || // WAHA retorna _data.id
+                                responseData?.body || // Se tem body, provavelmente enviou
+                                (responseData === null && (resp.status === 200 || resp.status === 201)) ||
+                                resp.status === 200 ||
+                                resp.status === 201 // Status 201 (Created) também é sucesso
               
               if (isSuccess) {
-                console.log(`[SENDTEXT] ✓ Mensagem enviada com sucesso via ${primaryAttempt.url}`)
                 return true
               }
             }
