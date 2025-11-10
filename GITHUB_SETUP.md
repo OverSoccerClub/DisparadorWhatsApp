@@ -2,9 +2,10 @@
 
 ## Status Atual
 - ✅ Repositório Git inicializado
-- ✅ Commit criado com todas as alterações (v0.1.2)
-- ✅ Tag v0.1.2 criada
-- ⚠️ Remote do GitHub ainda não configurado
+- ✅ Remote do GitHub configurado: https://github.com/OverSoccerClub/DisparadorWhatsApp.git
+- ✅ Branch master enviada para o GitHub
+- ✅ Tags v0.1.2 e v0.1.3 enviadas para o GitHub
+- ✅ Backup completo realizado
 
 ## Próximos Passos
 
