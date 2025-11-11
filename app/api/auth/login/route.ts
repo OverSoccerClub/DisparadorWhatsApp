@@ -37,7 +37,9 @@ export async function POST(request: NextRequest) {
               ...options,
               sameSite: 'lax',
               httpOnly: true,
-              secure: process.env.NODE_ENV === 'production'
+              secure: process.env.NODE_ENV === 'production',
+              // Cookie expira em 30 minutos (1800 segundos)
+              maxAge: 30 * 60
             })
           },
           remove(name: string, options: CookieOptions) {
@@ -73,13 +75,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Verificar se o email foi confirmado
+    if (!authData.user.email_confirmed_at) {
+      return NextResponse.json(
+        { success: false, message: 'Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada.' },
+        { status: 401 }
+      )
+    }
+
+    // Priorizar full_name, depois name, depois display_name, e por último email
+    const userName = authData.user.user_metadata?.full_name || 
+                     authData.user.user_metadata?.name || 
+                     authData.user.user_metadata?.display_name || 
+                     authData.user.email?.split('@')[0] || 
+                     'Usuário'
+
     // Criar resposta com os dados do usuário
     return NextResponse.json({
       success: true,
       user: {
         id: authData.user.id,
         email: authData.user.email,
-        name: authData.user.user_metadata?.name || authData.user.email?.split('@')[0],
+        name: userName, // Usar o nome correto do usuário
+        phone: authData.user.user_metadata?.phone,
         is_active: true,
         is_admin: false,
         created_at: authData.user.created_at,

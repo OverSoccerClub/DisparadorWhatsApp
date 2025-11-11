@@ -3,6 +3,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
+import { useInactivityTimeout } from './useInactivityTimeout'
 
 export interface User {
   id: string
@@ -135,6 +136,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     }
   }, [checkAuth])
+
+  // Monitorar inatividade e fazer logout automático após 30 minutos
+  const handleInactivityTimeout = useCallback(async () => {
+    if (user) {
+      // Mostrar notificação antes de fazer logout
+      toast.error('Sessão expirada por inatividade. Faça login novamente.', {
+        duration: 5000,
+        icon: '⏱️'
+      })
+      
+      // Fazer logout
+      await logout()
+    }
+  }, [user, logout])
+
+  // Configurar timeout de inatividade (30 minutos = 30 * 60 * 1000 ms)
+  useInactivityTimeout({
+    timeout: 30 * 60 * 1000, // 30 minutos em milissegundos
+    onTimeout: handleInactivityTimeout,
+    enabled: !!user // Só monitorar se o usuário estiver logado
+  })
 
   // Memoizar o valor do contexto
   const value: AuthContextType = useMemo(() => ({

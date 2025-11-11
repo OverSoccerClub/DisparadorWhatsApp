@@ -11,7 +11,9 @@ import {
   EyeIcon,
   EyeSlashIcon,
   SparklesIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  DevicePhoneMobileIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline'
 
 export default function AuthPage() {
@@ -32,8 +34,12 @@ export default function AuthPage() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    name: ''
+    name: '',
+    phone: ''
   })
+  const [activationCode, setActivationCode] = useState('')
+  const [showActivationModal, setShowActivationModal] = useState(false)
+  const [activating, setActivating] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
@@ -63,6 +69,15 @@ export default function AuthPage() {
     
     if (!isLogin && !formData.name.trim()) {
       newErrors.name = 'Nome é obrigatório'
+    }
+    
+    if (!isLogin && !formData.phone.trim()) {
+      newErrors.phone = 'Telefone é obrigatório'
+    } else if (!isLogin && formData.phone) {
+      const normalizedPhone = formData.phone.replace(/\D/g, '')
+      if (normalizedPhone.length < 10) {
+        newErrors.phone = 'Telefone inválido. Use o formato (XX) XXXXX-XXXX'
+      }
     }
     
     if (!formData.email.trim()) {
@@ -105,7 +120,7 @@ export default function AuthPage() {
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register'
       const body = isLogin 
         ? { email: formData.email, password: formData.password }
-        : { email: formData.email, password: formData.password, name: formData.name }
+        : { email: formData.email, password: formData.password, name: formData.name, phone: formData.phone }
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -122,18 +137,40 @@ export default function AuthPage() {
         // Fechar LoadingOverlay
         setLoadingOverlay(prev => ({ ...prev, open: false }))
         
-        // Mostrar SuccessModal
-        setSuccessModal({
-          open: true,
-          title: isLogin ? 'Login Realizado com Sucesso!' : 'Conta Criada com Sucesso!',
-          message: isLogin 
-            ? 'Bem-vindo de volta! Você será redirecionado para o dashboard.'
-            : 'Sua conta foi criada com sucesso! Você será redirecionado para o dashboard.'
-        })
-        
-        // Garantir que os cookies estejam aplicados e forçar navegação completa
-        await new Promise(resolve => setTimeout(resolve, 500))
-        window.location.replace('/')
+        if (isLogin) {
+          // Login: redirecionar normalmente
+          setSuccessModal({
+            open: true,
+            title: 'Login Realizado com Sucesso!',
+            message: 'Bem-vindo de volta! Você será redirecionado para o dashboard.'
+          })
+          
+          await new Promise(resolve => setTimeout(resolve, 500))
+          window.location.replace('/')
+        } else {
+          // Registro: verificar se precisa ativação
+          if (data.requiresActivation) {
+            // Mostrar modal de ativação
+            setShowActivationModal(true)
+            if (data.activationCode) {
+              setActivationCode(data.activationCode)
+            }
+            setSuccessModal({
+              open: true,
+              title: 'Conta Criada com Sucesso!',
+              message: data.message || 'Verifique seu email para ativar sua conta.'
+            })
+          } else {
+            // Conta já ativada (não deveria acontecer, mas por segurança)
+            setSuccessModal({
+              open: true,
+              title: 'Conta Criada com Sucesso!',
+              message: 'Sua conta foi criada com sucesso! Você será redirecionado para o dashboard.'
+            })
+            await new Promise(resolve => setTimeout(resolve, 500))
+            window.location.replace('/')
+          }
+        }
       } else {
         setLoadingOverlay(prev => ({ ...prev, open: false }))
         
@@ -141,6 +178,8 @@ export default function AuthPage() {
         const errorMessage = data.message || 'Erro ao processar solicitação'
         if (errorMessage.includes('email') || errorMessage.includes('Email')) {
           setErrors({ email: errorMessage })
+        } else if (errorMessage.includes('telefone') || errorMessage.includes('Telefone') || errorMessage.includes('phone')) {
+          setErrors({ phone: errorMessage })
         } else if (errorMessage.includes('senha') || errorMessage.includes('Senha') || errorMessage.includes('password')) {
           setErrors({ password: errorMessage })
         } else {
@@ -236,7 +275,7 @@ export default function AuthPage() {
                 onClick={() => {
                   setIsLogin(!isLogin)
                   setErrors({})
-                  setFormData({ email: '', password: '', name: '' })
+                  setFormData({ email: '', password: '', name: '', phone: '' })
                 }}
                 className="text-white/90 hover:text-white text-sm font-medium transition-colors flex items-center gap-1"
               >
@@ -275,6 +314,61 @@ export default function AuthPage() {
                 {errors.name && (
                   <p className="text-sm text-error-600 dark:text-error-400 flex items-center gap-1">
                     <span className="text-error-500">•</span> {errors.name}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Campo Telefone (apenas no registro) */}
+            {!isLogin && (
+              <div className="space-y-2">
+                <label htmlFor="phone" className="block text-sm font-semibold text-secondary-700 dark:text-secondary-300">
+                  Telefone/WhatsApp
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <DevicePhoneMobileIcon className={`h-5 w-5 ${errors.phone ? 'text-error-500' : 'text-secondary-400 dark:text-secondary-500'}`} />
+                  </div>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    required={!isLogin}
+                    value={formData.phone}
+                    onChange={(e) => {
+                      // Formatar telefone enquanto digita
+                      let value = e.target.value.replace(/\D/g, '')
+                      if (value.length <= 11) {
+                        if (value.length > 10) {
+                          value = value.replace(/^(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3')
+                        } else if (value.length > 6) {
+                          value = value.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3')
+                        } else if (value.length > 2) {
+                          value = value.replace(/^(\d{2})(\d{0,5})/, '($1) $2')
+                        } else {
+                          value = value.replace(/^(\d*)/, '($1')
+                        }
+                        setFormData(prev => ({ ...prev, phone: value }))
+                        if (errors.phone) {
+                          setErrors(prev => {
+                            const newErrors = { ...prev }
+                            delete newErrors.phone
+                            return newErrors
+                          })
+                        }
+                      }
+                    }}
+                    className={`block w-full pl-10 pr-3 py-3 border ${
+                      errors.phone 
+                        ? 'border-error-500 dark:border-error-500' 
+                        : 'border-secondary-300 dark:border-secondary-600'
+                    } bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-lg shadow-sm placeholder-secondary-400 dark:placeholder-secondary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+                    placeholder="(XX) XXXXX-XXXX"
+                  />
+                </div>
+                {errors.phone && (
+                  <p className="text-sm text-error-600 dark:text-error-400 flex items-center gap-1">
+                    <span className="text-error-500">•</span> {errors.phone}
                   </p>
                 )}
               </div>
@@ -393,6 +487,129 @@ export default function AuthPage() {
           </p>
         </div>
       </div>
+
+      {/* Modal de Ativação de Conta */}
+      {showActivationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="text-center mb-6">
+              <div className="mx-auto w-16 h-16 bg-primary-100 dark:bg-primary-900/20 rounded-full flex items-center justify-center mb-4">
+                <CheckCircleIcon className="h-8 w-8 text-primary-600 dark:text-primary-400" />
+              </div>
+              <h2 className="text-2xl font-bold text-secondary-900 dark:text-secondary-100 mb-2">
+                Ativar Conta
+              </h2>
+              <p className="text-sm text-secondary-600 dark:text-secondary-400">
+                Digite o código de ativação enviado para seu email
+              </p>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault()
+                if (!activationCode || activationCode.length !== 6) {
+                  setErrors({ activationCode: 'Código deve ter 6 dígitos' })
+                  return
+                }
+
+                setActivating(true)
+                try {
+                  const response = await fetch('/api/auth/activate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      email: formData.email,
+                      code: activationCode
+                    })
+                  })
+
+                  const data = await response.json()
+
+                  if (data.success) {
+                    setSuccessModal({
+                      open: true,
+                      title: 'Conta Ativada!',
+                      message: 'Sua conta foi ativada com sucesso! Faça login para continuar.'
+                    })
+                    setShowActivationModal(false)
+                    setActivationCode('')
+                    // Redirecionar para login
+                    setIsLogin(true)
+                    setFormData({ email: formData.email, password: '', name: '', phone: '' })
+                  } else {
+                    setErrors({ activationCode: data.message || 'Código inválido' })
+                  }
+                } catch (error) {
+                  setErrors({ activationCode: 'Erro ao ativar conta. Tente novamente.' })
+                } finally {
+                  setActivating(false)
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-sm font-semibold text-secondary-700 dark:text-secondary-300 mb-2">
+                  Código de Ativação
+                </label>
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={activationCode}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '').slice(0, 6)
+                    setActivationCode(value)
+                    if (errors.activationCode) {
+                      setErrors(prev => {
+                        const newErrors = { ...prev }
+                        delete newErrors.activationCode
+                        return newErrors
+                      })
+                    }
+                  }}
+                  className={`block w-full px-4 py-3 text-center text-2xl font-bold tracking-widest border ${
+                    errors.activationCode 
+                      ? 'border-error-500 dark:border-error-500' 
+                      : 'border-secondary-300 dark:border-secondary-600'
+                  } bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+                  placeholder="000000"
+                />
+                {errors.activationCode && (
+                  <p className="text-sm text-error-600 dark:text-error-400 mt-2 text-center">
+                    {errors.activationCode}
+                  </p>
+                )}
+                {process.env.NODE_ENV === 'development' && activationCode && (
+                  <p className="text-xs text-secondary-500 dark:text-secondary-400 mt-2 text-center">
+                    Modo desenvolvimento: código visível no console
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowActivationModal(false)
+                    setActivationCode('')
+                    setErrors({})
+                  }}
+                  className="flex-1 btn btn-secondary btn-md"
+                  disabled={activating}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={activating || activationCode.length !== 6}
+                  className="flex-1 btn btn-primary btn-md"
+                >
+                  {activating ? 'Ativando...' : 'Ativar Conta'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

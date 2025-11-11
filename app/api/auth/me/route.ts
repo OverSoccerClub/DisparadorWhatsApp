@@ -39,14 +39,22 @@ export async function GET(request: NextRequest) {
     }
 
     // Retornar dados do usuário
+    // Priorizar full_name, depois name, depois display_name, e por último email
+    const userName = user.user_metadata?.full_name || 
+                     user.user_metadata?.name || 
+                     user.user_metadata?.display_name || 
+                     user.email?.split('@')[0] || 
+                     'Usuário'
+
     return NextResponse.json({
       success: true,
       user: {
         id: user.id,
         email: user.email,
-        name: user.user_metadata?.name || user.email?.split('@')[0],
+        name: userName,
+        phone: user.user_metadata?.phone,
         avatar_url: user.user_metadata?.avatar_url,
-        is_active: true,
+        is_active: user.email_confirmed_at ? true : false,
         is_admin: false,
         last_login: user.last_sign_in_at,
         created_at: user.created_at,
