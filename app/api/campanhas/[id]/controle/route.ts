@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { CampaignService } from '@/lib/campaignService'
 import { ControleCampanhaRequest } from '@/lib/campaignTypes'
 
@@ -8,6 +10,32 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Autenticação
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            cookieStore.set({ name, value, ...options })
+          },
+          remove(name: string, options: any) {
+            cookieStore.set({ name, value: '', ...options })
+          },
+        },
+      }
+    )
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Usuário não autenticado' }, { status: 401 })
+    }
+
     const { id } = params
     const body: ControleCampanhaRequest = await request.json()
     const { acao } = body
@@ -21,7 +49,7 @@ export async function POST(
     }
 
     // Verificar se campanha existe
-    const { data: campanha, error: campanhaError } = await CampaignService.getCampanhaById(id)
+    const { data: campanha, error: campanhaError } = await CampaignService.getCampanhaById(id, user.id)
     if (campanhaError || !campanha) {
       return NextResponse.json({ error: 'Campanha não encontrada' }, { status: 404 })
     }
@@ -54,7 +82,7 @@ export async function POST(
     }
 
     // Executar controle
-    const sucesso = await CampaignService.controlarCampanha(id, { acao })
+    const sucesso = await CampaignService.controlarCampanha(id, { acao }, user.id)
 
     if (!sucesso) {
       return NextResponse.json({ error: 'Erro ao controlar campanha' }, { status: 500 })
@@ -63,7 +91,7 @@ export async function POST(
     // Se for iniciar, criar lotes se ainda não existirem
     if (acao === 'iniciar' && campanha.progresso.totalLotes === 0) {
       // Buscar clientes baseado nos critérios
-      const clientes = await CampaignService.buscarClientesPorCriterios(campanha.criterios)
+      const clientes = await CampaignService.buscarClientesPorCriterios(campanha.criterios, user.id)
       
       if (clientes.length === 0) {
         return NextResponse.json({ 
@@ -86,7 +114,7 @@ export async function POST(
     }
 
     // Buscar campanha atualizada
-    const { data: campanhaAtualizada } = await CampaignService.getCampanhaById(id)
+    const { data: campanhaAtualizada } = await CampaignService.getCampanhaById(id, user.id)
     return NextResponse.json({ 
       data: campanhaAtualizada,
       message: `Campanha ${acao}da com sucesso`

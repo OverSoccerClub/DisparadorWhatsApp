@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { getUserWithRetry } from '@/lib/utils/rate-limit-handler'
 
 export async function GET() {
   try {
@@ -23,7 +24,27 @@ export async function GET() {
       }
     )
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Usar retry automático para rate limit
+    let authResult
+    try {
+      authResult = await getUserWithRetry(supabase, {
+        maxRetries: 3,
+        baseDelay: 1000,
+        maxDelay: 10000
+      })
+    } catch (error: any) {
+      // Se ainda falhou após retries, retornar erro de rate limit
+      if (error?.status === 429 || error?.code === 'over_request_rate_limit') {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Muitas requisições. Aguarde alguns instantes e tente novamente.',
+          rateLimited: true
+        }, { status: 429 })
+      }
+      return NextResponse.json({ success: false, error: 'Erro de autenticação' }, { status: 401 })
+    }
+    
+    const { data: { user }, error: authError } = authResult
     if (authError || !user) {
       return NextResponse.json({ success: false, error: 'Usuário não autenticado' }, { status: 401 })
     }

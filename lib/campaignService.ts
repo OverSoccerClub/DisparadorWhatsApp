@@ -9,12 +9,13 @@ import {
 } from './campaignTypes'
 
 export class CampaignService {
-  // Buscar todas as campanhas
-  static async getCampanhas(): Promise<Campanha[]> {
+  // Buscar todas as campanhas (filtradas por user_id)
+  static async getCampanhas(userId: string): Promise<Campanha[]> {
     try {
       const { data, error } = await supabase
         .from('campanhas')
         .select('*')
+        .eq('user_id', userId)
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -29,13 +30,14 @@ export class CampaignService {
     }
   }
 
-  // Buscar campanha por ID
-  static async getCampanhaById(id: string): Promise<{ data: Campanha | null, error: any }> {
+  // Buscar campanha por ID (filtrada por user_id)
+  static async getCampanhaById(id: string, userId: string): Promise<{ data: Campanha | null, error: any }> {
     try {
       const { data, error } = await supabase
         .from('campanhas')
         .select('*')
         .eq('id', id)
+        .eq('user_id', userId)
         .single()
 
       if (error) {
@@ -50,8 +52,8 @@ export class CampaignService {
     }
   }
 
-  // Criar nova campanha
-  static async criarCampanha(campanha: CriarCampanhaRequest): Promise<Campanha | null> {
+  // Criar nova campanha (com user_id)
+  static async criarCampanha(campanha: CriarCampanhaRequest, userId: string): Promise<Campanha | null> {
     try {
       const { data, error } = await supabase
         .from('campanhas')
@@ -60,6 +62,7 @@ export class CampaignService {
           mensagem: campanha.mensagem,
           criterios: campanha.criterios,
           configuracao: campanha.configuracao,
+          user_id: userId,
           status: 'rascunho',
           progresso: {
             totalClientes: 0,
@@ -95,13 +98,14 @@ export class CampaignService {
     }
   }
 
-  // Atualizar campanha
-  static async atualizarCampanha(id: string, updates: AtualizarCampanhaRequest): Promise<boolean> {
+  // Atualizar campanha (verificando user_id)
+  static async atualizarCampanha(id: string, updates: AtualizarCampanhaRequest, userId: string): Promise<boolean> {
     try {
       const { error } = await supabase
         .from('campanhas')
         .update(updates)
         .eq('id', id)
+        .eq('user_id', userId)
 
       if (error) {
         console.error('Erro ao atualizar campanha:', error)
@@ -115,13 +119,14 @@ export class CampaignService {
     }
   }
 
-  // Deletar campanha
-  static async deletarCampanha(id: string): Promise<boolean> {
+  // Deletar campanha (verificando user_id)
+  static async deletarCampanha(id: string, userId: string): Promise<boolean> {
     try {
       const { error } = await supabase
         .from('campanhas')
         .delete()
         .eq('id', id)
+        .eq('user_id', userId)
 
       if (error) {
         console.error('Erro ao deletar campanha:', error)
@@ -135,8 +140,8 @@ export class CampaignService {
     }
   }
 
-  // Controle de campanha (iniciar, pausar, retomar, cancelar)
-  static async controlarCampanha(id: string, controle: ControleCampanhaRequest): Promise<boolean> {
+  // Controle de campanha (iniciar, pausar, retomar, cancelar) - verificando user_id
+  static async controlarCampanha(id: string, controle: ControleCampanhaRequest, userId: string): Promise<boolean> {
     try {
       const { acao } = controle
       
@@ -178,6 +183,7 @@ export class CampaignService {
           progresso: progressoUpdate
         })
         .eq('id', id)
+        .eq('user_id', userId)
 
       if (error) {
         console.error('Erro ao controlar campanha:', error)
@@ -191,12 +197,13 @@ export class CampaignService {
     }
   }
 
-  // Buscar clientes baseado nos critérios
-  static async buscarClientesPorCriterios(criterios: any): Promise<any[]> {
+  // Buscar clientes baseado nos critérios (filtrado por user_id)
+  static async buscarClientesPorCriterios(criterios: any, userId: string): Promise<any[]> {
     try {
       let query = supabase
-        .from('disparos_sms')
+        .from('clientes')
         .select('*')
+        .eq('user_id', userId)
         .order('created_at', { ascending: false })
 
       // Aplicar filtros baseado nos critérios
@@ -293,27 +300,28 @@ export class CampaignService {
     }
   }
 
-  // Gerar relatório de campanha
-  static async gerarRelatorio(campanhaId: string): Promise<RelatorioCampanha | null> {
+  // Gerar relatório de campanha (verificando user_id)
+  static async gerarRelatorio(campanhaId: string, userId: string): Promise<RelatorioCampanha | null> {
     try {
-      const campanha = await this.getCampanhaById(campanhaId)
-      if (!campanha) return null
+      const campanha = await this.getCampanhaById(campanhaId, userId)
+      if (!campanha.data) return null
+      const campanhaData = campanha.data
 
       const lotes = await this.getLotesCampanha(campanhaId)
       
       const estatisticas = {
-        totalClientes: campanha.progresso.totalClientes,
-        clientesEnviados: campanha.progresso.clientesEnviados,
-        clientesFalharam: campanha.progresso.clientesFalharam,
-        taxaEntrega: campanha.progresso.totalClientes > 0 
-          ? (campanha.progresso.clientesEnviados / campanha.progresso.totalClientes) * 100 
+        totalClientes: campanhaData.progresso.totalClientes,
+        clientesEnviados: campanhaData.progresso.clientesEnviados,
+        clientesFalharam: campanhaData.progresso.clientesFalharam,
+        taxaEntrega: campanhaData.progresso.totalClientes > 0 
+          ? (campanhaData.progresso.clientesEnviados / campanhaData.progresso.totalClientes) * 100 
           : 0,
         tempoTotal: 0, // TODO: Calcular baseado nos timestamps
         velocidadeMedia: 0 // TODO: Calcular baseado no tempo total
       }
 
       const relatorio: RelatorioCampanha = {
-        campanha,
+        campanha: campanhaData,
         estatisticas,
         lotes: lotes.map(lote => ({
           numero: lote.numero_lote,
@@ -323,7 +331,7 @@ export class CampaignService {
           falhas: 0, // TODO: Calcular baseado nos disparos
           tempoProcessamento: 0 // TODO: Calcular baseado nos timestamps
         })),
-        engajamento: campanha.relatorio.engajamento
+        engajamento: campanhaData.relatorio.engajamento
       }
 
       return relatorio

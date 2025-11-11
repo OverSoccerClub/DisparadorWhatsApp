@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { CampaignService } from '@/lib/campaignService'
 import { AtualizarCampanhaRequest, ControleCampanhaRequest } from '@/lib/campaignTypes'
 
@@ -8,13 +10,39 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Autenticação
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            cookieStore.set({ name, value, ...options })
+          },
+          remove(name: string, options: any) {
+            cookieStore.set({ name, value: '', ...options })
+          },
+        },
+      }
+    )
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Usuário não autenticado' }, { status: 401 })
+    }
+
     const { id } = params
 
     if (!id) {
       return NextResponse.json({ error: 'ID é obrigatório' }, { status: 400 })
     }
 
-    const { data: campanha, error } = await CampaignService.getCampanhaById(id)
+    const { data: campanha, error } = await CampaignService.getCampanhaById(id, user.id)
 
     if (error || !campanha) {
       return NextResponse.json({ error: 'Campanha não encontrada' }, { status: 404 })
@@ -40,8 +68,34 @@ export async function PUT(
       return NextResponse.json({ error: 'ID é obrigatório' }, { status: 400 })
     }
 
+    // Autenticação
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            cookieStore.set({ name, value, ...options })
+          },
+          remove(name: string, options: any) {
+            cookieStore.set({ name, value: '', ...options })
+          },
+        },
+      }
+    )
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Usuário não autenticado' }, { status: 401 })
+    }
+
     // Verificar se campanha existe
-    const { data: campanhaExistente, error: campanhaError } = await CampaignService.getCampanhaById(id)
+    const { data: campanhaExistente, error: campanhaError } = await CampaignService.getCampanhaById(id, user.id)
     if (campanhaError || !campanhaExistente) {
       return NextResponse.json({ error: 'Campanha não encontrada' }, { status: 404 })
     }
@@ -53,14 +107,14 @@ export async function PUT(
       }, { status: 400 })
     }
 
-    const sucesso = await CampaignService.atualizarCampanha(id, body)
+    const sucesso = await CampaignService.atualizarCampanha(id, body, user.id)
 
     if (!sucesso) {
       return NextResponse.json({ error: 'Erro ao atualizar campanha' }, { status: 500 })
     }
 
     // Buscar campanha atualizada
-    const { data: campanhaAtualizada } = await CampaignService.getCampanhaById(id)
+    const { data: campanhaAtualizada } = await CampaignService.getCampanhaById(id, user.id)
     return NextResponse.json({ data: campanhaAtualizada })
   } catch (error) {
     console.error('Erro ao atualizar campanha:', error)
@@ -80,8 +134,34 @@ export async function DELETE(
       return NextResponse.json({ error: 'ID é obrigatório' }, { status: 400 })
     }
 
+    // Autenticação
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            cookieStore.set({ name, value, ...options })
+          },
+          remove(name: string, options: any) {
+            cookieStore.set({ name, value: '', ...options })
+          },
+        },
+      }
+    )
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Usuário não autenticado' }, { status: 401 })
+    }
+
     // Verificar se campanha existe
-    const { data: campanha, error: campanhaError } = await CampaignService.getCampanhaById(id)
+    const { data: campanha, error: campanhaError } = await CampaignService.getCampanhaById(id, user.id)
     if (campanhaError || !campanha) {
       return NextResponse.json({ error: 'Campanha não encontrada' }, { status: 404 })
     }
@@ -93,7 +173,7 @@ export async function DELETE(
       }, { status: 400 })
     }
 
-    const sucesso = await CampaignService.deletarCampanha(id)
+    const sucesso = await CampaignService.deletarCampanha(id, user.id)
 
     if (!sucesso) {
       return NextResponse.json({ error: 'Erro ao deletar campanha' }, { status: 500 })

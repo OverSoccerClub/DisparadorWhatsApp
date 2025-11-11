@@ -7,7 +7,8 @@ import ConfirmModal from './ConfirmModal'
 import { useNotificationContext } from './NotificationProvider'
 
 interface SessionItem {
-  serverId: string
+  type?: 'waha' | 'evolution' // Tipo de sessão/instância
+  serverId?: string // Para WAHA
   serverName: string
   sessionName: string
   status: string
@@ -329,48 +330,131 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
     }
   }
 
+  // Cache simples para evitar múltiplas chamadas
+  const sessionsCacheRef = useRef<{ data: SessionItem[], timestamp: number } | null>(null)
+  const CACHE_DURATION = 30000 // 30 segundos de cache
+  
   useEffect(() => {
     if (!isOpen) return
-    console.log('[FRONTEND] Carregando sessões WAHA...')
-    ;(async () => {
+    
+    // Verificar cache
+    const now = Date.now()
+    if (sessionsCacheRef.current && (now - sessionsCacheRef.current.timestamp) < CACHE_DURATION) {
+      console.log('[FRONTEND] Usando cache de sessões/instâncias')
+      setSessions(sessionsCacheRef.current.data)
+      return
+    }
+    
+    // Debounce: aguardar 300ms antes de fazer requisições
+    const timeoutId = setTimeout(async () => {
+      console.log('[FRONTEND] Carregando sessões WAHA e instâncias Evolution...')
       try {
-        const res = await fetch('/api/waha/sessions/all')
-        console.log('[FRONTEND] Resposta de sessões:', { ok: res.ok, status: res.status })
-        const data = await res.json()
-        console.log('[FRONTEND] Dados de sessões:', {
-          success: data.success,
-          totalSessions: data.sessions?.length || 0
-        })
+        const allSessions: SessionItem[] = []
         
-        if (data.success) {
-          const ws = (data.sessions || []).filter((s: any) => {
-            const statusUpper = String(s.status || '').toUpperCase()
-            const valid = ['WORKING','CONNECTED','READY','OPEN','AUTHENTICATED'].includes(statusUpper)
-            if (!valid) {
-              console.log('[FRONTEND] Sessão filtrada:', s.name, 'Status:', s.status)
+        // Função helper para fazer fetch com retry em caso de rate limit
+        const fetchWithRetry = async (url: string, retries = 3): Promise<Response | null> => {
+          for (let i = 0; i < retries; i++) {
+            try {
+              const res = await fetch(url)
+              
+              // Se for rate limit, aguardar antes de tentar novamente
+              if (res.status === 429) {
+                const waitTime = Math.min(1000 * Math.pow(2, i), 10000) // Backoff exponencial, max 10s
+                console.warn(`[FRONTEND] Rate limit detectado, aguardando ${waitTime}ms antes de tentar novamente...`)
+                await new Promise(resolve => setTimeout(resolve, waitTime))
+                continue
+              }
+              
+              return res
+            } catch (e) {
+              if (i === retries - 1) throw e
+              const waitTime = Math.min(1000 * Math.pow(2, i), 10000)
+              await new Promise(resolve => setTimeout(resolve, waitTime))
             }
-            return valid
-          }).map((s: any) => ({
-            // Normalizar estrutura: usar 'name' da API como 'sessionName'
-            serverId: s.serverId,
-            serverName: s.serverName,
-            sessionName: s.name, // A API retorna 'name', não 'sessionName'
-            status: s.status,
-            phoneNumber: s.phoneNumber || (s.me?.id ? String(s.me.id).replace('@c.us', '') : undefined)
-          }))
-          console.log('[FRONTEND] Sessões válidas normalizadas:', ws.length, ws.map((s: any) => ({
-            sessionName: s.sessionName,
-            serverName: s.serverName,
-            phoneNumber: s.phoneNumber ? 'SIM' : 'NÃO'
-          })))
-          setSessions(ws)
-        } else {
-          console.error('[FRONTEND] Erro ao carregar sessões:', data)
+          }
+          return null
         }
+        
+        // Carregar sessões WAHA
+        try {
+          const wahaRes = await fetchWithRetry('/api/waha/sessions/all')
+          if (wahaRes) {
+            const wahaData = await wahaRes.json()
+            console.log('[FRONTEND] Dados de sessões WAHA:', {
+              success: wahaData.success,
+              totalSessions: wahaData.sessions?.length || 0
+            })
+            
+            if (wahaData.success) {
+              const ws = (wahaData.sessions || []).filter((s: any) => {
+                const statusUpper = String(s.status || '').toUpperCase()
+                const valid = ['WORKING','CONNECTED','READY','OPEN','AUTHENTICATED'].includes(statusUpper)
+                if (!valid) {
+                  console.log('[FRONTEND] Sessão WAHA filtrada:', s.name, 'Status:', s.status)
+                }
+                return valid
+              }).map((s: any) => ({
+                type: 'waha' as const,
+                serverId: s.serverId,
+                serverName: s.serverName,
+                sessionName: s.name,
+                status: s.status,
+                phoneNumber: s.phoneNumber || (s.me?.id ? String(s.me.id).replace('@c.us', '') : undefined)
+              }))
+              allSessions.push(...ws)
+              console.log('[FRONTEND] Sessões WAHA válidas:', ws.length)
+            }
+          }
+        } catch (e) {
+          console.error('[FRONTEND] Erro ao carregar sessões WAHA:', e)
+        }
+        
+        // Carregar instâncias Evolution API (com pequeno delay para evitar chamadas simultâneas)
+        await new Promise(resolve => setTimeout(resolve, 200))
+        
+        try {
+          const evolutionRes = await fetchWithRetry('/api/evolution/instances')
+          if (evolutionRes) {
+            const evolutionData = await evolutionRes.json()
+            console.log('[FRONTEND] Dados de instâncias Evolution:', {
+              success: evolutionData.success,
+              totalInstances: evolutionData.instances?.length || 0
+            })
+            
+            if (evolutionData.success && evolutionData.instances) {
+              const ev = evolutionData.instances
+                .filter((inst: any) => inst.connected === true)
+                .map((inst: any) => ({
+                  type: 'evolution' as const,
+                  serverId: undefined,
+                  serverName: 'Evolution API',
+                  sessionName: inst.instance_name || inst.name,
+                  status: inst.status || 'open',
+                  phoneNumber: inst.userPhone || inst.phoneNumber
+                }))
+              allSessions.push(...ev)
+              console.log('[FRONTEND] Instâncias Evolution válidas:', ev.length)
+            }
+          }
+        } catch (e) {
+          console.error('[FRONTEND] Erro ao carregar instâncias Evolution:', e)
+        }
+        
+        console.log('[FRONTEND] Total de sessões/instâncias carregadas:', allSessions.length)
+        
+        // Atualizar cache
+        sessionsCacheRef.current = {
+          data: allSessions,
+          timestamp: Date.now()
+        }
+        
+        setSessions(allSessions)
       } catch (e) {
-        console.error('[FRONTEND] Exceção ao carregar sessões:', e)
+        console.error('[FRONTEND] Exceção ao carregar sessões/instâncias:', e)
       }
-    })()
+    }, 300) // Debounce de 300ms
+    
+    return () => clearTimeout(timeoutId)
   }, [isOpen])
 
   const toggle = (key: string) => {
@@ -681,7 +765,15 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
     }
   }, [])
 
-  const selectedSessions = sessions.filter(s => selected.includes(`${s.serverId}:${s.sessionName}`))
+  // Função para gerar chave única (mesmo formato da API)
+  const getSessionKey = (s: SessionItem): string => {
+    if (s.type === 'evolution') {
+      return `evolution:${s.sessionName}`
+    }
+    return `waha:${s.serverId}:${s.sessionName}`
+  }
+  
+  const selectedSessions = sessions.filter(s => selected.includes(getSessionKey(s)))
   const pairsCount = Math.floor(selectedSessions.length / 2) + (selectedSessions.length % 2)
   const previewMessages = generatePreview()
   
@@ -763,7 +855,7 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
               {/* Seção de Seleção de Sessões - Coluna Esquerda */}
               <div className="lg:col-span-1">
                 <div className="text-sm font-semibold text-secondary-900 dark:text-secondary-100 flex items-center gap-2 mb-3">
-                <DevicePhoneMobileIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" /> Selecionar Sessões WAHA
+                <DevicePhoneMobileIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" /> Selecionar Sessões/Instâncias
                 {selected.length > 0 && (
                   <span className="ml-2 px-2 py-0.5 bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 rounded-full text-xs font-medium">
                     {selected.length} selecionada{selected.length !== 1 ? 's' : ''}
@@ -772,8 +864,9 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
               </div>
                 <div className="max-h-64 overflow-y-auto border border-secondary-200 dark:border-secondary-700 rounded-lg bg-secondary-50 dark:bg-secondary-900">
                 {sessions.map((s) => {
-                  const key = `${s.serverId}:${s.sessionName}`
+                  const key = getSessionKey(s)
                   const isSelected = selected.includes(key)
+                  const typeLabel = s.type === 'evolution' ? 'Evolution' : 'WAHA'
                   return (
                     <label 
                       key={key} 
@@ -788,6 +881,7 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-sm text-secondary-900 dark:text-secondary-100">{s.serverName}</span>
+                          <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-secondary-200 dark:bg-secondary-700 text-secondary-700 dark:text-secondary-300">{typeLabel}</span>
                           <span className="text-secondary-400 dark:text-secondary-500">•</span>
                           <span className="text-sm text-secondary-700 dark:text-secondary-300">{s.sessionName}</span>
                           {isSelected && <CheckCircleIcon className="h-4 w-4 text-primary-600 dark:text-primary-400" />}
@@ -805,7 +899,7 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                 {sessions.length === 0 && (
                   <div className="px-4 py-8 text-center">
                     <DevicePhoneMobileIcon className="h-10 w-10 text-secondary-300 dark:text-secondary-600 mx-auto mb-2" />
-                    <p className="text-sm text-secondary-600 dark:text-secondary-400">Nenhuma sessão conectada encontrada.</p>
+                    <p className="text-sm text-secondary-600 dark:text-secondary-400">Nenhuma sessão WAHA ou instância Evolution conectada encontrada.</p>
                   </div>
                 )}
               </div>

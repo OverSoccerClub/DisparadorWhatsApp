@@ -115,55 +115,14 @@ export default function WahaSessionsPage() {
   const [restartingSession, setRestartingSession] = useState<string | null>(null)
   const [loadingSessions, setLoadingSessions] = useState(false)
   const restartPollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true)
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState(5000) // 5 segundos padrão
+  const autoRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const unifiedModeRef = useRef(unifiedMode)
+  const selectedServerIdRef = useRef(selectedServerId)
 
-  useEffect(() => {
-    if (!user) return
-
-    let interval: NodeJS.Timeout | null = null
-    
-    const loadInitialData = async () => {
-      await loadServers()
-      if (unifiedMode) {
-        loadAllSessions()
-      } else if (selectedServerId) {
-        loadSessions(selectedServerId)
-      }
-    }
-
-    loadInitialData()
-
-    // Configurar polling apenas após carregar dados iniciais
-    interval = setInterval(() => {
-      if (unifiedMode) {
-        loadAllSessions()
-      } else if (selectedServerId) {
-        loadSessions(selectedServerId)
-      }
-    }, 5000)
-
-    return () => {
-      if (interval) clearInterval(interval)
-    }
-  }, [user, unifiedMode, selectedServerId])
-
-  const loadServers = async () => {
-    try {
-      const response = await fetch('/api/config/waha/list')
-      if (response.ok) {
-        const data = await response.json()
-        const list = (data.servers || []).map((s: any) => ({ id: s.id, name: s.name }))
-        setServers(list)
-        if (list.length && !selectedServerId) {
-          setSelectedServerId(list[0].id)
-          loadSessions(list[0].id)
-        }
-      }
-    } catch (e) {
-      console.error('Erro ao carregar servidores WAHA', e)
-    }
-  }
-
-  const loadSessions = async (serverId: string) => {
+  const loadSessions = useCallback(async (serverId: string) => {
     try {
       const response = await fetch(`/api/waha/sessions?serverId=${encodeURIComponent(serverId)}`)
       const data = await response.json()
@@ -171,6 +130,7 @@ export default function WahaSessionsPage() {
       if (data.success) {
         const newSessions = data.sessions || []
         setSessions(newSessions)
+        setLastUpdate(new Date())
         // Limpar avatares falhados que não existem mais nas novas sessões
         setFailedAvatars(prev => {
           const sessionNames = new Set(newSessions.map((s: WahaSession) => s.name))
@@ -182,9 +142,9 @@ export default function WahaSessionsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const loadAllSessions = async () => {
+  const loadAllSessions = useCallback(async () => {
     // Prevenir múltiplas chamadas simultâneas
     if (loadingSessions) {
       return
@@ -198,6 +158,7 @@ export default function WahaSessionsPage() {
       if (data.success) {
         const newSessions = data.sessions || []
         setSessions(newSessions)
+        setLastUpdate(new Date())
         // Limpar avatares falhados que não existem mais nas novas sessões
         setFailedAvatars(prev => {
           const sessionNames = new Set(newSessions.map((s: WahaSession) => s.name))
@@ -211,6 +172,94 @@ export default function WahaSessionsPage() {
     } finally {
       setLoading(false)
       setLoadingSessions(false)
+    }
+  }, [loadingSessions])
+
+  // Função para atualizar sessões (sem dependências para evitar re-criações)
+  const refreshSessions = useCallback(async () => {
+    if (unifiedMode) {
+      await loadAllSessions()
+    } else if (selectedServerId) {
+      await loadSessions(selectedServerId)
+    }
+  }, [unifiedMode, selectedServerId, loadAllSessions, loadSessions])
+
+  // Carregar dados iniciais
+  useEffect(() => {
+    if (!user) return
+
+    const loadInitialData = async () => {
+      await loadServers()
+      if (unifiedMode) {
+        await loadAllSessions()
+      } else if (selectedServerId) {
+        await loadSessions(selectedServerId)
+      }
+    }
+
+    loadInitialData()
+  }, [user, unifiedMode, selectedServerId, loadAllSessions, loadSessions])
+
+  // Atualizar refs quando os valores mudarem
+  useEffect(() => {
+    unifiedModeRef.current = unifiedMode
+    selectedServerIdRef.current = selectedServerId
+  }, [unifiedMode, selectedServerId])
+
+  // Gerenciar atualização automática - separado e estável
+  useEffect(() => {
+    // Se não há usuário ou auto-refresh está desabilitado, limpar e sair
+    if (!user || !autoRefreshEnabled) {
+      if (autoRefreshIntervalRef.current) {
+        clearInterval(autoRefreshIntervalRef.current)
+        autoRefreshIntervalRef.current = null
+      }
+      return
+    }
+
+    // Limpar qualquer intervalo anterior
+    if (autoRefreshIntervalRef.current) {
+      clearInterval(autoRefreshIntervalRef.current)
+      autoRefreshIntervalRef.current = null
+    }
+
+    // Criar novo intervalo com o tempo configurado
+    const intervalId = setInterval(() => {
+      // Usar refs para acessar os valores atuais sem adicionar dependências
+      if (unifiedModeRef.current) {
+        loadAllSessions()
+      } else if (selectedServerIdRef.current) {
+        loadSessions(selectedServerIdRef.current)
+      }
+    }, autoRefreshInterval)
+
+    // Armazenar o ID do intervalo
+    autoRefreshIntervalRef.current = intervalId
+
+    // Cleanup: limpar intervalo quando o componente desmontar ou dependências mudarem
+    return () => {
+      if (autoRefreshIntervalRef.current) {
+        clearInterval(autoRefreshIntervalRef.current)
+        autoRefreshIntervalRef.current = null
+      }
+    }
+    // Apenas dependências essenciais: intervalo, enabled, user e as funções de load
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRefreshInterval, autoRefreshEnabled, user])
+
+  const loadServers = async () => {
+    try {
+      const response = await fetch('/api/config/waha/list')
+      if (response.ok) {
+        const data = await response.json()
+        const list = (data.servers || []).map((s: any) => ({ id: s.id, name: s.name }))
+        setServers(list)
+        if (list.length && !selectedServerId) {
+          setSelectedServerId(list[0].id)
+        }
+      }
+    } catch (e) {
+      console.error('Erro ao carregar servidores WAHA', e)
     }
   }
 
@@ -812,10 +861,64 @@ export default function WahaSessionsPage() {
                       <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex items-center">
                         Sessões WAHA
                       </h3>
-                      <p className="text-sm text-secondary-600 dark:text-secondary-400 mt-1">
-                        {sessions.length} sessão{sessions.length !== 1 ? 'ões' : ''} configurada{sessions.length !== 1 ? 's' : ''}
-                      </p>
+                      <div className="flex items-center gap-3 mt-1">
+                        <p className="text-sm text-secondary-600 dark:text-secondary-400">
+                          {sessions.length === 1 ? '1 Sessão configurada' : `${sessions.length} Sessões configuradas`}
+                        </p>
+                        {lastUpdate && (
+                          <div className="flex items-center gap-1 text-xs text-secondary-500 dark:text-secondary-400">
+                            <ClockIcon className="h-3 w-3" />
+                            <span>
+                              Atualizado: {lastUpdate.toLocaleTimeString('pt-BR', { 
+                                hour: '2-digit', 
+                                minute: '2-digit',
+                                second: '2-digit'
+                              })}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {/* Controles de Atualização Automática */}
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary-100 dark:bg-secondary-700 rounded-lg">
+                      <label className="flex items-center gap-2 text-sm text-secondary-700 dark:text-secondary-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={autoRefreshEnabled}
+                          onChange={(e) => {
+                            const newValue = e.target.checked
+                            setAutoRefreshEnabled(newValue)
+                            // O useEffect vai lidar com a limpeza do intervalo
+                          }}
+                          className="rounded border-secondary-300 dark:border-secondary-600 text-primary-600 dark:text-primary-400 focus:ring-primary-500 dark:focus:ring-primary-400 bg-white dark:bg-secondary-800"
+                        />
+                        <span className="text-xs">Auto-atualizar</span>
+                      </label>
+                      {autoRefreshEnabled && (
+                        <select
+                          value={autoRefreshInterval}
+                          onChange={(e) => setAutoRefreshInterval(Number(e.target.value))}
+                          className="text-xs px-2 py-1 rounded border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 text-secondary-700 dark:text-secondary-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        >
+                          <option value={3000}>3s</option>
+                          <option value={5000}>5s</option>
+                          <option value={10000}>10s</option>
+                          <option value={15000}>15s</option>
+                          <option value={30000}>30s</option>
+                        </select>
+                      )}
+                    </div>
+                    <button
+                      onClick={refreshSessions}
+                      disabled={loadingSessions}
+                      className="btn btn-secondary btn-sm flex items-center gap-2"
+                      title="Atualizar agora"
+                    >
+                      <ArrowPathIcon className={`h-4 w-4 ${loadingSessions ? 'animate-spin' : ''}`} />
+                      {loadingSessions ? 'Atualizando...' : 'Atualizar'}
+                    </button>
                   </div>
                 </div>
 
@@ -1121,3 +1224,4 @@ export default function WahaSessionsPage() {
     </div>
   )
 }
+

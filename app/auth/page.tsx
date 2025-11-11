@@ -4,6 +4,15 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import LoadingOverlay from '@/components/LoadingOverlay'
 import SuccessModal from '@/components/SuccessModal'
+import { 
+  EnvelopeIcon, 
+  LockClosedIcon, 
+  UserIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  SparklesIcon,
+  ArrowRightIcon
+} from '@heroicons/react/24/outline'
 
 export default function AuthPage() {
   const router = useRouter()
@@ -25,6 +34,8 @@ export default function AuthPage() {
     password: '',
     name: ''
   })
+  const [showPassword, setShowPassword] = useState(false)
+  const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
   // Verificar se componente foi montado no cliente
   useEffect(() => {
@@ -37,11 +48,49 @@ export default function AuthPage() {
       ...prev,
       [name]: value
     }))
+    // Limpar erro do campo quando usuário começar a digitar
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[name]
+        return newErrors
+      })
+    }
+  }
+
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {}
+    
+    if (!isLogin && !formData.name.trim()) {
+      newErrors.name = 'Nome é obrigatório'
+    }
+    
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email é obrigatório'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Email inválido'
+    }
+    
+    if (!formData.password) {
+      newErrors.password = 'Senha é obrigatória'
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Senha deve ter pelo menos 6 caracteres'
+    }
+    
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validar formulário antes de enviar
+    if (!validateForm()) {
+      return
+    }
+    
     setLoading(true)
+    setErrors({})
     
     // Mostrar LoadingOverlay com mensagem específica
     setLoadingOverlay({
@@ -87,11 +136,20 @@ export default function AuthPage() {
         window.location.replace('/')
       } else {
         setLoadingOverlay(prev => ({ ...prev, open: false }))
-        setSuccessModal({
-          open: true,
-          title: 'Erro na Autenticação',
-          message: data.message
-        })
+        
+        // Mapear erros comuns para campos específicos
+        const errorMessage = data.message || 'Erro ao processar solicitação'
+        if (errorMessage.includes('email') || errorMessage.includes('Email')) {
+          setErrors({ email: errorMessage })
+        } else if (errorMessage.includes('senha') || errorMessage.includes('Senha') || errorMessage.includes('password')) {
+          setErrors({ password: errorMessage })
+        } else {
+          setSuccessModal({
+            open: true,
+            title: 'Erro na Autenticação',
+            message: errorMessage
+          })
+        }
       }
     } catch (error) {
       console.error('Erro na autenticação:', error)
@@ -109,7 +167,7 @@ export default function AuthPage() {
   // Evitar problemas de hidratação
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 dark:from-secondary-900 dark:via-secondary-900 dark:to-secondary-800 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div className="flex justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
         </div>
@@ -118,7 +176,13 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 dark:from-secondary-900 dark:via-secondary-900 dark:to-secondary-800 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Background decorativo */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-200 dark:bg-primary-900/20 rounded-full blur-3xl opacity-20"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-secondary-200 dark:bg-secondary-700/20 rounded-full blur-3xl opacity-20"></div>
+      </div>
+
       <LoadingOverlay 
         open={loadingOverlay.open}
         title={loadingOverlay.title}
@@ -131,51 +195,68 @@ export default function AuthPage() {
         onClose={() => setSuccessModal(prev => ({ ...prev, open: false }))}
         autoCloseDelay={5000}
       />
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-          <img 
-            src="/img/logo_dispatcher.png" 
-            alt="WhatsApp Dispatcher" 
-            className="h-16 w-auto"
-          />
-        </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-secondary-100">
-          {isLogin ? 'Faça login em sua conta' : 'Crie sua conta'}
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600 dark:text-secondary-400">
-          {isLogin ? (
-            <>
-              Ou{' '}
-              <button
-                onClick={() => setIsLogin(false)}
-                className="font-medium text-primary-600 hover:text-primary-500"
-              >
-                crie uma nova conta
-              </button>
-            </>
-          ) : (
-            <>
-              Ou{' '}
-              <button
-                onClick={() => setIsLogin(true)}
-                className="font-medium text-primary-600 hover:text-primary-500"
-              >
-                faça login com sua conta existente
-              </button>
-            </>
-          )}
-        </p>
-      </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white dark:bg-secondary-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+      <div className="relative z-10 sm:mx-auto sm:w-full sm:max-w-md">
+        {/* Logo e Header */}
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary-500 rounded-2xl blur-lg opacity-30"></div>
+              <div className="relative bg-white dark:bg-secondary-800 p-4 rounded-2xl shadow-xl">
+                <img 
+                  src="/img/logo_dispatcher.png" 
+                  alt="WhatsApp Dispatcher" 
+                  className="h-12 w-auto"
+                />
+              </div>
+            </div>
+          </div>
+          <h1 className="text-3xl font-bold text-secondary-900 dark:text-secondary-100 mb-2">
+            {isLogin ? 'Bem-vindo de volta!' : 'Crie sua conta'}
+          </h1>
+          <p className="text-sm text-secondary-600 dark:text-secondary-400">
+            {isLogin 
+              ? 'Entre para gerenciar suas automações' 
+              : 'Comece a usar nossa plataforma hoje mesmo'}
+          </p>
+        </div>
+
+        {/* Card do Formulário */}
+        <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-2xl border border-secondary-200 dark:border-secondary-700 overflow-hidden">
+          {/* Indicador de modo (Login/Registro) */}
+          <div className="bg-gradient-to-r from-primary-500 to-primary-600 dark:from-primary-600 dark:to-primary-700 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <SparklesIcon className="h-5 w-5 text-white" />
+                <span className="text-white font-semibold">
+                  {isLogin ? 'Login' : 'Registro'}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setIsLogin(!isLogin)
+                  setErrors({})
+                  setFormData({ email: '', password: '', name: '' })
+                }}
+                className="text-white/90 hover:text-white text-sm font-medium transition-colors flex items-center gap-1"
+              >
+                {isLogin ? 'Criar conta' : 'Já tenho conta'}
+                <ArrowRightIcon className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          <form className="p-6 space-y-5" onSubmit={handleSubmit}>
+            {/* Campo Nome (apenas no registro) */}
             {!isLogin && (
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-secondary-300">
+              <div className="space-y-2">
+                <label htmlFor="name" className="block text-sm font-semibold text-secondary-700 dark:text-secondary-300">
                   Nome completo
                 </label>
-                <div className="mt-1">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <UserIcon className={`h-5 w-5 ${errors.name ? 'text-error-500' : 'text-secondary-400 dark:text-secondary-500'}`} />
+                  </div>
                   <input
                     id="name"
                     name="name"
@@ -183,18 +264,31 @@ export default function AuthPage() {
                     required={!isLogin}
                     value={formData.name}
                     onChange={handleInputChange}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 bg-white dark:bg-secondary-700 text-gray-900 dark:text-secondary-100 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    className={`block w-full pl-10 pr-3 py-3 border ${
+                      errors.name 
+                        ? 'border-error-500 dark:border-error-500' 
+                        : 'border-secondary-300 dark:border-secondary-600'
+                    } bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-lg shadow-sm placeholder-secondary-400 dark:placeholder-secondary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
                     placeholder="Seu nome completo"
                   />
                 </div>
+                {errors.name && (
+                  <p className="text-sm text-error-600 dark:text-error-400 flex items-center gap-1">
+                    <span className="text-error-500">•</span> {errors.name}
+                  </p>
+                )}
               </div>
             )}
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-secondary-300">
+            {/* Campo Email */}
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-semibold text-secondary-700 dark:text-secondary-300">
                 Email
               </label>
-              <div className="mt-1">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <EnvelopeIcon className={`h-5 w-5 ${errors.email ? 'text-error-500' : 'text-secondary-400 dark:text-secondary-500'}`} />
+                </div>
                 <input
                   id="email"
                   name="email"
@@ -203,59 +297,99 @@ export default function AuthPage() {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 bg-white dark:bg-secondary-700 text-gray-900 dark:text-secondary-100 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  className={`block w-full pl-10 pr-3 py-3 border ${
+                    errors.email 
+                      ? 'border-error-500 dark:border-error-500' 
+                      : 'border-secondary-300 dark:border-secondary-600'
+                  } bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-lg shadow-sm placeholder-secondary-400 dark:placeholder-secondary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
                   placeholder="seu@email.com"
                 />
               </div>
+              {errors.email && (
+                <p className="text-sm text-error-600 dark:text-error-400 flex items-center gap-1">
+                  <span className="text-error-500">•</span> {errors.email}
+                </p>
+              )}
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-secondary-300">
+            {/* Campo Senha */}
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-sm font-semibold text-secondary-700 dark:text-secondary-300">
                 Senha
               </label>
-              <div className="mt-1">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <LockClosedIcon className={`h-5 w-5 ${errors.password ? 'text-error-500' : 'text-secondary-400 dark:text-secondary-500'}`} />
+                </div>
                 <input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   autoComplete={isLogin ? "current-password" : "new-password"}
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 bg-white dark:bg-secondary-700 text-gray-900 dark:text-secondary-100 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  className={`block w-full pl-10 pr-10 py-3 border ${
+                    errors.password 
+                      ? 'border-error-500 dark:border-error-500' 
+                      : 'border-secondary-300 dark:border-secondary-600'
+                  } bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-lg shadow-sm placeholder-secondary-400 dark:placeholder-secondary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
                   placeholder="Sua senha"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-secondary-400 dark:text-secondary-500 hover:text-secondary-600 dark:hover:text-secondary-300 transition-colors"
+                >
+                  {showPassword ? (
+                    <EyeSlashIcon className="h-5 w-5" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" />
+                  )}
+                </button>
               </div>
+              {errors.password && (
+                <p className="text-sm text-error-600 dark:text-error-400 flex items-center gap-1">
+                  <span className="text-error-500">•</span> {errors.password}
+                </p>
+              )}
+              {!isLogin && !errors.password && (
+                <p className="text-xs text-secondary-500 dark:text-secondary-400">
+                  Mínimo de 6 caracteres
+                </p>
+              )}
             </div>
 
-            <div>
+            {/* Botão de Submit */}
+            <div className="pt-2">
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-2 py-3.5 px-4 border border-transparent rounded-lg shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 {loading ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    {isLogin ? 'Fazendo login...' : 'Criando conta...'}
-                  </div>
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                    <span>{isLogin ? 'Fazendo login...' : 'Criando conta...'}</span>
+                  </>
                 ) : (
-                  isLogin ? 'Entrar' : 'Criar conta'
+                  <>
+                    <span>{isLogin ? 'Entrar' : 'Criar conta'}</span>
+                    <ArrowRightIcon className="h-5 w-5" />
+                  </>
                 )}
               </button>
             </div>
           </form>
         </div>
-      </div>
 
-      {/* Informações de versão */}
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="text-center">
-          <p className="text-sm text-gray-600 dark:text-secondary-400">
-            WhatsApp Dispatcher - Automação Inteligente
+        {/* Informações de versão */}
+        <div className="mt-6 text-center">
+          <p className="text-sm text-secondary-600 dark:text-secondary-400 font-medium">
+            WhatsApp Dispatcher
           </p>
-          <p className="text-xs text-gray-400 dark:text-secondary-500 mt-1">
-            Versão v0.1.3
+          <p className="text-xs text-secondary-400 dark:text-secondary-500 mt-1">
+            Automação Inteligente • Versão v0.1.5
           </p>
         </div>
       </div>

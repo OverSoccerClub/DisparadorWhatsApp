@@ -1,21 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ConversationAgentService, ConversationContext } from '@/lib/conversation-agent-service'
+import { EvolutionConfigService } from '@/lib/supabase/evolution-config-service'
 
-type WahaSession = {
-  serverId: string
+type Session = {
+  type: 'waha' | 'evolution' // Tipo de sessão/instância
+  serverId?: string // Para WAHA
   serverName: string
-  sessionName: string
+  sessionName: string // Nome da sessão (WAHA) ou instância (Evolution)
   status: string
   apiUrl: string
   apiKey: string
   phoneNumber?: string
   name?: string
+  userId?: string // Para Evolution API
 }
 
 // Store para flags de parada (compartilhado com stop route)
-const stopFlags: Map<string, boolean> = globalThis.__maturationStopFlags || new Map()
-// @ts-ignore
-globalThis.__maturationStopFlags = stopFlags
+declare global {
+  var __maturationStopFlags: Map<string, boolean> | undefined
+}
+const stopFlags: Map<string, boolean> = global.__maturationStopFlags || new Map()
+global.__maturationStopFlags = stopFlags
 
 // Função helper para verificar se deve parar
 function shouldStop(maturationId: string): boolean {
@@ -71,6 +76,7 @@ export async function POST(request: NextRequest) {
         // Buscar servidores WAHA primeiro (para ter apiUrl e apiKey)
         const { createServerClient } = await import('@supabase/ssr')
         const { cookies: getCookies } = await import('next/headers')
+        const { getUserWithRetry } = await import('@/lib/utils/rate-limit-handler')
         const cookieStore = getCookies()
         const supabase = createServerClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -83,7 +89,39 @@ export async function POST(request: NextRequest) {
             },
           }
         )
-        const { data: { user } } = await supabase.auth.getUser()
+        
+        // Usar retry automático para rate limit
+        let authResult
+        try {
+          authResult = await getUserWithRetry(supabase, {
+            maxRetries: 3,
+            baseDelay: 1000,
+            maxDelay: 10000
+          })
+        } catch (error: any) {
+          console.error('[MATURACAO] Erro de autenticação (possível rate limit):', error)
+          if (maturationId) {
+            await fetch(`${origin}/api/maturacao/progress`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                id: maturationId, 
+                update: { 
+                  status: 'error', 
+                  log: { 
+                    type: 'error', 
+                    message: error?.status === 429 
+                      ? 'Muitas requisições. Aguarde alguns instantes.' 
+                      : 'Erro de autenticação'
+                  } 
+                } 
+              })
+            })
+          }
+          return
+        }
+        
+        const user = authResult.data?.user
         if (!user) {
           console.error('[MATURACAO] Usuário não autenticado')
           if (maturationId) {
@@ -102,6 +140,7 @@ export async function POST(request: NextRequest) {
           return
         }
         
+        // Buscar servidores WAHA
         const { data: wahaServers } = await supabase
           .from('waha_servers')
           .select('id, nome, api_url, api_key')
@@ -110,8 +149,18 @@ export async function POST(request: NextRequest) {
         
         console.log('[MATURACAO] Servidores WAHA encontrados:', wahaServers?.length || 0, wahaServers?.map((s: any) => ({ id: s.id, nome: s.nome })))
         
-        if (!wahaServers || wahaServers.length === 0) {
-          console.error('[MATURACAO] Nenhum servidor WAHA encontrado')
+        // Buscar instâncias Evolution API
+        const evolutionResult = await EvolutionConfigService.getUserInstances(user.id)
+        const evolutionInstances = evolutionResult.success && evolutionResult.data ? evolutionResult.data : []
+        console.log('[MATURACAO] Instâncias Evolution encontradas:', evolutionInstances?.length || 0)
+        
+        // Buscar configuração Evolution para obter api_url e api_key
+        const evolutionConfig = await EvolutionConfigService.getConfig(user.id)
+        const evolutionApiUrl = evolutionConfig.success && evolutionConfig.data ? evolutionConfig.data.api_url : null
+        const evolutionApiKey = evolutionConfig.success && evolutionConfig.data ? evolutionConfig.data.global_api_key : null
+        
+        if ((!wahaServers || wahaServers.length === 0) && (!evolutionInstances || evolutionInstances.length === 0)) {
+          console.error('[MATURACAO] Nenhum servidor WAHA ou instância Evolution encontrada')
           if (maturationId) {
             await fetch(`${origin}/api/maturacao/progress`, {
               method: 'POST',
@@ -120,7 +169,7 @@ export async function POST(request: NextRequest) {
                 id: maturationId, 
                 update: { 
                   status: 'error', 
-                  log: { type: 'error', message: 'Nenhum servidor WAHA configurado', direction: 'SYSTEM' } 
+                  log: { type: 'error', message: 'Nenhum servidor WAHA ou instância Evolution configurada', direction: 'SYSTEM' } 
                 } 
               })
             })
@@ -128,8 +177,8 @@ export async function POST(request: NextRequest) {
           return
         }
         
-        // Buscar sessões diretamente dos servidores WAHA (sem usar fetch interno para evitar problema de autenticação)
-        console.log('[MATURACAO] Buscando sessões diretamente dos servidores WAHA...')
+        // Buscar sessões WAHA e instâncias Evolution
+        console.log('[MATURACAO] Buscando sessões WAHA e instâncias Evolution...')
         const fetchWithTimeout = async (url: string, options: any, timeoutMs = 8000) => {
           const controller = new AbortController()
           const timeout = setTimeout(() => controller.abort(), timeoutMs)
@@ -141,29 +190,31 @@ export async function POST(request: NextRequest) {
           }
         }
         
-        const sessionResults = await Promise.allSettled(
+        // Buscar sessões WAHA
+        const wahaSessionResults = await Promise.allSettled(
           (wahaServers || []).map(async (server: any) => {
-            console.log(`[MATURACAO] Buscando sessões no servidor: ${server.nome} (${server.api_url})`)
+            console.log(`[MATURACAO] Buscando sessões WAHA no servidor: ${server.nome} (${server.api_url})`)
             try {
               const res = await fetchWithTimeout(`${server.api_url}/api/sessions`, {
                 method: 'GET',
                 headers: server.api_key ? { 'X-Api-Key': server.api_key, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
               })
               if (!res.ok) {
-                console.log(`[MATURACAO] ❌ Erro no servidor ${server.nome}: ${res.status}`)
+                console.log(`[MATURACAO] ❌ Erro no servidor WAHA ${server.nome}: ${res.status}`)
                 return []
               }
               const list = await res.json()
               if (!Array.isArray(list)) {
-                console.log(`[MATURACAO] ⚠️ Resposta inválida do servidor ${server.nome}`)
+                console.log(`[MATURACAO] ⚠️ Resposta inválida do servidor WAHA ${server.nome}`)
                 return []
               }
-              console.log(`[MATURACAO] ✅ Servidor ${server.nome}: ${list.length} sessões encontradas`)
+              console.log(`[MATURACAO] ✅ Servidor WAHA ${server.nome}: ${list.length} sessões encontradas`)
               
-              // Mapear sessões com informações do servidor
+              // Mapear sessões WAHA com informações do servidor
               return list.map((s: any) => ({
-                name: s.name, // Nome original da API
-                sessionName: s.name, // Garantir que sessionName também está presente
+                type: 'waha' as const,
+                name: s.name,
+                sessionName: s.name,
                 status: s.status,
                 config: s.config,
                 me: s.me,
@@ -174,20 +225,91 @@ export async function POST(request: NextRequest) {
                 phoneNumber: s.me?.id ? s.me.id.replace('@c.us', '') : null,
               }))
             } catch (error) {
-              console.error(`[MATURACAO] Erro ao buscar sessões do servidor ${server.nome}:`, error)
+              console.error(`[MATURACAO] Erro ao buscar sessões WAHA do servidor ${server.nome}:`, error)
               return []
             }
           })
         )
         
-        const all: any[] = sessionResults.flatMap(r => r.status === 'fulfilled' ? r.value : [])
-        console.log('[MATURACAO] Total de sessões encontradas:', all.length)
+        // Buscar instâncias Evolution API (apenas conectadas)
+        const evolutionSessionResults: any[] = []
+        if (evolutionInstances && evolutionInstances.length > 0 && evolutionApiUrl && evolutionApiKey) {
+          console.log('[MATURACAO] Verificando status das instâncias Evolution...')
+          for (const instance of evolutionInstances) {
+            try {
+              // Verificar se a instância está conectada
+              const statusRes = await fetchWithTimeout(`${evolutionApiUrl}/instance/connectionState/${instance.instance_name}`, {
+                method: 'GET',
+                headers: { 'apikey': evolutionApiKey, 'Content-Type': 'application/json' },
+              })
+              
+              if (statusRes.ok) {
+                const statusData = await statusRes.json()
+                const connected = statusData.instance?.state === 'open' || statusData.instance?.connectionStatus === 'open'
+                const status = statusData.instance?.state || statusData.instance?.connectionStatus || 'disconnected'
+                
+                if (connected) {
+                  // Buscar informações do perfil
+                  let phoneNumber: string | undefined = undefined
+                  try {
+                    const profileRes = await fetchWithTimeout(`${evolutionApiUrl}/instance/fetchInstances?instanceName=${instance.instance_name}`, {
+                      method: 'GET',
+                      headers: { 'apikey': evolutionApiKey, 'Content-Type': 'application/json' },
+                    })
+                    
+                    if (profileRes.ok) {
+                      const profileData = await profileRes.json()
+                      const instances = profileData.data || profileData
+                      if (Array.isArray(instances)) {
+                        const instData = instances.find((inst: any) => inst.name === instance.instance_name) || instances[0]
+                        if (instData?.ownerJid) {
+                          phoneNumber = instData.ownerJid.split('@')[0]
+                        }
+                      }
+                    }
+                  } catch (e) {
+                    console.log(`[MATURACAO] Erro ao buscar perfil da instância ${instance.instance_name}:`, e)
+                  }
+                  
+                  evolutionSessionResults.push({
+                    type: 'evolution' as const,
+                    name: instance.instance_name,
+                    sessionName: instance.instance_name,
+                    status: status,
+                    serverId: undefined,
+                    serverName: 'Evolution API',
+                    apiUrl: evolutionApiUrl,
+                    apiKey: evolutionApiKey,
+                    phoneNumber: phoneNumber,
+                    userId: user.id,
+                  })
+                  console.log(`[MATURACAO] ✅ Instância Evolution ${instance.instance_name} adicionada (conectada)`)
+                } else {
+                  console.log(`[MATURACAO] ⚠️ Instância Evolution ${instance.instance_name} não está conectada (status: ${status})`)
+                }
+              }
+            } catch (error) {
+              console.error(`[MATURACAO] Erro ao verificar instância Evolution ${instance.instance_name}:`, error)
+            }
+          }
+        }
+        
+        const allWaha: any[] = wahaSessionResults.flatMap(r => r.status === 'fulfilled' ? r.value : [])
+        const allEvolution: any[] = evolutionSessionResults
+        const all: any[] = [...allWaha, ...allEvolution]
+        console.log('[MATURACAO] Total encontrado:', { waha: allWaha.length, evolution: allEvolution.length, total: all.length })
 
-        // Montar mapa por key "serverId:name" (conforme /api/waha/sessions/all)
-        const keyOf = (s: any) => `${s.serverId}:${s.name || s.sessionName || 'unknown'}`
-        console.log('[MATURACAO] Sessões solicitadas pelo usuário:', sessions)
-        console.log('[MATURACAO] Todas as sessões disponíveis da API:', all.map(s => ({
+        // Montar mapa por key: "waha:serverId:name" ou "evolution:name"
+        const keyOf = (s: any) => {
+          if (s.type === 'evolution') {
+            return `evolution:${s.name || s.sessionName || 'unknown'}`
+          }
+          return `waha:${s.serverId}:${s.name || s.sessionName || 'unknown'}`
+        }
+        console.log('[MATURACAO] Sessões/instâncias solicitadas pelo usuário:', sessions)
+        console.log('[MATURACAO] Todas as sessões/instâncias disponíveis:', all.map(s => ({
           key: keyOf(s),
+          type: s.type,
           name: s.name,
           sessionName: s.sessionName,
           status: s.status,
@@ -195,26 +317,27 @@ export async function POST(request: NextRequest) {
           serverId: s.serverId
         })))
         
-        const selected: WahaSession[] = all
+        const selected: Session[] = all
           .filter(s => {
             const key = keyOf(s)
             const included = sessions.includes(key)
             if (included) {
-              console.log('[MATURACAO] ✓ Sessão selecionada:', {
+              console.log('[MATURACAO] ✓ Sessão/instância selecionada:', {
                 key,
+                type: s.type,
                 name: s.name || s.sessionName,
                 status: s.status,
                 serverName: s.serverName
               })
             } else {
-              console.log('[MATURACAO] ✗ Sessão não está na lista solicitada:', key)
+              console.log('[MATURACAO] ✗ Sessão/instância não está na lista solicitada:', key)
             }
             return included
           })
           .map(s => {
-            // Usar 'name' da API diretamente (já vem do servidor WAHA)
             const sessionName = s.name || s.sessionName
-            console.log('[MATURACAO] Mapeando sessão:', {
+            console.log('[MATURACAO] Mapeando sessão/instância:', {
+              type: s.type,
               rawData: s,
               originalName: s.name,
               originalSessionName: s.sessionName,
@@ -225,18 +348,20 @@ export async function POST(request: NextRequest) {
               hasApiKey: !!s.apiKey
             })
             
-            // apiUrl e apiKey já devem vir do mapeamento anterior
-            const mappedSession = {
+            const mappedSession: Session = {
+              type: s.type,
               serverId: s.serverId,
-              serverName: s.serverName || `Servidor ${s.serverId}`,
-              sessionName: sessionName, // Usar o nome real da sessão
+              serverName: s.serverName || (s.type === 'evolution' ? 'Evolution API' : `Servidor ${s.serverId}`),
+              sessionName: sessionName,
               status: s.status,
-              apiUrl: s.apiUrl, // Já vem do mapeamento anterior
-              apiKey: s.apiKey, // Já vem do mapeamento anterior
-              phoneNumber: s.phoneNumber || (s.me && s.me.id ? String(s.me.id).replace('@c.us', '').split(':')[0] : undefined)
+              apiUrl: s.apiUrl,
+              apiKey: s.apiKey,
+              phoneNumber: s.phoneNumber || (s.me && s.me.id ? String(s.me.id).replace('@c.us', '').split(':')[0] : undefined),
+              userId: s.userId || user.id
             }
             
-            console.log('[MATURACAO] Sessão mapeada final:', {
+            console.log('[MATURACAO] Sessão/instância mapeada final:', {
+              type: mappedSession.type,
               sessionName: mappedSession.sessionName,
               serverName: mappedSession.serverName,
               hasApiUrl: !!mappedSession.apiUrl,
@@ -245,14 +370,16 @@ export async function POST(request: NextRequest) {
             })
             
             if (!mappedSession.apiUrl) {
-              console.error('[MATURACAO] ⚠️ Sessão sem apiUrl!', {
+              console.error('[MATURACAO] ⚠️ Sessão/instância sem apiUrl!', {
+                type: s.type,
                 serverId: s.serverId,
                 rawSession: s
               })
             }
             
             if (!mappedSession.sessionName || mappedSession.sessionName === 'default' || mappedSession.sessionName === 'unknown') {
-              console.error('[MATURACAO] ⚠️ Nome de sessão inválido!', {
+              console.error('[MATURACAO] ⚠️ Nome de sessão/instância inválido!', {
+                type: s.type,
                 sessionName: mappedSession.sessionName,
                 rawData: s
               })
@@ -262,9 +389,13 @@ export async function POST(request: NextRequest) {
           })
           .filter(s => {
             const statusUpper = String(s.status || '').toUpperCase()
-            const valid = ['WORKING','CONNECTED','READY','OPEN','AUTHENTICATED'].includes(statusUpper)
+            // Para WAHA: WORKING, CONNECTED, READY, OPEN, AUTHENTICATED
+            // Para Evolution: open (já filtrado acima, mas garantir)
+            const valid = s.type === 'evolution' 
+              ? statusUpper === 'OPEN' 
+              : ['WORKING','CONNECTED','READY','OPEN','AUTHENTICATED'].includes(statusUpper)
             if (!valid) {
-              console.log('[MATURACAO] Sessão filtrada (status inválido):', s.sessionName, 'Status:', s.status)
+              console.log('[MATURACAO] Sessão/instância filtrada (status inválido):', s.sessionName, 'Status:', s.status, 'Tipo:', s.type)
             }
             return valid
           })
@@ -340,8 +471,12 @@ export async function POST(request: NextRequest) {
         
         console.log('[MATURACAO] ✓ Todas as sessões têm apiUrl e apiKey configurados')
 
-        // Função para verificar status da sessão antes de enviar e reiniciar se necessário
-        const checkSessionStatus = async (sess: WahaSession): Promise<boolean> => {
+        // Função para verificar status da sessão WAHA antes de enviar e reiniciar se necessário
+        const checkSessionStatus = async (sess: Session): Promise<boolean> => {
+          // Apenas para WAHA
+          if (sess.type === 'evolution') {
+            return true // Evolution não precisa verificar status aqui (já foi verificado antes)
+          }
           try {
             const sessionName = sess.sessionName || sess.name || 'default'
             const base = sess.apiUrl.replace(/\/$/, '')
@@ -421,11 +556,11 @@ export async function POST(request: NextRequest) {
           }
         }
         
-        // Utilitário de envio robusto (reutiliza lógica do waha/dispatch/route.ts)
-        const sendText = async (sess: WahaSession, toPhone: string, text: string) => {
+        // Utilitário de envio robusto (suporta WAHA e Evolution API)
+        const sendText = async (sess: Session, toPhone: string, text: string) => {
           // Validações críticas antes de tentar enviar
           if (!sess.apiUrl) {
-            console.error(`[SENDTEXT] ⚠️ Sessão ${sess.sessionName || sess.name || 'unknown'} não tem apiUrl`)
+            console.error(`[SENDTEXT] ⚠️ Sessão/instância ${sess.sessionName || sess.name || 'unknown'} não tem apiUrl`)
             return false
           }
           if (!toPhone || !toPhone.replace(/\D/g, '')) {
@@ -433,14 +568,56 @@ export async function POST(request: NextRequest) {
             return false
           }
           
-          // Verificar status da sessão antes de tentar enviar
-          const isSessionWorking = await checkSessionStatus(sess)
+          // Limpar número do telefone
+          const phoneClean = toPhone.replace(/\D/g, '')
+          
+          // Enviar via Evolution API
+          if (sess.type === 'evolution') {
+            try {
+              console.log(`[SENDTEXT] Enviando via Evolution API: ${sess.sessionName} -> ${phoneClean}`)
+              
+              const base = sess.apiUrl.replace(/\/$/, '')
+              const response = await fetch(`${base}/message/sendText/${sess.sessionName}`, {
+                method: 'POST',
+                headers: {
+                  'apikey': sess.apiKey,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  number: phoneClean,
+                  text: text,
+                  delay: 1200,
+                  linkPreview: true
+                })
+              })
+              
+              const data = await response.json()
+              
+              if (response.ok) {
+                console.log(`[SENDTEXT] ✅ Mensagem enviada via Evolution API`)
+                return true
+              } else {
+                console.error(`[SENDTEXT] ✗ Falha ao enviar via Evolution API:`, {
+                  status: response.status,
+                  error: data.message || data.error
+                })
+                return false
+              }
+            } catch (e) {
+              console.error(`[SENDTEXT] ✗ Exceção ao enviar via Evolution API:`, e)
+              return false
+            }
+          }
+          
+          // Enviar via WAHA (código original)
+          // Verificar status da sessão antes de tentar enviar (apenas para WAHA)
+          const isSessionWorking = await checkSessionStatus(sess as any)
           if (!isSessionWorking) {
-            console.error(`[SENDTEXT] ⚠️ Sessão não está em estado válido para envio`)
+            console.error(`[SENDTEXT] ⚠️ Sessão WAHA não está em estado válido para envio`)
             return false
           }
           
-          // Aceitar "default" como nome válido se não houver outro nome
+          // Aceitar "default" como nome válido se não houver outro nome (apenas para WAHA)
           // Usar sessionName mesmo se for "default" (alguns servidores WAHA usam isso)
           let sessionName = sess.sessionName || sess.name
           
@@ -462,12 +639,11 @@ export async function POST(request: NextRequest) {
             console.log(`[SENDTEXT] Usando "default" como nome da sessão (comum em servidores WAHA)`)
           }
           
-          const phoneClean = toPhone.replace(/\D/g, '')
           const jid = `${phoneClean}@c.us`
           const base = sess.apiUrl.replace(/\/$/, '')
           const session = encodeURIComponent(sessionName)
           
-          console.log(`[SENDTEXT] Tentando enviar mensagem:`, {
+          console.log(`[SENDTEXT] Tentando enviar mensagem via WAHA:`, {
             from: `${sess.serverName || 'Servidor'} • ${sessionName}`,
             to: phoneClean,
             jid: jid,
@@ -815,9 +991,16 @@ export async function POST(request: NextRequest) {
           } catch {}
         }
 
-        // Tentar completar phoneNumber para sessões ausentes
-        const ensurePhoneNumber = async (sess: WahaSession) => {
+        // Tentar completar phoneNumber para sessões ausentes (apenas WAHA, Evolution já vem com número)
+        const ensurePhoneNumber = async (sess: Session) => {
           if (sess.phoneNumber) return sess
+          
+          // Evolution API já vem com número do mapeamento inicial, não precisa buscar
+          if (sess.type === 'evolution') {
+            return sess
+          }
+          
+          // Apenas para WAHA
           const base = sess.apiUrl.replace(/\/$/, '')
           const session = encodeURIComponent(sess.sessionName)
           const headers: Record<string,string> = { 'Content-Type': 'application/json', 'X-Api-Key': sess.apiKey || '' }
@@ -939,8 +1122,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Função para gerar pares únicos entre todas as sessões (todas conversam entre si)
-        const generateConversationPairs = (sessions: WahaSession[]): Array<{from: WahaSession, to: WahaSession}> => {
-          const pairs: Array<{from: WahaSession, to: WahaSession}> = []
+        const generateConversationPairs = (sessions: Session[]): Array<{from: Session, to: Session}> => {
+          const pairs: Array<{from: Session, to: Session}> = []
           
           // Criar matriz de todas as combinações possíveis (sem repetir o mesmo par)
           for (let i = 0; i < sessions.length; i++) {
@@ -1564,7 +1747,7 @@ export async function POST(request: NextRequest) {
                     type: 'error', 
                     message: `Erro: ${errorMessage}`,
                     direction: 'SYSTEM',
-                    details: errorStack.substring(0, 200) // Primeiros 200 chars do stack
+                    details: errorStack ? errorStack.substring(0, 200) : errorMessage // Primeiros 200 chars do stack
                   } 
                 } 
               })

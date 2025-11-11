@@ -1,10 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { InstanceDistributionService } from '@/lib/instance-distribution-service'
 import { generateTypedVariations } from '@/lib/messageVariations'
 
 export async function GET(request: NextRequest) {
   try {
+    // Autenticação
+    const cookieStore = cookies()
+    const supabaseAuth = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            cookieStore.set({ name, value, ...options })
+          },
+          remove(name: string, options: any) {
+            cookieStore.set({ name, value: '', ...options })
+          },
+        },
+      }
+    )
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Usuário não autenticado' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
@@ -15,10 +43,11 @@ export async function GET(request: NextRequest) {
     const dataFim = searchParams.get('data_fim')
     const tipoData = searchParams.get('tipo_data') || 'created_at' // 'created_at' ou 'enviado_em'
 
-    // Consulta básica que funciona
-    const { data, error } = await supabase
+    // Consulta básica que funciona (filtrada por user_id)
+    const { data, error } = await supabaseAuth
       .from('disparos')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 
     if (error) {

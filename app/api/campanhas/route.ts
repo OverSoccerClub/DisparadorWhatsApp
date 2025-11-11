@@ -1,16 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { CampaignService } from '@/lib/campaignService'
 import { CriarCampanhaRequest, AtualizarCampanhaRequest } from '@/lib/campaignTypes'
 
 // GET /api/campanhas - Listar campanhas
 export async function GET(request: NextRequest) {
   try {
+    // Autenticação
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            cookieStore.set({ name, value, ...options })
+          },
+          remove(name: string, options: any) {
+            cookieStore.set({ name, value: '', ...options })
+          },
+        },
+      }
+    )
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Usuário não autenticado' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
     const status = searchParams.get('status') || 'todos'
 
-    const campanhas = await CampaignService.getCampanhas()
+    const campanhas = await CampaignService.getCampanhas(user.id)
 
     // Aplicar filtros
     let campanhasFiltradas = campanhas
@@ -45,6 +73,32 @@ export async function GET(request: NextRequest) {
 // POST /api/campanhas - Criar campanha
 export async function POST(request: NextRequest) {
   try {
+    // Autenticação
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            cookieStore.set({ name, value, ...options })
+          },
+          remove(name: string, options: any) {
+            cookieStore.set({ name, value: '', ...options })
+          },
+        },
+      }
+    )
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Usuário não autenticado' }, { status: 401 })
+    }
+
     const body: CriarCampanhaRequest = await request.json()
     const { nome, mensagem, criterios, configuracao } = body
 
@@ -74,7 +128,7 @@ export async function POST(request: NextRequest) {
       mensagem,
       criterios,
       configuracao
-    })
+    }, user.id)
 
     if (!campanha) {
       return NextResponse.json({ 
