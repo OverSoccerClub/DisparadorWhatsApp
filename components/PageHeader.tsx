@@ -14,7 +14,7 @@ export default function PageHeader({ title, subtitle, icon, actions, className =
   return (
     <div className={`flex items-center justify-between mb-8 ${className}`} suppressHydrationWarning>
       <div>
-        <h1 className="text-2xl font-semibold text-secondary-900 flex items-center" suppressHydrationWarning>
+        <h1 className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100 flex items-center" suppressHydrationWarning>
           {icon ? (
             <span className="h-6 w-6 mr-2 flex-shrink-0" suppressHydrationWarning>
               {icon}
@@ -23,7 +23,7 @@ export default function PageHeader({ title, subtitle, icon, actions, className =
           <span>{title}</span>
         </h1>
         {subtitle ? (
-          <p className="mt-1 text-sm text-secondary-600">
+          <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">
             {subtitle}
           </p>
         ) : null}

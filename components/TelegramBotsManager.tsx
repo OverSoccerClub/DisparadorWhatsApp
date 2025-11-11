@@ -219,7 +219,7 @@ export default function TelegramBotsManager({ userId }: Props) {
   return (
     <div className="card p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium text-secondary-900 flex items-center">
+        <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100 flex items-center">
           <PaperClipIcon className="h-5 w-5 mr-2" />
           Gerenciamento de Bots do Telegram
         </h3>
@@ -235,8 +235,8 @@ export default function TelegramBotsManager({ userId }: Props) {
       {/* Lista de Bots */}
       {bots.length === 0 ? (
         <div className="text-center py-8">
-          <PaperClipIcon className="h-12 w-12 text-secondary-400 mx-auto mb-4" />
-          <p className="text-secondary-600 mb-4">Nenhum bot do Telegram configurado</p>
+          <PaperClipIcon className="h-12 w-12 text-secondary-400 dark:text-secondary-600 mx-auto mb-4" />
+          <p className="text-secondary-600 dark:text-secondary-400 mb-4">Nenhum bot do Telegram configurado</p>
           <button onClick={handleAdd} className="btn btn-primary btn-sm">
             <PlusIcon className="h-4 w-4 mr-2" />
             Adicionar Primeiro Bot
@@ -247,33 +247,33 @@ export default function TelegramBotsManager({ userId }: Props) {
           {bots.map((bot) => (
             <div
               key={bot.id}
-              className="border border-secondary-200 rounded-lg p-4 hover:bg-secondary-50 transition-colors"
+              className="border border-secondary-200 dark:border-secondary-700 rounded-lg p-4 hover:bg-secondary-50 dark:hover:bg-secondary-800 transition-colors"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
-                    <h4 className="text-sm font-semibold text-secondary-900">
+                    <h4 className="text-sm font-semibold text-secondary-900 dark:text-secondary-100">
                       {bot.nome}
                     </h4>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       bot.status === 'active'
-                        ? 'bg-success-100 text-success-700'
-                        : 'bg-secondary-100 text-secondary-700'
+                        ? 'bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-300'
+                        : 'bg-secondary-100 dark:bg-secondary-700 text-secondary-700 dark:text-secondary-300'
                     }`}>
                       {bot.status === 'active' ? 'Ativo' : 'Inativo'}
                     </span>
                     {bot.status_info?.valid !== undefined && (
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         bot.status_info.valid
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-error-100 text-error-700'
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                          : 'bg-error-100 dark:bg-error-900/30 text-error-700 dark:text-error-300'
                       }`}>
                         {bot.status_info.valid ? '✓ Válido' : '✗ Inválido'}
                       </span>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-secondary-600">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-secondary-600 dark:text-secondary-400">
                     {bot.bot_username && (
                       <div className="flex items-center">
                         <span className="font-medium mr-2">Username:</span>
@@ -297,7 +297,7 @@ export default function TelegramBotsManager({ userId }: Props) {
                   </div>
 
                   {bot.status_info?.error && (
-                    <div className="mt-2 text-xs text-error-600 bg-error-50 p-2 rounded">
+                    <div className="mt-2 text-xs text-error-600 dark:text-error-400 bg-error-50 dark:bg-error-900/20 p-2 rounded">
                       {bot.status_info.error}
                     </div>
                   )}
@@ -341,23 +341,42 @@ export default function TelegramBotsManager({ userId }: Props) {
       {showModal && editingBot && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-screen items-center justify-center p-4">
-            <div className="fixed inset-0 bg-black/50" onClick={() => setShowModal(false)} />
-            <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-secondary-900">
-                  {editingBot.id ? 'Editar Bot' : 'Adicionar Bot'}
-                </h3>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="text-secondary-500 hover:text-secondary-700"
-                >
-                  <XMarkIcon className="h-5 w-5" />
-                </button>
+            <div className="fixed inset-0 bg-black/50 dark:bg-black/70" onClick={() => setShowModal(false)} />
+            <div className="relative bg-white dark:bg-secondary-800 rounded-lg shadow-xl max-w-2xl w-full p-6">
+              {/* Header da Modal com Título e Subtítulo */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+                      {editingBot.id ? (
+                        <PencilIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+                      ) : (
+                        <PlusIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-secondary-900 dark:text-secondary-100">
+                        {editingBot.id ? 'Editar Bot' : 'Adicionar Bot'}
+                      </h3>
+                      <p className="text-sm text-secondary-600 dark:text-secondary-400 mt-1">
+                        {editingBot.id 
+                          ? 'Atualize as informações do bot do Telegram'
+                          : 'Configure um novo bot do Telegram para envio de mensagens'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="text-secondary-500 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200 transition-colors"
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                     Nome do Bot *
                   </label>
                   <input
@@ -367,13 +386,13 @@ export default function TelegramBotsManager({ userId }: Props) {
                     placeholder="Ex: Bot Principal, Bot Marketing, etc."
                     className="input w-full"
                   />
-                  <p className="text-xs text-secondary-500 mt-1">
+                  <p className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
                     Nome identificador para o bot (apenas para organização interna)
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                     Token do Bot *
                   </label>
                   <div className="flex items-center space-x-2">
@@ -384,16 +403,16 @@ export default function TelegramBotsManager({ userId }: Props) {
                       placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
                       className="input flex-1"
                     />
-                    <KeyIcon className="h-5 w-5 text-secondary-400" />
+                    <KeyIcon className="h-5 w-5 text-secondary-400 dark:text-secondary-500" />
                   </div>
-                  <p className="text-xs text-secondary-500 mt-1">
+                  <p className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
                     Token do bot obtido do @BotFather no Telegram
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                       Username do Bot (opcional)
                     </label>
                     <input
@@ -403,13 +422,13 @@ export default function TelegramBotsManager({ userId }: Props) {
                       placeholder="Ex: meu_bot"
                       className="input w-full"
                     />
-                    <p className="text-xs text-secondary-500 mt-1">
+                    <p className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
                       Será detectado automaticamente ao testar
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                       Número Remetente (opcional)
                     </label>
                     <input
@@ -419,7 +438,7 @@ export default function TelegramBotsManager({ userId }: Props) {
                       placeholder="Ex: +5511999999999"
                       className="input w-full"
                     />
-                    <p className="text-xs text-secondary-500 mt-1">
+                    <p className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
                       Número/identificador para facilitar seleção nos disparos
                     </p>
                   </div>
@@ -434,28 +453,44 @@ export default function TelegramBotsManager({ userId }: Props) {
                         ...editingBot, 
                         status: e.target.checked ? 'active' : 'inactive' 
                       })}
-                      className="rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+                      className="rounded border-secondary-300 dark:border-secondary-600 text-primary-600 dark:text-primary-400 focus:ring-primary-500 dark:focus:ring-primary-400 bg-white dark:bg-secondary-700"
                     />
-                    <span className="text-sm text-secondary-700">
+                    <span className="text-sm text-secondary-700 dark:text-secondary-300">
                       Bot ativo (disponível para uso em disparos)
                     </span>
                   </label>
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-3 mt-6">
+              <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-secondary-200 dark:border-secondary-700">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="btn btn-secondary btn-sm"
+                  className="btn btn-secondary btn-sm flex items-center gap-2"
                 >
+                  <XMarkIcon className="h-4 w-4" />
                   Cancelar
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={loading || !editingBot.nome || !editingBot.bot_token}
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary btn-sm flex items-center gap-2"
                 >
-                  {loading ? 'Salvando...' : editingBot.id ? 'Atualizar' : 'Criar'}
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Salvando...
+                    </>
+                  ) : editingBot.id ? (
+                    <>
+                      <CheckCircleIcon className="h-4 w-4" />
+                      Atualizar
+                    </>
+                  ) : (
+                    <>
+                      <PlusIcon className="h-4 w-4" />
+                      Criar Bot
+                    </>
+                  )}
                 </button>
               </div>
             </div>

@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Header from '@/components/Header'
 import PageHeader from '@/components/PageHeader'
 import Sidebar from '@/components/Sidebar'
+import MainContent from '@/components/MainContent'
 import { 
   DevicePhoneMobileIcon, 
   PlusIcon,
@@ -12,10 +13,12 @@ import {
   ArrowPathIcon,
   CheckCircleIcon,
   XCircleIcon,
-  ClockIcon
+  ClockIcon,
+  ServerIcon
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/lib/hooks/useAuth'
+import WahaServersManager from '@/components/WahaServersManager'
 
 interface WahaSession {
   name: string
@@ -33,6 +36,62 @@ interface WahaSession {
   avatar?: string
   connectedAt?: string
   phoneNumber?: string
+}
+
+// Componente para badge de status
+function StatusBadge({ status }: { status: string }) {
+  const badges: Record<string, { bg: string; text: string; darkBg: string; darkText: string; icon: React.ComponentType<{ className?: string }>; label: string }> = {
+    'WORKING': {
+      bg: 'bg-success-100',
+      text: 'text-success-800',
+      darkBg: 'dark:bg-success-900/30',
+      darkText: 'dark:text-success-300',
+      icon: CheckCircleIcon,
+      label: 'Conectado'
+    },
+    'SCAN_QR_CODE': {
+      bg: 'bg-warning-100',
+      text: 'text-warning-800',
+      darkBg: 'dark:bg-warning-900/30',
+      darkText: 'dark:text-warning-300',
+      icon: QrCodeIcon,
+      label: 'Aguardando QR'
+    },
+    'STARTING': {
+      bg: 'bg-primary-100',
+      text: 'text-primary-800',
+      darkBg: 'dark:bg-primary-900/30',
+      darkText: 'dark:text-primary-300',
+      icon: ClockIcon,
+      label: 'Iniciando'
+    },
+    'STOPPED': {
+      bg: 'bg-secondary-100',
+      text: 'text-secondary-800',
+      darkBg: 'dark:bg-secondary-700',
+      darkText: 'dark:text-secondary-300',
+      icon: XCircleIcon,
+      label: 'Parado'
+    },
+    'FAILED': {
+      bg: 'bg-error-100',
+      text: 'text-error-800',
+      darkBg: 'dark:bg-error-900/30',
+      darkText: 'dark:text-error-300',
+      icon: XCircleIcon,
+      label: 'Erro'
+    }
+  }
+
+  const badge = badges[status] || badges['STOPPED']
+  const Icon = badge.icon
+
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.bg} ${badge.text} ${badge.darkBg} ${badge.darkText}`}>
+      <Icon className="w-4 h-4 mr-1" />
+      {badge.label}
+    </span>
+  )
 }
 
 export default function WahaSessionsPage() {
@@ -660,55 +719,10 @@ export default function WahaSessionsPage() {
     }
   }
 
-  const getStatusBadge = (status: string) => {
-    const badges = {
-      'WORKING': {
-        bg: 'bg-success-100',
-        text: 'text-success-800',
-        icon: CheckCircleIcon,
-        label: 'Conectado'
-      },
-      'SCAN_QR_CODE': {
-        bg: 'bg-warning-100',
-        text: 'text-warning-800',
-        icon: QrCodeIcon,
-        label: 'Aguardando QR'
-      },
-      'STARTING': {
-        bg: 'bg-primary-100',
-        text: 'text-primary-800',
-        icon: ClockIcon,
-        label: 'Iniciando'
-      },
-      'STOPPED': {
-        bg: 'bg-secondary-100',
-        text: 'text-secondary-800',
-        icon: XCircleIcon,
-        label: 'Parado'
-      },
-      'FAILED': {
-        bg: 'bg-error-100',
-        text: 'text-error-800',
-        icon: XCircleIcon,
-        label: 'Erro'
-      }
-    }
-
-    const badge = badges[status as keyof typeof badges] || badges.STOPPED
-    const Icon = badge.icon
-
-    return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.bg} ${badge.text}`}>
-        <Icon className="w-4 h-4 mr-1" />
-        {badge.label}
-      </span>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-secondary-50">
+    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
       <Sidebar />
-      <div className="md:pl-64">
+      <MainContent>
         <Header />
         
         <main className="py-6" suppressHydrationWarning>
@@ -720,7 +734,7 @@ export default function WahaSessionsPage() {
               icon={<DevicePhoneMobileIcon className="h-6 w-6" />}
               actions={(
                 <>
-                  <label className="flex items-center space-x-2 text-sm text-secondary-700">
+                  <label className="flex items-center space-x-2 text-sm text-secondary-700 dark:text-secondary-300">
                     <input
                       type="checkbox"
                       checked={unifiedMode}
@@ -728,12 +742,13 @@ export default function WahaSessionsPage() {
                         setUnifiedMode(e.target.checked)
                         if (e.target.checked) loadAllSessions()
                       }}
+                      className="rounded border-secondary-300 dark:border-secondary-600 text-primary-600 dark:text-primary-400 focus:ring-primary-500 dark:focus:ring-primary-400 bg-white dark:bg-secondary-700"
                     />
                     <span>Exibir sessões de todos servidores</span>
                   </label>
                   {!unifiedMode ? (
                     <select
-                      className="input"
+                      className="input bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 border-secondary-300 dark:border-secondary-600"
                       value={selectedServerId}
                       onChange={(e) => {
                         setSelectedServerId(e.target.value)
@@ -758,16 +773,21 @@ export default function WahaSessionsPage() {
               )}
             />
 
+            {/* Configuração do WAHA - Múltiplos Servidores */}
+            <div className="mb-6">
+              <WahaServersManager userId={user?.id || ''} />
+            </div>
+
             {/* Lista de Sessões */}
             {loading ? (
               <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 dark:border-primary-400"></div>
               </div>
             ) : sessions.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-lg border border-secondary-200">
-                <DevicePhoneMobileIcon className="mx-auto h-12 w-12 text-secondary-400" />
-                <h3 className="mt-2 text-sm font-medium text-secondary-900">Nenhuma sessão</h3>
-                <p className="mt-1 text-sm text-secondary-500">
+              <div className="text-center py-12 bg-white dark:bg-secondary-800 rounded-lg border border-secondary-200 dark:border-secondary-700">
+                <DevicePhoneMobileIcon className="mx-auto h-12 w-12 text-secondary-400 dark:text-secondary-500" />
+                <h3 className="mt-2 text-sm font-medium text-secondary-900 dark:text-secondary-100">Nenhuma sessão</h3>
+                <p className="mt-1 text-sm text-secondary-500 dark:text-secondary-400">
                   Comece criando uma nova sessão do WhatsApp
                 </p>
                 <div className="mt-6">
@@ -781,121 +801,140 @@ export default function WahaSessionsPage() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-                {sessions.map((session, index) => (
-                  <div key={`session-${session.name}-${session.serverId || 'noserver'}-${index}`} className="bg-white rounded-lg border border-secondary-200 p-6 hover:shadow-lg transition-shadow">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="text-lg font-medium text-secondary-900">{session.name}</h3>
-                        {session.serverName ? (
-                          <p className="text-xs text-secondary-500 mt-1">Servidor: {session.serverName}</p>
-                        ) : null}
-                      </div>
-                      <div>
-                        {getStatusBadge(session.status)}
-                      </div>
+              <div className="card p-6">
+                {/* Cabeçalho da Seção de Sessões */}
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-secondary-200 dark:border-secondary-700">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
+                      <DevicePhoneMobileIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
                     </div>
-
-                    {/* Botão de reiniciar para sessões com erro */}
-                    {(session.status === 'FAILED' || session.status === 'STOPPED') && session.serverId && (
-                      <div className="mt-4">
-                        <button
-                          onClick={() => handleRestartSession(session.name, session.serverId!)}
-                          disabled={restartingSession === session.name}
-                          className="w-full btn btn-primary btn-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Reiniciar sessão"
-                        >
-                          <ArrowPathIcon className={`h-4 w-4 ${restartingSession === session.name ? 'animate-spin' : ''}`} />
-                          {restartingSession === session.name ? 'Reiniciando...' : 'Reiniciar Sessão'}
-                        </button>
-                      </div>
-                    )}
-
-                    {session.me ? (
-                      <div className="mb-4 p-3 bg-secondary-50 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          {/* Foto de Perfil */}
-                          {session.avatar && !failedAvatars.has(session.name) ? (
-                            <div className="w-12 h-12 rounded-full border-2 border-secondary-200 overflow-hidden flex-shrink-0 flex items-center justify-center bg-primary-100">
-                              <img 
-                                src={session.avatar} 
-                                alt="Foto de perfil" 
-                                className="w-full h-full object-cover rounded-full"
-                                onError={() => {
-                                  setFailedAvatars(prev => new Set(prev).add(session.name))
-                                }}
-                              />
-                            </div>
-                          ) : (
-                            <div className="w-12 h-12 rounded-full border-2 border-secondary-200 flex-shrink-0 flex items-center justify-center bg-primary-100">
-                              <DevicePhoneMobileIcon className="h-6 w-6 text-primary-600" />
-                            </div>
-                          )}
-                          
-                          {/* Informações */}
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-secondary-900">
-                              {session.me.pushName || 'Sem nome'}
-                            </p>
-                            {session.phoneNumber ? (
-                              <p className="text-[10px] text-secondary-600 whitespace-nowrap">
-                                {formatPhoneNumber(session.phoneNumber)}
-                              </p>
-                            ) : null}
-                            {session.connectedAt ? (
-                              <p className="text-[9px] text-secondary-500 whitespace-nowrap overflow-hidden text-ellipsis">
-                                Conectado em: {new Date(session.connectedAt).toLocaleString('pt-BR')}
-                              </p>
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
-                    ) : null}
-
-                    <div className="flex space-x-2">
-                      {session.status === 'SCAN_QR_CODE' ? (
-                        <button
-                          onClick={() => handleGetQrCode(session.name, session.serverId)}
-                          className="flex-1 btn btn-primary btn-sm"
-                        >
-                          <QrCodeIcon className="h-4 w-4 mr-1" />
-                          Ver QR
-                        </button>
-                      ) : null}
-                      
-                      {session.status === 'WORKING' ? (
-                        <button
-                          onClick={() => handleRestartSession(session.name, session.serverId)}
-                          className="flex-1 btn btn-secondary btn-sm"
-                        >
-                          <ArrowPathIcon className="h-4 w-4 mr-1" />
-                          Reiniciar
-                        </button>
-                      ) : null}
-
-                      <button
-                        onClick={() => handleDeleteSession(session.name)}
-                        className="btn btn-error btn-sm"
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
+                    <div>
+                      <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex items-center">
+                        Sessões WAHA
+                      </h3>
+                      <p className="text-sm text-secondary-600 dark:text-secondary-400 mt-1">
+                        {sessions.length} sessão{sessions.length !== 1 ? 'ões' : ''} configurada{sessions.length !== 1 ? 's' : ''}
+                      </p>
                     </div>
                   </div>
-                ))}
+                </div>
+
+                {/* Grid de Sessões */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                  {sessions.map((session, index) => (
+                    <div key={`session-${session.name}-${session.serverId || 'noserver'}-${index}`} className="bg-white dark:bg-secondary-800 rounded-lg border border-secondary-200 dark:border-secondary-700 p-6 hover:shadow-lg transition-shadow">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100">{session.name}</h3>
+                          {session.serverName ? (
+                            <p className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">Servidor: {session.serverName}</p>
+                          ) : null}
+                        </div>
+                        <div>
+                          <StatusBadge status={session.status} />
+                        </div>
+                      </div>
+
+                      {/* Botão de reiniciar para sessões com erro */}
+                      {(session.status === 'FAILED' || session.status === 'STOPPED') && session.serverId && (
+                        <div className="mt-4">
+                          <button
+                            onClick={() => handleRestartSession(session.name, session.serverId!)}
+                            disabled={restartingSession === session.name}
+                            className="w-full btn btn-primary btn-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Reiniciar sessão"
+                          >
+                            <ArrowPathIcon className={`h-4 w-4 ${restartingSession === session.name ? 'animate-spin' : ''}`} />
+                            {restartingSession === session.name ? 'Reiniciando...' : 'Reiniciar Sessão'}
+                          </button>
+                        </div>
+                      )}
+
+                      {session.me ? (
+                        <div className="mb-4 p-3 bg-secondary-50 dark:bg-secondary-700/50 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            {/* Foto de Perfil */}
+                            {session.avatar && !failedAvatars.has(session.name) ? (
+                              <div className="w-12 h-12 rounded-full border-2 border-secondary-200 dark:border-secondary-600 overflow-hidden flex-shrink-0 flex items-center justify-center bg-primary-100 dark:bg-primary-900/20">
+                                <img 
+                                  src={session.avatar} 
+                                  alt="Foto de perfil" 
+                                  className="w-full h-full object-cover rounded-full"
+                                  onError={() => {
+                                    setFailedAvatars(prev => new Set(prev).add(session.name))
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-12 h-12 rounded-full border-2 border-secondary-200 dark:border-secondary-600 flex-shrink-0 flex items-center justify-center bg-primary-100 dark:bg-primary-900/20">
+                                <DevicePhoneMobileIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+                              </div>
+                            )}
+                            
+                            {/* Informações */}
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-secondary-900 dark:text-secondary-100">
+                                {session.me.pushName || 'Sem nome'}
+                              </p>
+                              {session.phoneNumber ? (
+                                <p className="text-[10px] text-secondary-600 dark:text-secondary-400 whitespace-nowrap">
+                                  {formatPhoneNumber(session.phoneNumber)}
+                                </p>
+                              ) : null}
+                              {session.connectedAt ? (
+                                <p className="text-[9px] text-secondary-500 dark:text-secondary-400 whitespace-nowrap overflow-hidden text-ellipsis">
+                                  Conectado em: {new Date(session.connectedAt).toLocaleString('pt-BR')}
+                                </p>
+                              ) : null}
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      <div className="flex space-x-2">
+                        {session.status === 'SCAN_QR_CODE' ? (
+                          <button
+                            onClick={() => handleGetQrCode(session.name, session.serverId)}
+                            className="flex-1 btn btn-primary btn-sm"
+                          >
+                            <QrCodeIcon className="h-4 w-4 mr-1" />
+                            Ver QR
+                          </button>
+                        ) : null}
+                        
+                        {session.status === 'WORKING' ? (
+                          <button
+                            onClick={() => handleRestartSession(session.name, session.serverId)}
+                            className="flex-1 btn btn-secondary btn-sm"
+                          >
+                            <ArrowPathIcon className="h-4 w-4 mr-1" />
+                            Reiniciar
+                          </button>
+                        ) : null}
+
+                        <button
+                          onClick={() => handleDeleteSession(session.name)}
+                          className="btn btn-error btn-sm"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
         </main>
-      </div>
 
-      {/* Modal Nova Sessão */}
+        {/* Modal Nova Sessão */}
       {showNewSessionModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h2 className="text-xl font-semibold text-secondary-900 mb-4">Nova Sessão WAHA</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-secondary-800 rounded-lg max-w-md w-full p-6">
+            <h2 className="text-xl font-semibold text-secondary-900 dark:text-secondary-100 mb-4">Nova Sessão WAHA</h2>
             
             <div className="mb-4">
-              <label className="block text-sm font-medium text-secondary-700 mb-2">
+              <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                 Nome da Sessão
               </label>
               <input
@@ -906,7 +945,7 @@ export default function WahaSessionsPage() {
                 className="input"
                 disabled={creatingSession}
               />
-              <p className="mt-1 text-xs text-secondary-500">
+              <p className="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
                 Use apenas letras minúsculas, números e hífens
               </p>
             </div>
@@ -933,11 +972,11 @@ export default function WahaSessionsPage() {
 
       {/* Modal QR Code */}
       {qrCodeData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-lg w-full p-5">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-secondary-800 rounded-lg max-w-lg w-full p-5">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-secondary-900">
+              <h2 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
                 QR Code - {qrCodeData.session}
               </h2>
               <button
@@ -949,7 +988,7 @@ export default function WahaSessionsPage() {
                   setQrAutoRefreshPaused(false)
                   setQrCodeGenerating(false)
                 }}
-                className="text-secondary-400 hover:text-secondary-600"
+                className="text-secondary-400 dark:text-secondary-500 hover:text-secondary-600 dark:hover:text-secondary-300"
               >
                 <XCircleIcon className="h-6 w-6" />
               </button>
@@ -957,7 +996,7 @@ export default function WahaSessionsPage() {
             
             {/* QR Code - Reduzido e centralizado */}
             <div className="mb-4 flex flex-col items-center">
-              <div className="relative bg-white p-3 rounded-lg border-2 border-gray-200 shadow-lg">
+              <div className="relative bg-white dark:bg-secondary-700 p-3 rounded-lg border-2 border-gray-200 dark:border-secondary-600 shadow-lg">
                 <img 
                   key={qrCodeData.qr.substring(0, 100)}
                   src={qrCodeData.qr} 
@@ -989,21 +1028,21 @@ export default function WahaSessionsPage() {
             </div>
 
             {/* Status de conexão - Compacto */}
-            <div className="mb-3 p-2 bg-primary-50 rounded-lg border border-primary-200">
+            <div className="mb-3 p-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
               <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary-600 mr-2"></div>
-                <span className="text-xs text-primary-700">Aguardando conexão automática...</span>
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary-600 dark:border-primary-400 mr-2"></div>
+                <span className="text-xs text-primary-700 dark:text-primary-400">Aguardando conexão automática...</span>
               </div>
             </div>
 
             {/* Cronômetro e Controles - Reorganizado */}
-            <div className="mb-3 p-3 bg-warning-50 rounded-lg border border-warning-200">
+            <div className="mb-3 p-3 bg-warning-50 dark:bg-warning-900/20 rounded-lg border border-warning-200 dark:border-warning-800">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
-                  <ClockIcon className="h-4 w-4 text-warning-700" />
-                  <span className="text-xs font-medium text-warning-800">
+                  <ClockIcon className="h-4 w-4 text-warning-700 dark:text-warning-400" />
+                  <span className="text-xs font-medium text-warning-800 dark:text-warning-400">
                     {qrAutoRefreshPaused ? (
-                      <span className="text-secondary-600">Pausado</span>
+                      <span className="text-secondary-600 dark:text-secondary-400">Pausado</span>
                     ) : (
                       <>Próximo QR em: <span className="font-bold">{qrCountdown}s</span></>
                     )}
@@ -1011,22 +1050,22 @@ export default function WahaSessionsPage() {
                 </div>
                 <button
                   onClick={toggleQrAutoRefresh}
-                  className="text-xs px-2 py-1 rounded bg-warning-100 hover:bg-warning-200 text-warning-800 font-medium transition-colors"
+                  className="text-xs px-2 py-1 rounded bg-warning-100 dark:bg-warning-900/30 hover:bg-warning-200 dark:hover:bg-warning-900/50 text-warning-800 dark:text-warning-300 font-medium transition-colors"
                 >
                   {qrAutoRefreshPaused ? '▶️ Retomar' : '⏸️ Pausar'}
                 </button>
               </div>
-              <p className="text-xs text-warning-600 text-center">
+              <p className="text-xs text-warning-600 dark:text-warning-400 text-center">
                 ⚠️ Escaneie rapidamente! QR codes expiram em ~20-30 segundos
               </p>
             </div>
 
             {/* Instruções - Compactas */}
-            <div className="mb-4 p-2 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-xs text-blue-800 font-medium mb-1 text-center">
+            <div className="mb-4 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-xs text-blue-800 dark:text-blue-200 font-medium mb-1 text-center">
                 📱 Como escanear:
               </p>
-              <ul className="text-xs text-blue-700 space-y-0.5 text-left">
+              <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-0.5 text-left">
                 <li>1. Abra WhatsApp → Configurações → Aparelhos conectados</li>
                 <li>2. Toque em "Conectar um aparelho"</li>
                 <li>3. Aponte a câmera para o QR Code acima</li>
@@ -1078,6 +1117,7 @@ export default function WahaSessionsPage() {
           </div>
         </div>
       )}
+      </MainContent>
     </div>
   )
 }

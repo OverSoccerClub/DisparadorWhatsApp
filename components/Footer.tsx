@@ -10,11 +10,11 @@ export default function Footer({ className = '' }: FooterProps) {
   const buildDate = new Date().toLocaleDateString('pt-BR')
   
   return (
-    <footer className={`bg-secondary-50 border-t border-secondary-200 py-4 ${className}`}>
+    <footer className={`bg-secondary-50 dark:bg-secondary-900 border-t border-secondary-200 dark:border-secondary-700 py-4 ${className}`}>
       <div className="md:pl-64">
         <div className="px-3 md:px-4 lg:px-6">
           <div className="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-2 text-sm text-secondary-600">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-2 text-sm text-secondary-600 dark:text-secondary-400">
               <span>© 2024 WhatsApp Dispatcher</span>
               <span className="hidden sm:inline">•</span>
               <span className="flex items-center">
@@ -25,24 +25,24 @@ export default function Footer({ className = '' }: FooterProps) {
               </span>
             </div>
             
-            <div className="flex flex-wrap items-center justify-center sm:justify-end gap-x-4 gap-y-2 text-sm text-secondary-500">
+            <div className="flex flex-wrap items-center justify-center sm:justify-end gap-x-4 gap-y-2 text-sm text-secondary-500 dark:text-secondary-400">
               <div className="flex items-center space-x-2">
-                <span className="bg-primary-100 text-primary-800 px-2 py-1 rounded-md font-medium">
+                <span className="bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-400 px-2 py-1 rounded-md font-medium">
                   v{currentVersion}
                 </span>
-                <span className="text-secondary-400">•</span>
+                <span className="text-secondary-400 dark:text-secondary-500">•</span>
                 <span>Build {buildDate}</span>
               </div>
               
               <div className="flex items-center space-x-1">
                 <div className="w-2 h-2 bg-success-500 rounded-full animate-pulse"></div>
-                <span className="text-success-600 font-medium">Operacional</span>
+                <span className="text-success-600 dark:text-success-400 font-medium">Operacional</span>
               </div>
             </div>
           </div>
           
-          <div className="mt-3 pt-3 border-t border-secondary-200">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-y-2 text-xs text-secondary-500">
+          <div className="mt-3 pt-3 border-t border-secondary-200 dark:border-secondary-700">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-y-2 text-xs text-secondary-500 dark:text-secondary-400">
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1">
                 <span>Desenvolvido com Next.js 14</span>
                 <span>•</span>

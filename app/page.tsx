@@ -1,13 +1,14 @@
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
 import DashboardReal from '@/components/DashboardReal'
+import MainContent from '@/components/MainContent'
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-secondary-50">
+    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
       <Sidebar />
       
-      <div className="md:pl-64 flex flex-col flex-1">
+      <MainContent>
         <Header />
         
         <main className="flex-1">
@@ -17,7 +18,7 @@ export default function Home() {
             </div>
           </div>
         </main>
-      </div>
+      </MainContent>
     </div>
   )
 }

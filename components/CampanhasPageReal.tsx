@@ -216,17 +216,17 @@ export default function CampanhasPageReal() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'rascunho':
-        return 'bg-secondary-100 text-secondary-800'
+        return 'bg-secondary-100 dark:bg-secondary-700 text-secondary-800 dark:text-secondary-300'
       case 'agendada':
-        return 'bg-warning-100 text-warning-800'
+        return 'bg-warning-100 dark:bg-warning-900/20 text-warning-800 dark:text-warning-400'
       case 'processando':
-        return 'bg-primary-100 text-primary-800'
+        return 'bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-400'
       case 'pausada':
-        return 'bg-error-100 text-error-800'
+        return 'bg-error-100 dark:bg-error-900/20 text-error-800 dark:text-error-400'
       case 'concluida':
-        return 'bg-success-100 text-success-800'
+        return 'bg-success-100 dark:bg-success-900/20 text-success-800 dark:text-success-400'
       default:
-        return 'bg-secondary-100 text-secondary-800'
+        return 'bg-secondary-100 dark:bg-secondary-700 text-secondary-800 dark:text-secondary-300'
     }
   }
 
@@ -277,11 +277,11 @@ export default function CampanhasPageReal() {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-semibold text-secondary-900 flex items-center">
+              <h1 className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100 flex items-center">
                 <MegaphoneIcon className="h-6 w-6 mr-2" />
                 Campanhas
               </h1>
-              <p className="mt-1 text-sm text-secondary-600">
+              <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">
                 Gerencie suas campanhas de disparo em massa
               </p>
             </div>
@@ -305,15 +305,15 @@ export default function CampanhasPageReal() {
 
           {/* Filtros */}
           {mostrarFiltros && (
-            <div className="bg-white rounded-lg border border-secondary-200 p-6 shadow-sm">
+            <div className="bg-white dark:bg-secondary-800 rounded-lg border border-secondary-200 dark:border-secondary-700 p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-secondary-900 flex items-center">
+                <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100 flex items-center">
                   <FunnelIcon className="h-5 w-5 mr-2" />
                   Filtros de Busca
                 </h3>
                 <button
                   onClick={() => setMostrarFiltros(false)}
-                  className="text-secondary-400 hover:text-secondary-600"
+                  className="text-secondary-400 dark:text-secondary-500 hover:text-secondary-600 dark:hover:text-secondary-300"
                 >
                   <XMarkIcon className="h-5 w-5" />
                 </button>
@@ -322,7 +322,7 @@ export default function CampanhasPageReal() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Filtro por Nome */}
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                     <MagnifyingGlassIcon className="h-4 w-4 inline mr-1" />
                     Nome da Campanha
                   </label>
@@ -337,7 +337,7 @@ export default function CampanhasPageReal() {
 
                 {/* Filtro por Status */}
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                     <ChartBarIcon className="h-4 w-4 inline mr-1" />
                     Status
                   </label>
@@ -358,7 +358,7 @@ export default function CampanhasPageReal() {
 
                 {/* Filtro por Data Início */}
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                     <CalendarIcon className="h-4 w-4 inline mr-1" />
                     Data Início
                   </label>
@@ -372,7 +372,7 @@ export default function CampanhasPageReal() {
 
                 {/* Filtro por Data Fim */}
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                     <CalendarIcon className="h-4 w-4 inline mr-1" />
                     Data Fim
                   </label>
@@ -386,8 +386,8 @@ export default function CampanhasPageReal() {
               </div>
 
               {/* Botões de Ação dos Filtros */}
-              <div className="flex items-center justify-between mt-6 pt-4 border-t border-secondary-200">
-                <div className="text-sm text-secondary-500">
+              <div className="flex items-center justify-between mt-6 pt-4 border-t border-secondary-200 dark:border-secondary-700">
+                <div className="text-sm text-secondary-500 dark:text-secondary-400">
                   {campanhasFiltradas.length} de {campanhas.length} campanhas encontradas
                 </div>
                 <div className="flex space-x-3">
@@ -406,10 +406,10 @@ export default function CampanhasPageReal() {
           {/* Lista de Campanhas */}
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {campanhasFiltradas.map((campanha) => (
-          <div key={campanha.id} className="card p-6">
+          <div key={campanha.id} className="card p-6 dark:bg-secondary-800 dark:border-secondary-700">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-secondary-900 truncate">
+              <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100 truncate">
                 {campanha.nome}
               </h3>
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(campanha.progresso?.status || 'rascunho')}`}>
@@ -499,14 +499,14 @@ export default function CampanhasPageReal() {
             {/* Estatísticas */}
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <span className="text-xs text-secondary-500">Clientes</span>
-                <div className="text-sm font-medium text-secondary-900">
+                <span className="text-xs text-secondary-500 dark:text-secondary-400">Clientes</span>
+                <div className="text-sm font-medium text-secondary-900 dark:text-secondary-100">
                   {(campanha.progresso?.totalClientes || 0).toLocaleString()}
                 </div>
               </div>
               <div>
-                <span className="text-xs text-secondary-500">Enviados</span>
-                <div className="text-sm font-medium text-success-600">
+                <span className="text-xs text-secondary-500 dark:text-secondary-400">Enviados</span>
+                <div className="text-sm font-medium text-success-600 dark:text-success-400">
                   {(campanha.progresso?.clientesEnviados || 0).toLocaleString()}
                 </div>
               </div>
@@ -515,13 +515,13 @@ export default function CampanhasPageReal() {
             {/* Progress Bar */}
             {campanha.progresso?.status === 'processando' && (
               <div className="mb-4">
-                <div className="flex justify-between text-xs text-secondary-600 mb-1">
+                <div className="flex justify-between text-xs text-secondary-600 dark:text-secondary-400 mb-1">
                   <span>Progresso</span>
                   <span>{Math.round(((campanha.progresso?.lotesProcessados || 0) / (campanha.progresso?.totalLotes || 1)) * 100)}%</span>
                 </div>
-                <div className="w-full bg-secondary-200 rounded-full h-2">
+                <div className="w-full bg-secondary-200 dark:bg-secondary-700 rounded-full h-2">
                   <div 
-                    className="bg-primary-600 h-2 rounded-full transition-all duration-300"
+                    className="bg-primary-600 dark:bg-primary-500 h-2 rounded-full transition-all duration-300"
                     style={{ 
                       width: `${((campanha.progresso?.lotesProcessados || 0) / (campanha.progresso?.totalLotes || 1)) * 100}%` 
                     }}
@@ -531,7 +531,7 @@ export default function CampanhasPageReal() {
             )}
 
             {/* Data */}
-            <div className="text-xs text-secondary-500 mb-4">
+            <div className="text-xs text-secondary-500 dark:text-secondary-400 mb-4">
               Criada em {formatDate(campanha.created_at)}
             </div>
 
@@ -594,15 +594,15 @@ export default function CampanhasPageReal() {
 
           {campanhasFiltradas.length === 0 && (
             <div className="text-center py-12">
-              <div className="text-secondary-400 mb-4">
+              <div className="text-secondary-400 dark:text-secondary-500 mb-4">
                 <MegaphoneIcon className="h-12 w-12 mx-auto" />
               </div>
               {campanhas.length === 0 ? (
                 <>
-                  <h3 className="text-lg font-medium text-secondary-900 mb-2">
+                  <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100 mb-2">
                     Nenhuma campanha criada
                   </h3>
-                  <p className="text-secondary-500 mb-4">
+                  <p className="text-secondary-500 dark:text-secondary-400 mb-4">
                     Comece criando sua primeira campanha de disparo
                   </p>
                   <button
@@ -615,10 +615,10 @@ export default function CampanhasPageReal() {
                 </>
               ) : (
                 <>
-                  <h3 className="text-lg font-medium text-secondary-900 mb-2">
+                  <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100 mb-2">
                     Nenhuma campanha encontrada
                   </h3>
-                  <p className="text-secondary-500 mb-4">
+                  <p className="text-secondary-500 dark:text-secondary-400 mb-4">
                     Tente ajustar os filtros de busca ou limpar os filtros
                   </p>
                   <button

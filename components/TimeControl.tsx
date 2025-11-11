@@ -188,20 +188,20 @@ export default function TimeControl({
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
+    <div className="bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-700 rounded-lg p-4 space-y-4">
       <div className="flex items-center gap-2 mb-4">
-        <ClockIcon className="h-5 w-5 text-blue-600" />
-        <h3 className="text-lg font-semibold text-gray-900">Controle de Tempo</h3>
+        <ClockIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-secondary-100">Controle de Tempo</h3>
       </div>
 
       {/* Delay entre mensagens */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700 dark:text-secondary-300">
           Delay entre mensagens
         </label>
         <div className="flex gap-2">
           <div className="flex-1">
-            <label className="block text-xs text-gray-500 mb-1">Minutos</label>
+            <label className="block text-xs text-gray-500 dark:text-secondary-400 mb-1">Minutos</label>
             <input
               type="number"
               min="0"
@@ -209,11 +209,11 @@ export default function TimeControl({
               value={config.delayMinutes}
               onChange={(e) => handleDelayChange('delayMinutes', parseInt(e.target.value) || 0)}
               disabled={disabled}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-secondary-700 bg-white dark:bg-secondary-900 text-gray-900 dark:text-secondary-100"
             />
           </div>
           <div className="flex-1">
-            <label className="block text-xs text-gray-500 mb-1">Segundos</label>
+            <label className="block text-xs text-gray-500 dark:text-secondary-400 mb-1">Segundos</label>
             <input
               type="number"
               min="0"
@@ -221,7 +221,7 @@ export default function TimeControl({
               value={config.delaySeconds}
               onChange={(e) => handleDelayChange('delaySeconds', parseInt(e.target.value) || 0)}
               disabled={disabled}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-secondary-700 bg-white dark:bg-secondary-900 text-gray-900 dark:text-secondary-100"
             />
           </div>
         </div>
@@ -229,12 +229,12 @@ export default function TimeControl({
 
       {/* Tempo total disponível */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700 dark:text-secondary-300">
           Tempo total disponível
         </label>
         <div className="flex gap-2">
           <div className="flex-1">
-            <label className="block text-xs text-gray-500 mb-1">Horas</label>
+            <label className="block text-xs text-gray-500 dark:text-secondary-400 mb-1">Horas</label>
             <input
               type="number"
               min="0"
@@ -242,11 +242,11 @@ export default function TimeControl({
               value={config.totalTimeHours}
               onChange={(e) => handleTotalTimeChange('totalTimeHours', parseInt(e.target.value) || 0)}
               disabled={disabled}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-secondary-700 bg-white dark:bg-secondary-900 text-gray-900 dark:text-secondary-100"
             />
           </div>
           <div className="flex-1">
-            <label className="block text-xs text-gray-500 mb-1">Minutos</label>
+            <label className="block text-xs text-gray-500 dark:text-secondary-400 mb-1">Minutos</label>
             <input
               type="number"
               min="0"
@@ -254,7 +254,7 @@ export default function TimeControl({
               value={config.totalTimeMinutes}
               onChange={(e) => handleTotalTimeChange('totalTimeMinutes', parseInt(e.target.value) || 0)}
               disabled={disabled}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-secondary-700 bg-white dark:bg-secondary-900 text-gray-900 dark:text-secondary-100"
             />
           </div>
         </div>
@@ -265,7 +265,7 @@ export default function TimeControl({
         <button
           onClick={handleAutoCalculate}
           disabled={disabled || totalDestinatarios === 0 || totalInstancias === 0}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-secondary-600 disabled:cursor-not-allowed transition-colors"
         >
           <CalculatorIcon className="h-4 w-4" />
           Calcular Delay Ideal
@@ -274,28 +274,28 @@ export default function TimeControl({
 
       {/* Resultados dos cálculos */}
       {totalDestinatarios > 0 && totalInstancias > 0 && (
-        <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+        <div className="bg-gray-50 dark:bg-secondary-900 rounded-lg p-4 space-y-2">
           <div className="flex items-center gap-2 mb-3">
-            <CalculatorIcon className="h-4 w-4 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">Cálculos</span>
+            <CalculatorIcon className="h-4 w-4 text-gray-600 dark:text-secondary-400" />
+            <span className="text-sm font-medium text-gray-700 dark:text-secondary-300">Cálculos</span>
           </div>
           
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-gray-600">Delay total:</span>
-              <span className="ml-2 font-medium">{calculations.totalDelaySeconds}s</span>
+              <span className="text-gray-600 dark:text-secondary-400">Delay total:</span>
+              <span className="ml-2 font-medium text-gray-900 dark:text-secondary-100">{calculations.totalDelaySeconds}s</span>
             </div>
             <div>
-              <span className="text-gray-600">Tempo estimado:</span>
-              <span className="ml-2 font-medium">{calculations.estimatedTime}</span>
+              <span className="text-gray-600 dark:text-secondary-400">Tempo estimado:</span>
+              <span className="ml-2 font-medium text-gray-900 dark:text-secondary-100">{calculations.estimatedTime}</span>
             </div>
             <div>
-              <span className="text-gray-600">Mensagens por instância:</span>
-              <span className="ml-2 font-medium">{calculations.messagesPerInstance}</span>
+              <span className="text-gray-600 dark:text-secondary-400">Mensagens por instância:</span>
+              <span className="ml-2 font-medium text-gray-900 dark:text-secondary-100">{calculations.messagesPerInstance}</span>
             </div>
             <div>
-              <span className="text-gray-600">Tempo disponível:</span>
-              <span className="ml-2 font-medium">
+              <span className="text-gray-600 dark:text-secondary-400">Tempo disponível:</span>
+              <span className="ml-2 font-medium text-gray-900 dark:text-secondary-100">
                 {Math.floor(calculations.totalTimeSeconds / 3600)}h {Math.floor((calculations.totalTimeSeconds % 3600) / 60)}m
               </span>
             </div>
@@ -305,8 +305,8 @@ export default function TimeControl({
           {calculations.warningMessage && (
             <div className={`mt-3 p-3 rounded-md flex items-center gap-2 ${
               calculations.isFeasible 
-                ? 'bg-yellow-50 text-yellow-800 border border-yellow-200' 
-                : 'bg-red-50 text-red-800 border border-red-200'
+                ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800' 
+                : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-400 border border-red-200 dark:border-red-800'
             }`}>
               <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0" />
               <span className="text-sm">{calculations.warningMessage}</span>
@@ -317,11 +317,11 @@ export default function TimeControl({
 
       {/* Sugestão Segura */}
       {totalDestinatarios > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <ClockIcon className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-800">Sugestão segura{messageType ? ` (${messageType})` : ''}</span>
+              <ClockIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <span className="text-sm font-medium text-blue-800 dark:text-blue-300">Sugestão segura{messageType ? ` (${messageType})` : ''}</span>
             </div>
             <button
               type="button"
@@ -337,26 +337,26 @@ export default function TimeControl({
                   autoCalculate: true
                 }))
               }}
-              className="px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400"
+              className="px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-secondary-600 transition-colors"
             >
               Aplicar sugestão
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-4 text-sm text-blue-900">
+          <div className="grid grid-cols-2 gap-4 text-sm text-blue-900 dark:text-blue-300">
             {(() => { const s = getSuggestedConfig(); return (
               <>
                 <div>
-                  <span className="text-blue-800">Delay recomendado:</span>
+                  <span className="text-blue-800 dark:text-blue-300">Delay recomendado:</span>
                   <span className="ml-2 font-semibold">{s.delayMinutes}m {s.delaySeconds}s</span>
                 </div>
                 <div>
-                  <span className="text-blue-800">Tempo total estimado:</span>
+                  <span className="text-blue-800 dark:text-blue-300">Tempo total estimado:</span>
                   <span className="ml-2 font-semibold">{s.totalTimeHours}h {s.totalTimeMinutes}m</span>
                 </div>
               </>
             )})()}
           </div>
-          <p className="mt-2 text-xs text-blue-700">
+          <p className="mt-2 text-xs text-blue-700 dark:text-blue-400">
             A sugestão considera o tipo de mensagem, o número de destinatários e as instâncias conectadas para mitigar riscos de spam.
           </p>
         </div>

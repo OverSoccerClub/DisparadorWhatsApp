@@ -1,9 +1,9 @@
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
 import MainContent from '@/components/MainContent'
-import ConfiguracoesPage from '@/components/ConfiguracoesPage'
+import EvolutionApiPage from '@/components/EvolutionApiPage'
 
-export default function Configuracoes() {
+export default function EvolutionApi() {
   return (
     <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
       <Sidebar />
@@ -14,7 +14,7 @@ export default function Configuracoes() {
         <main className="flex-1">
           <div className="py-6">
             <div className="px-3 md:px-4 lg:px-6">
-              <ConfiguracoesPage />
+              <EvolutionApiPage />
             </div>
           </div>
         </main>
@@ -22,3 +22,4 @@ export default function Configuracoes() {
     </div>
   )
 }
+

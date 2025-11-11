@@ -306,13 +306,13 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
   // Obter cor do status
   const getStatusColor = (status: string): string => {
     switch (status) {
-      case 'agendado': return 'bg-blue-100 text-blue-700'
-      case 'executando': return 'bg-green-100 text-green-700'
-      case 'concluido': return 'bg-success-100 text-success-700'
-      case 'pausado': return 'bg-yellow-100 text-yellow-700'
-      case 'cancelado': return 'bg-gray-100 text-gray-700'
-      case 'erro': return 'bg-red-100 text-red-700'
-      default: return 'bg-secondary-100 text-secondary-700'
+      case 'agendado': return 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
+      case 'executando': return 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+      case 'concluido': return 'bg-success-100 dark:bg-success-900/20 text-success-700 dark:text-success-400'
+      case 'pausado': return 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400'
+      case 'cancelado': return 'bg-gray-100 dark:bg-secondary-700 text-gray-700 dark:text-secondary-300'
+      case 'erro': return 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+      default: return 'bg-secondary-100 dark:bg-secondary-700 text-secondary-700 dark:text-secondary-300'
     }
   }
   
@@ -718,82 +718,82 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
     const displaySeconds = totalSeconds % 60
 
     if (timeRemaining <= 0) {
-      return (
-        <div className="flex items-center gap-1 text-xs text-secondary-500">
-          <ClockIcon className="h-4 w-4" />
-          <span>Enviando...</span>
-        </div>
-      )
-    }
-
-    // Se for menos de 1 minuto, mostrar apenas segundos (ex: "43s")
-    // Se for 1 minuto ou mais, mostrar minutos e segundos (ex: "1m 30s")
-    const displayText = minutes > 0 
-      ? `${minutes}m ${displaySeconds}s`
-      : `${displaySeconds}s`
-
     return (
-      <div className="flex items-center gap-1 text-xs text-primary-600 font-medium">
+      <div className="flex items-center gap-1 text-xs text-secondary-500 dark:text-secondary-400">
         <ClockIcon className="h-4 w-4" />
-        <span>{displayText}</span>
+        <span>Enviando...</span>
       </div>
     )
   }
 
+  // Se for menos de 1 minuto, mostrar apenas segundos (ex: "43s")
+  // Se for 1 minuto ou mais, mostrar minutos e segundos (ex: "1m 30s")
+  const displayText = minutes > 0 
+    ? `${minutes}m ${displaySeconds}s`
+    : `${displaySeconds}s`
+
+  return (
+    <div className="flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400 font-medium">
+      <ClockIcon className="h-4 w-4" />
+      <span>{displayText}</span>
+    </div>
+  )
+  }
+
   return (
     <div className="fixed inset-0 z-[10500]">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50 dark:bg-black/70" onClick={onClose} />
       <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="w-full max-w-7xl bg-white rounded-lg shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
-          <div className="px-5 py-4 border-b border-secondary-200 flex items-center justify-between bg-gradient-to-r from-primary-50 to-primary-100">
+        <div className="w-full max-w-7xl bg-white dark:bg-secondary-800 rounded-lg shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+          <div className="px-5 py-4 border-b border-secondary-200 dark:border-secondary-700 flex items-center justify-between bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-900/10">
             <div className="flex items-center gap-2">
-              <SparklesIcon className="h-6 w-6 text-primary-600" />
+              <SparklesIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
               <div>
-                <h3 className="text-base font-bold text-secondary-900">Maturação de Chips</h3>
-                <p className="text-xs text-secondary-600">Simulação de conversas humanizadas entre sessões</p>
+                <h3 className="text-base font-bold text-secondary-900 dark:text-secondary-100">Maturação de Chips</h3>
+                <p className="text-xs text-secondary-600 dark:text-secondary-400">Simulação de conversas humanizadas entre sessões</p>
               </div>
             </div>
-            <button onClick={onClose} className="text-secondary-500 hover:text-secondary-700">
+            <button onClick={onClose} className="p-2 text-secondary-500 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 rounded-lg transition-colors">
               <XMarkIcon className="h-5 w-5" />
             </button>
           </div>
-          <div className="p-6 space-y-6 overflow-y-auto flex-1">
+          <div className="p-6 space-y-6 overflow-y-auto flex-1 bg-white dark:bg-secondary-800">
             {/* Grid Principal: Seleção de Sessões e Configurações */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Seção de Seleção de Sessões - Coluna Esquerda */}
               <div className="lg:col-span-1">
-                <div className="text-sm font-semibold text-secondary-900 flex items-center gap-2 mb-3">
-                <DevicePhoneMobileIcon className="h-5 w-5 text-primary-600" /> Selecionar Sessões WAHA
+                <div className="text-sm font-semibold text-secondary-900 dark:text-secondary-100 flex items-center gap-2 mb-3">
+                <DevicePhoneMobileIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" /> Selecionar Sessões WAHA
                 {selected.length > 0 && (
-                  <span className="ml-2 px-2 py-0.5 bg-primary-100 text-primary-700 rounded-full text-xs font-medium">
+                  <span className="ml-2 px-2 py-0.5 bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 rounded-full text-xs font-medium">
                     {selected.length} selecionada{selected.length !== 1 ? 's' : ''}
                   </span>
                 )}
               </div>
-                <div className="max-h-64 overflow-y-auto border border-secondary-200 rounded-lg bg-secondary-50">
+                <div className="max-h-64 overflow-y-auto border border-secondary-200 dark:border-secondary-700 rounded-lg bg-secondary-50 dark:bg-secondary-900">
                 {sessions.map((s) => {
                   const key = `${s.serverId}:${s.sessionName}`
                   const isSelected = selected.includes(key)
                   return (
                     <label 
                       key={key} 
-                      className={`flex items-center gap-3 px-4 py-3 border-b last:border-b-0 cursor-pointer hover:bg-white transition-colors ${isSelected ? 'bg-primary-50 border-l-4 border-l-primary-500' : ''}`}
+                      className={`flex items-center gap-3 px-4 py-3 border-b dark:border-secondary-700 last:border-b-0 cursor-pointer hover:bg-white dark:hover:bg-secondary-800 transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/20 border-l-4 border-l-primary-500 dark:border-l-primary-400' : ''}`}
                     >
                       <input 
                         type="checkbox" 
                         checked={isSelected} 
                         onChange={() => toggle(key)}
-                        className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                        className="w-4 h-4 text-primary-600 dark:text-primary-400 rounded focus:ring-primary-500 dark:focus:ring-primary-400 bg-white dark:bg-secondary-800"
                       />
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm text-secondary-900">{s.serverName}</span>
-                          <span className="text-secondary-400">•</span>
-                          <span className="text-sm text-secondary-700">{s.sessionName}</span>
-                          {isSelected && <CheckCircleIcon className="h-4 w-4 text-primary-600" />}
+                          <span className="font-semibold text-sm text-secondary-900 dark:text-secondary-100">{s.serverName}</span>
+                          <span className="text-secondary-400 dark:text-secondary-500">•</span>
+                          <span className="text-sm text-secondary-700 dark:text-secondary-300">{s.sessionName}</span>
+                          {isSelected && <CheckCircleIcon className="h-4 w-4 text-primary-600 dark:text-primary-400" />}
                         </div>
                         {s.phoneNumber && (
-                          <div className="text-xs text-secondary-500 mt-0.5 flex items-center gap-1">
+                          <div className="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5 flex items-center gap-1">
                             <DevicePhoneMobileIcon className="h-3 w-3" />
                             {s.phoneNumber}
                           </div>
@@ -804,16 +804,16 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                 })}
                 {sessions.length === 0 && (
                   <div className="px-4 py-8 text-center">
-                    <DevicePhoneMobileIcon className="h-10 w-10 text-secondary-300 mx-auto mb-2" />
-                    <p className="text-sm text-secondary-600">Nenhuma sessão conectada encontrada.</p>
+                    <DevicePhoneMobileIcon className="h-10 w-10 text-secondary-300 dark:text-secondary-600 mx-auto mb-2" />
+                    <p className="text-sm text-secondary-600 dark:text-secondary-400">Nenhuma sessão conectada encontrada.</p>
                   </div>
                 )}
               </div>
               {selected.length > 0 && (
-                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                   <div className="flex items-start gap-2">
-                    <InformationCircleIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div className="text-xs text-blue-800">
+                    <InformationCircleIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-xs text-blue-800 dark:text-blue-300">
                       <p className="font-semibold mb-1">Como funciona:</p>
                       <ul className="list-disc list-inside space-y-0.5">
                         <li>As sessões serão pareadas automaticamente</li>
@@ -832,13 +832,13 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
 
               {/* Configurações de Rodadas e Tempo - Coluna Direita (2 colunas) */}
               <div className="lg:col-span-2">
-                <div className="text-sm font-semibold text-secondary-900 flex items-center gap-2 mb-3">
-                  <ClockIcon className="h-5 w-5 text-primary-600" /> Configurações de Tempo
+                <div className="text-sm font-semibold text-secondary-900 dark:text-secondary-100 flex items-center gap-2 mb-3">
+                  <ClockIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" /> Configurações de Tempo
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-secondary-50 p-4 rounded-lg border border-secondary-200">
-                <label className="block text-sm font-semibold text-secondary-900 mb-2 flex items-center gap-2">
-                  <ClockIcon className="h-5 w-5 text-primary-600" /> Número de Rodadas
+              <div className="bg-secondary-50 dark:bg-secondary-900 p-4 rounded-lg border border-secondary-200 dark:border-secondary-700">
+                <label className="block text-sm font-semibold text-secondary-900 dark:text-secondary-100 mb-2 flex items-center gap-2">
+                  <ClockIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" /> Número de Rodadas
                 </label>
                 <div className="flex items-center gap-2">
                   <input 
@@ -849,19 +849,19 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                     value={numberOfRounds} 
                     onChange={e => setNumberOfRounds(Math.max(1, Math.min(100, parseInt(e.target.value || '1'))))} 
                   />
-                  <span className="text-sm font-medium text-secondary-600">rodadas</span>
+                  <span className="text-sm font-medium text-secondary-600 dark:text-secondary-400">rodadas</span>
                 </div>
-                <p className="text-xs text-secondary-500 mt-2">Quantidade de rodadas que serão executadas.</p>
-                <div className="mt-2 p-2 bg-white rounded border border-secondary-200">
-                  <div className="text-xs text-secondary-600">
+                <p className="text-xs text-secondary-500 dark:text-secondary-400 mt-2">Quantidade de rodadas que serão executadas.</p>
+                <div className="mt-2 p-2 bg-white dark:bg-secondary-800 rounded border border-secondary-200 dark:border-secondary-700">
+                  <div className="text-xs text-secondary-600 dark:text-secondary-400">
                     <span className="font-medium">Quantidade:</span> {numberOfRounds} rodada{numberOfRounds !== 1 ? 's' : ''}
                   </div>
                 </div>
               </div>
               
-              <div className="bg-secondary-50 p-4 rounded-lg border border-secondary-200">
-                <label className="block text-sm font-semibold text-secondary-900 mb-2 flex items-center gap-2">
-                  <ClockIcon className="h-5 w-5 text-primary-600" /> Tempo por Rodada
+              <div className="bg-secondary-50 dark:bg-secondary-900 p-4 rounded-lg border border-secondary-200 dark:border-secondary-700">
+                <label className="block text-sm font-semibold text-secondary-900 dark:text-secondary-100 mb-2 flex items-center gap-2">
+                  <ClockIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" /> Tempo por Rodada
                 </label>
                 <div className="flex items-center gap-2">
                   <input 
@@ -872,19 +872,19 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                     value={minutesPerRound} 
                     onChange={e => setMinutesPerRound(Math.max(1, parseInt(e.target.value || '10')))} 
                   />
-                  <span className="text-sm font-medium text-secondary-600">min</span>
+                  <span className="text-sm font-medium text-secondary-600 dark:text-secondary-400">min</span>
                 </div>
-                <p className="text-xs text-secondary-500 mt-2">Duração de cada rodada individual.</p>
-                <div className="mt-2 p-2 bg-white rounded border border-secondary-200">
-                  <div className="text-xs text-secondary-600">
+                <p className="text-xs text-secondary-500 dark:text-secondary-400 mt-2">Duração de cada rodada individual.</p>
+                <div className="mt-2 p-2 bg-white dark:bg-secondary-800 rounded border border-secondary-200 dark:border-secondary-700">
+                  <div className="text-xs text-secondary-600 dark:text-secondary-400">
                     <span className="font-medium">Por rodada:</span> {minutesPerRound} minuto{minutesPerRound !== 1 ? 's' : ''}
                   </div>
                 </div>
               </div>
 
-              <div className="bg-secondary-50 p-4 rounded-lg border border-secondary-200">
-                <label className="block text-sm font-semibold text-secondary-900 mb-2 flex items-center gap-2">
-                  <ClockIcon className="h-5 w-5 text-primary-600" /> Pausa Entre Rodadas
+              <div className="bg-secondary-50 dark:bg-secondary-900 p-4 rounded-lg border border-secondary-200 dark:border-secondary-700">
+                <label className="block text-sm font-semibold text-secondary-900 dark:text-secondary-100 mb-2 flex items-center gap-2">
+                  <ClockIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" /> Pausa Entre Rodadas
                 </label>
                 <div className="flex items-center gap-2">
                   <input 
@@ -895,14 +895,14 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                     value={pauseMinutesBetweenRounds} 
                     onChange={e => setPauseMinutesBetweenRounds(Math.max(0, parseInt(e.target.value || '5')))} 
                   />
-                  <span className="text-sm font-medium text-secondary-600">min</span>
+                  <span className="text-sm font-medium text-secondary-600 dark:text-secondary-400">min</span>
                 </div>
-                <p className="text-xs text-secondary-500 mt-2">Tempo de espera entre uma rodada e a próxima.</p>
-                <div className="mt-2 p-2 bg-white rounded border border-secondary-200">
-                  <div className="text-xs text-secondary-600">
+                <p className="text-xs text-secondary-500 dark:text-secondary-400 mt-2">Tempo de espera entre uma rodada e a próxima.</p>
+                <div className="mt-2 p-2 bg-white dark:bg-secondary-800 rounded border border-secondary-200 dark:border-secondary-700">
+                  <div className="text-xs text-secondary-600 dark:text-secondary-400">
                     <span className="font-medium">Pausa:</span> {pauseMinutesBetweenRounds} minuto{pauseMinutesBetweenRounds !== 1 ? 's' : ''}
                     {numberOfRounds > 1 && (
-                      <span className="block mt-1 text-secondary-500">
+                      <span className="block mt-1 text-secondary-500 dark:text-secondary-500">
                         ({numberOfRounds - 1} pausa{numberOfRounds - 1 !== 1 ? 's' : ''} total)
                       </span>
                     )}
@@ -910,18 +910,18 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                 </div>
               </div>
               
-              <div className="bg-primary-50 p-4 rounded-lg border border-primary-200">
-                <label className="block text-sm font-semibold text-primary-900 mb-2 flex items-center gap-2">
-                  <ClockIcon className="h-5 w-5 text-primary-600" /> Duração Total
+              <div className="bg-primary-50 dark:bg-primary-900/20 p-4 rounded-lg border border-primary-200 dark:border-primary-800">
+                <label className="block text-sm font-semibold text-primary-900 dark:text-primary-300 mb-2 flex items-center gap-2">
+                  <ClockIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" /> Duração Total
                 </label>
-                <div className="px-3 py-2 bg-white border border-primary-300 rounded-lg text-sm font-semibold text-primary-700 text-center">
+                <div className="px-3 py-2 bg-white dark:bg-secondary-800 border border-primary-300 dark:border-primary-700 rounded-lg text-sm font-semibold text-primary-700 dark:text-primary-400 text-center">
                   {totalMinutes} minuto{totalMinutes !== 1 ? 's' : ''}
                 </div>
-                <p className="text-xs text-primary-600 mt-2 text-center">
+                <p className="text-xs text-primary-600 dark:text-primary-400 mt-2 text-center">
                   <span className="font-medium">Cálculo:</span> ({numberOfRounds} × {minutesPerRound}) + {totalPauseMinutes} min{pauseMinutesBetweenRounds > 0 && numberOfRounds > 1 ? ' (pausas)' : ''} = {totalMinutes} min
                 </p>
-                <div className="mt-2 p-2 bg-white rounded border border-primary-200">
-                  <div className="text-xs text-primary-700">
+                <div className="mt-2 p-2 bg-white dark:bg-secondary-800 rounded border border-primary-200 dark:border-primary-800">
+                  <div className="text-xs text-primary-700 dark:text-primary-400">
                     <span className="font-medium">Tempo total estimado:</span> ~{totalMinutes} minuto{totalMinutes !== 1 ? 's' : ''}
                   </div>
                 </div>
@@ -933,9 +933,9 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
             {/* Delay e Templates lado a lado */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Delay Mínimo Entre Mensagens */}
-              <div className="bg-secondary-50 p-4 rounded-lg border border-secondary-200">
-                <label className="block text-sm font-semibold text-secondary-900 mb-2 flex items-center gap-2">
-                  <ClockIcon className="h-5 w-5 text-primary-600" /> Delay Mínimo Entre Mensagens
+              <div className="bg-secondary-50 dark:bg-secondary-900 p-4 rounded-lg border border-secondary-200 dark:border-secondary-700">
+                <label className="block text-sm font-semibold text-secondary-900 dark:text-secondary-100 mb-2 flex items-center gap-2">
+                  <ClockIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" /> Delay Mínimo Entre Mensagens
                 </label>
                 <div className="flex items-center gap-2">
                   <input 
@@ -946,22 +946,22 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                     value={cadenceSeconds} 
                     onChange={e => setCadenceSeconds(Math.max(60, parseInt(e.target.value || '60')))} 
                   />
-                  <span className="text-sm font-medium text-secondary-600">seg</span>
+                  <span className="text-sm font-medium text-secondary-600 dark:text-secondary-400">seg</span>
                 </div>
-                <p className="text-xs text-secondary-500 mt-2">
+                <p className="text-xs text-secondary-500 dark:text-secondary-400 mt-2">
                   Delay mínimo obrigatório: <span className="font-semibold">60 segundos (1 minuto)</span>. O sistema randomiza entre 1-3 minutos para cada mensagem.
                 </p>
               </div>
 
               {/* Templates de Mensagem */}
-              <div className="bg-secondary-50 p-4 rounded-lg border border-secondary-200">
+              <div className="bg-secondary-50 dark:bg-secondary-900 p-4 rounded-lg border border-secondary-200 dark:border-secondary-700">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-semibold text-secondary-900 flex items-center gap-2">
-                    <ChatBubbleLeftRightIcon className="h-5 w-5 text-primary-600" /> Templates de Mensagens
+                  <label className="block text-sm font-semibold text-secondary-900 dark:text-secondary-100 flex items-center gap-2">
+                    <ChatBubbleLeftRightIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" /> Templates de Mensagens
                   </label>
                   <button
                     onClick={() => setShowPreview(!showPreview)}
-                    className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                    className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors"
                   >
                     {showPreview ? 'Ocultar' : 'Ver'} Preview
                   </button>
@@ -972,20 +972,20 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                   onChange={e => setMessageTemplates(e.target.value)}
                   placeholder="Digite uma mensagem por linha. Cada linha será usada como variação."
                 />
-                <p className="text-xs text-secondary-600 mt-2">
+                <p className="text-xs text-secondary-600 dark:text-secondary-400 mt-2">
                   <span className="font-semibold">Dica:</span> Digite uma mensagem por linha. O sistema selecionará aleatoriamente entre elas. 
                   Use {'{{nome}}'} para incluir o nome da sessão destinatária.
                 </p>
                 {showPreview && previewMessages.length > 0 && (
-                  <div className="mt-4 p-3 bg-white rounded border border-primary-200">
-                    <p className="text-xs font-semibold text-secondary-700 mb-2">Preview de Mensagens:</p>
+                  <div className="mt-4 p-3 bg-white dark:bg-secondary-800 rounded border border-primary-200 dark:border-primary-800">
+                    <p className="text-xs font-semibold text-secondary-700 dark:text-secondary-300 mb-2">Preview de Mensagens:</p>
                     <div className="space-y-3">
                       {previewMessages.map((p, idx) => (
-                        <div key={idx} className="text-xs border-l-4 border-l-primary-500 pl-2">
-                          <div className="font-medium text-secondary-900 mb-1">
+                        <div key={idx} className="text-xs border-l-4 border-l-primary-500 dark:border-l-primary-400 pl-2">
+                          <div className="font-medium text-secondary-900 dark:text-secondary-100 mb-1">
                             {p.from} → {p.to}
                           </div>
-                          <div className="text-secondary-700 space-y-1">
+                          <div className="text-secondary-700 dark:text-secondary-300 space-y-1">
                             <div className="italic">"{p.greeting}"</div>
                             <div>"{p.message}"</div>
                           </div>
@@ -1000,18 +1000,18 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
             {/* Agendamento e Lista de Agendamentos lado a lado */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Agendamento */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border-2 border-blue-200">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800">
               <div className="flex items-center justify-between mb-3">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={scheduleEnabled}
                     onChange={e => setScheduleEnabled(e.target.checked)}
-                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                    className="w-5 h-5 text-blue-600 dark:text-blue-400 rounded focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-secondary-800"
                   />
                   <div className="flex items-center gap-2">
-                    <CalendarIcon className="h-5 w-5 text-blue-600" />
-                    <span className="text-sm font-semibold text-secondary-900">Agendar Maturação</span>
+                    <CalendarIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <span className="text-sm font-semibold text-secondary-900 dark:text-secondary-100">Agendar Maturação</span>
                   </div>
                 </label>
               </div>
@@ -1019,8 +1019,8 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
               {scheduleEnabled && (
                 <div className="space-y-4 mt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-white p-3 rounded-lg border border-blue-200">
-                      <label className="block text-xs font-semibold text-secondary-700 mb-1">
+                    <div className="bg-white dark:bg-secondary-800 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <label className="block text-xs font-semibold text-secondary-700 dark:text-secondary-300 mb-1">
                         Data de Início
                       </label>
                       <input
@@ -1033,8 +1033,8 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                       />
                     </div>
                     
-                    <div className="bg-white p-3 rounded-lg border border-blue-200">
-                      <label className="block text-xs font-semibold text-secondary-700 mb-1">
+                    <div className="bg-white dark:bg-secondary-800 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <label className="block text-xs font-semibold text-secondary-700 dark:text-secondary-300 mb-1">
                         Hora de Início
                       </label>
                       <input
@@ -1048,15 +1048,15 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                   </div>
                   
                   {endDateTime && (
-                    <div className="bg-blue-100 p-3 rounded-lg border border-blue-300">
+                    <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-lg border border-blue-300 dark:border-blue-800">
                       <div className="flex items-start gap-2">
-                        <InformationCircleIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <InformationCircleIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                         <div className="flex-1">
-                          <p className="text-xs font-semibold text-blue-900 mb-1">Previsão de Término</p>
-                          <p className="text-sm text-blue-800 font-medium">
+                          <p className="text-xs font-semibold text-blue-900 dark:text-blue-300 mb-1">Previsão de Término</p>
+                          <p className="text-sm text-blue-800 dark:text-blue-400 font-medium">
                             {formatEndDateTime(endDateTime)}
                           </p>
-                          <p className="text-xs text-blue-700 mt-1">
+                          <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
                             Duração estimada: {totalMinutes} minuto{totalMinutes !== 1 ? 's' : ''}
                             {totalPauseMinutes > 0 && (
                               <span> (incluindo {totalPauseMinutes} min de pausas)</span>
@@ -1067,8 +1067,8 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                     </div>
                   )}
                   
-                  <div className="bg-white p-3 rounded-lg border border-blue-200">
-                    <p className="text-xs text-secondary-600">
+                  <div className="bg-white dark:bg-secondary-800 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <p className="text-xs text-secondary-600 dark:text-secondary-400">
                       <span className="font-semibold">ℹ️ Como funciona:</span> A maturação será executada automaticamente na data e hora especificadas. 
                       Você receberá notificações quando iniciar e concluir.
                     </p>
@@ -1077,20 +1077,20 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
               )}
               
               {!scheduleEnabled && (
-                <p className="text-xs text-secondary-600 mt-2">
+                <p className="text-xs text-secondary-600 dark:text-secondary-400 mt-2">
                   Marque esta opção para agendar a maturação em vez de executá-la imediatamente.
                 </p>
               )}
               </div>
               
               {/* Lista de Agendamentos */}
-              <div className="bg-secondary-50 p-4 rounded-lg border border-secondary-200">
+              <div className="bg-secondary-50 dark:bg-secondary-900 p-4 rounded-lg border border-secondary-200 dark:border-secondary-700">
               <div className="flex items-center justify-between mb-3">
                 <label className="flex items-center gap-2 cursor-pointer" onClick={() => setShowSchedulesList(!showSchedulesList)}>
-                  <CalendarIcon className="h-5 w-5 text-primary-600" />
-                  <span className="text-sm font-semibold text-secondary-900">Meus Agendamentos</span>
+                  <CalendarIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                  <span className="text-sm font-semibold text-secondary-900 dark:text-secondary-100">Meus Agendamentos</span>
                   {schedules.length > 0 && (
-                    <span className="ml-2 px-2 py-0.5 bg-primary-100 text-primary-700 rounded-full text-xs font-medium">
+                    <span className="ml-2 px-2 py-0.5 bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 rounded-full text-xs font-medium">
                       {schedules.length}
                     </span>
                   )}
@@ -1100,7 +1100,7 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                     setShowSchedulesList(!showSchedulesList)
                     if (!showSchedulesList) loadSchedules()
                   }}
-                  className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                  className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors"
                 >
                   {showSchedulesList ? 'Ocultar' : 'Ver'}
                 </button>
@@ -1109,18 +1109,18 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
               {showSchedulesList && (
                 <div className="mt-3 space-y-2 max-h-96 overflow-y-auto">
                   {loadingSchedules ? (
-                    <div className="text-center py-4 text-sm text-secondary-500">
+                    <div className="text-center py-4 text-sm text-secondary-500 dark:text-secondary-400">
                       Carregando agendamentos...
                     </div>
                   ) : schedules.length === 0 ? (
-                    <div className="text-center py-4 text-sm text-secondary-500">
+                    <div className="text-center py-4 text-sm text-secondary-500 dark:text-secondary-400">
                       Nenhum agendamento encontrado.
                     </div>
                   ) : (
                     schedules.map((schedule) => (
                       <div
                         key={schedule.id}
-                        className="bg-white p-3 rounded-lg border border-secondary-200 hover:border-primary-300 transition-colors"
+                        className="bg-white dark:bg-secondary-800 p-3 rounded-lg border border-secondary-200 dark:border-secondary-700 hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1">
@@ -1129,12 +1129,12 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                                 {getStatusText(schedule.status)}
                               </span>
                               {schedule.number_of_rounds && (
-                                <span className="text-xs text-secondary-600">
+                                <span className="text-xs text-secondary-600 dark:text-secondary-400">
                                   {schedule.number_of_rounds} rodada{schedule.number_of_rounds !== 1 ? 's' : ''}
                                 </span>
                               )}
                             </div>
-                            <div className="text-xs text-secondary-700 space-y-0.5">
+                            <div className="text-xs text-secondary-700 dark:text-secondary-300 space-y-0.5">
                               <div>
                                 <span className="font-medium">Início:</span> {formatScheduleDateTime(schedule.scheduled_start_at)}
                               </div>
@@ -1144,7 +1144,7 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                                 </div>
                               )}
                               {schedule.created_at && (
-                                <div className="text-secondary-500">
+                                <div className="text-secondary-500 dark:text-secondary-500">
                                   Criado em: {formatScheduleDateTime(schedule.created_at)}
                                 </div>
                               )}
@@ -1154,7 +1154,7 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                             {schedule.status === 'pausado' && (
                               <button
                                 onClick={() => handleResumeSchedule(schedule.id)}
-                                className="px-2 py-1 text-xs bg-green-100 hover:bg-green-200 text-green-700 rounded transition-colors flex items-center gap-1"
+                                className="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/20 hover:bg-green-200 dark:hover:bg-green-900/30 text-green-700 dark:text-green-400 rounded transition-colors flex items-center gap-1"
                                 title="Retomar agendamento"
                               >
                                 <PlayIcon className="h-3 w-3" />
@@ -1164,7 +1164,7 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                             {(schedule.status === 'agendado' || schedule.status === 'executando') && (
                               <button
                                 onClick={() => handlePauseSchedule(schedule.id)}
-                                className="px-2 py-1 text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded transition-colors flex items-center gap-1"
+                                className="px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-900/20 hover:bg-yellow-200 dark:hover:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded transition-colors flex items-center gap-1"
                                 title="Pausar agendamento"
                               >
                                 <PauseIcon className="h-3 w-3" />
@@ -1174,7 +1174,7 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                             {(schedule.status === 'agendado' || schedule.status === 'pausado' || schedule.status === 'executando') && (
                               <button
                                 onClick={() => handleCancelSchedule(schedule.id)}
-                                className="px-2 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded transition-colors"
+                                className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/20 hover:bg-red-200 dark:hover:bg-red-900/30 text-red-700 dark:text-red-400 rounded transition-colors"
                                 title="Cancelar agendamento"
                               >
                                 Cancelar
@@ -1183,7 +1183,7 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                             {(schedule.status === 'cancelado' || schedule.status === 'concluido' || schedule.status === 'erro') && (
                               <button
                                 onClick={() => handleDeleteSchedule(schedule.id)}
-                                className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors"
+                                className="px-2 py-1 text-xs bg-gray-100 dark:bg-secondary-700 hover:bg-gray-200 dark:hover:bg-secondary-600 text-gray-700 dark:text-secondary-300 rounded transition-colors"
                                 title="Excluir permanentemente"
                               >
                                 <TrashIcon className="h-4 w-4" />
@@ -1192,7 +1192,7 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                           </div>
                         </div>
                         {schedule.error_message && (
-                          <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                          <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-400">
                             <span className="font-medium">Erro:</span> {schedule.error_message}
                           </div>
                         )}
@@ -1206,13 +1206,13 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
             
             {/* Status em Tempo Real - Largura Completa */}
             {maturationId && (
-              <div className="bg-gradient-to-br from-primary-50 to-secondary-50 border-2 border-primary-200 rounded-lg p-4">
+              <div className="bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-primary-900/20 dark:to-secondary-900 border-2 border-primary-200 dark:border-primary-800 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <SparklesIcon className="h-5 w-5 text-primary-600" />
-                    <h4 className="text-sm font-bold text-secondary-900">Status em Tempo Real</h4>
+                    <SparklesIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                    <h4 className="text-sm font-bold text-secondary-900 dark:text-secondary-100">Status em Tempo Real</h4>
                     {runInBackground && (
-                      <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                      <span className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-full text-xs font-medium">
                         Executando em Background
                       </span>
                     )}
@@ -1228,7 +1228,7 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                             'A maturação continuará executando. Você receberá uma notificação quando terminar.',
                           )
                         }}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium transition-colors"
+                        className="flex items-center gap-1 px-3 py-1.5 bg-blue-100 dark:bg-blue-900/20 hover:bg-blue-200 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded text-xs font-medium transition-colors"
                         title="Executar em background"
                       >
                         <ArrowsPointingOutIcon className="h-4 w-4" />
@@ -1237,7 +1237,7 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                     )}
                   <button
                     onClick={handleStop}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded text-xs font-medium transition-colors"
+                    className="flex items-center gap-1 px-3 py-1.5 bg-red-100 dark:bg-red-900/20 hover:bg-red-200 dark:hover:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs font-medium transition-colors"
                   >
                     <StopIcon className="h-4 w-4" />
                     Parar
@@ -1248,12 +1248,12 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                 {/* Barra de Progresso */}
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium text-secondary-700">Progresso</span>
-                    <span className="text-xs font-bold text-primary-600">{Math.round(progressPercent)}%</span>
+                    <span className="text-xs font-medium text-secondary-700 dark:text-secondary-300">Progresso</span>
+                    <span className="text-xs font-bold text-primary-600 dark:text-primary-400">{Math.round(progressPercent)}%</span>
                   </div>
-                  <div className="w-full bg-secondary-200 rounded-full h-2.5 overflow-hidden">
+                  <div className="w-full bg-secondary-200 dark:bg-secondary-700 rounded-full h-2.5 overflow-hidden">
                     <div 
-                      className="h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full transition-all duration-500"
+                      className="h-full bg-gradient-to-r from-primary-500 to-primary-600 dark:from-primary-400 dark:to-primary-500 rounded-full transition-all duration-500"
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
@@ -1261,9 +1261,9 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
 
                 {/* Estatísticas */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                  <div className="bg-white rounded-lg p-2 border border-secondary-200">
-                    <div className="text-xs text-secondary-500 mb-0.5">Estado</div>
-                    <div className="text-sm font-bold text-secondary-900 capitalize">
+                  <div className="bg-white dark:bg-secondary-800 rounded-lg p-2 border border-secondary-200 dark:border-secondary-700">
+                    <div className="text-xs text-secondary-500 dark:text-secondary-400 mb-0.5">Estado</div>
+                    <div className="text-sm font-bold text-secondary-900 dark:text-secondary-100 capitalize">
                       {progress?.status === 'started' && '🟢 Iniciado'}
                       {progress?.status === 'sending' && '📤 Enviando'}
                       {progress?.status === 'replying' && '💬 Respondendo'}
@@ -1274,24 +1274,24 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                       {!progress?.status && '⏳ Aguardando...'}
                     </div>
                   </div>
-                  <div className="bg-white rounded-lg p-2 border border-secondary-200">
-                    <div className="text-xs text-secondary-500 mb-0.5">Tempo Restante</div>
-                    <div className="text-sm font-bold text-secondary-900">
+                  <div className="bg-white dark:bg-secondary-800 rounded-lg p-2 border border-secondary-200 dark:border-secondary-700">
+                    <div className="text-xs text-secondary-500 dark:text-secondary-400 mb-0.5">Tempo Restante</div>
+                    <div className="text-sm font-bold text-secondary-900 dark:text-secondary-100">
                       {typeof progress?.remainingMs === 'number' 
                         ? `${Math.max(0, Math.ceil(progress.remainingMs / 60000))} min`
                         : '—'
                       }
                     </div>
                   </div>
-                  <div className="bg-white rounded-lg p-2 border border-secondary-200">
-                    <div className="text-xs text-secondary-500 mb-0.5">Mensagens Enviadas</div>
-                    <div className="text-sm font-bold text-primary-600">
+                  <div className="bg-white dark:bg-secondary-800 rounded-lg p-2 border border-secondary-200 dark:border-secondary-700">
+                    <div className="text-xs text-secondary-500 dark:text-secondary-400 mb-0.5">Mensagens Enviadas</div>
+                    <div className="text-sm font-bold text-primary-600 dark:text-primary-400">
                       {progress?.stats?.totalMessages || 0}
                     </div>
                   </div>
-                  <div className="bg-white rounded-lg p-2 border border-secondary-200">
-                    <div className="text-xs text-secondary-500 mb-0.5">Pares Ativos</div>
-                    <div className="text-sm font-bold text-secondary-900">
+                  <div className="bg-white dark:bg-secondary-800 rounded-lg p-2 border border-secondary-200 dark:border-secondary-700">
+                    <div className="text-xs text-secondary-500 dark:text-secondary-400 mb-0.5">Pares Ativos</div>
+                    <div className="text-sm font-bold text-secondary-900 dark:text-secondary-100">
                       {progress?.stats?.activePairs || 0}
                     </div>
                   </div>
@@ -1299,8 +1299,8 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
 
                 {/* Par Atual */}
                 {progress?.pair && (
-                  <div className="mb-4 p-3 bg-white rounded-lg border border-primary-200">
-                    <div className="text-xs font-semibold text-secondary-700 mb-2 flex items-center justify-between">
+                  <div className="mb-4 p-3 bg-white dark:bg-secondary-800 rounded-lg border border-primary-200 dark:border-primary-800">
+                    <div className="text-xs font-semibold text-secondary-700 dark:text-secondary-300 mb-2 flex items-center justify-between">
                       <span>Conversa Atual</span>
                       {/* SEMPRE mostrar o ícone de tempo e cronômetro quando houver pair */}
                       <div className="flex items-center gap-1">
@@ -1308,18 +1308,18 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                           <NextMessageTimer nextMessageAt={progress.nextMessageAt} />
                         ) : (
                           <>
-                            <ClockIcon className="h-4 w-4 text-secondary-500 flex-shrink-0" />
-                            <span className="text-xs text-secondary-500 whitespace-nowrap">Calculando tempo...</span>
+                            <ClockIcon className="h-4 w-4 text-secondary-500 dark:text-secondary-400 flex-shrink-0" />
+                            <span className="text-xs text-secondary-500 dark:text-secondary-400 whitespace-nowrap">Calculando tempo...</span>
                           </>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                      <div className="px-2 py-1 bg-primary-100 text-primary-700 rounded font-medium">
+                      <div className="px-2 py-1 bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 rounded font-medium">
                         {progress.pair.from}
                       </div>
-                      <span className="text-secondary-400">→</span>
-                      <div className="px-2 py-1 bg-secondary-100 text-secondary-700 rounded font-medium">
+                      <span className="text-secondary-400 dark:text-secondary-500">→</span>
+                      <div className="px-2 py-1 bg-secondary-100 dark:bg-secondary-700 text-secondary-700 dark:text-secondary-300 rounded font-medium">
                         {progress.pair.to}
                       </div>
                     </div>
@@ -1327,10 +1327,10 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                 )}
 
                 {/* Logs de Conversação */}
-                <div className="bg-white rounded-lg border border-secondary-200 p-3 max-h-64 overflow-y-auto">
-                  <div className="text-xs font-semibold text-secondary-700 mb-2 flex items-center justify-between">
+                <div className="bg-white dark:bg-secondary-800 rounded-lg border border-secondary-200 dark:border-secondary-700 p-3 max-h-64 overflow-y-auto">
+                  <div className="text-xs font-semibold text-secondary-700 dark:text-secondary-300 mb-2 flex items-center justify-between">
                     <span>Histórico de Conversação</span>
-                    <span className="text-secondary-500 font-normal">
+                    <span className="text-secondary-500 dark:text-secondary-400 font-normal">
                       {progress?.logs?.length || 0} evento{progress?.logs?.length !== 1 ? 's' : ''}
                     </span>
                   </div>
@@ -1339,48 +1339,48 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
                       <div 
                         key={idx} 
                         className={`text-xs p-2 rounded border-l-2 ${
-                          l.type === 'greeting' ? 'bg-blue-50 border-blue-300' :
-                          l.type === 'message' ? 'bg-green-50 border-green-300' :
-                          l.type === 'error' ? 'bg-red-50 border-red-300' :
-                          l.type === 'info' ? 'bg-blue-50 border-blue-300' :
-                          'bg-secondary-50 border-secondary-300'
+                          l.type === 'greeting' ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-800' :
+                          l.type === 'message' ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-800' :
+                          l.type === 'error' ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-800' :
+                          l.type === 'info' ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-800' :
+                          'bg-secondary-50 dark:bg-secondary-900 border-secondary-300 dark:border-secondary-700'
                         }`}
                       >
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-secondary-400 font-mono text-[10px]">
+                          <span className="text-secondary-400 dark:text-secondary-500 font-mono text-[10px]">
                             {new Date(l.ts).toLocaleTimeString()}
                           </span>
                           <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                            l.type === 'error' ? 'bg-red-100 text-red-700' :
-                            l.direction === 'A->B' || l.direction === 'A→B' ? 'bg-blue-100 text-blue-700' :
-                            l.direction === 'B->A' || l.direction === 'B→A' ? 'bg-green-100 text-green-700' :
-                            l.type === 'info' ? 'bg-blue-100 text-blue-700' :
-                            'bg-secondary-100 text-secondary-700'
+                            l.type === 'error' ? 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400' :
+                            l.direction === 'A->B' || l.direction === 'A→B' ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400' :
+                            l.direction === 'B->A' || l.direction === 'B→A' ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400' :
+                            l.type === 'info' ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400' :
+                            'bg-secondary-100 dark:bg-secondary-700 text-secondary-700 dark:text-secondary-300'
                           }`}>
                             {l.direction || l.type || 'info'}
                           </span>
                         </div>
                         {(l.message || l.text) && (
-                          <div className={`mt-1 ${l.type === 'error' ? 'text-red-700 font-medium' : 'text-secondary-700 italic'}`}>
+                          <div className={`mt-1 ${l.type === 'error' ? 'text-red-700 dark:text-red-400 font-medium' : 'text-secondary-700 dark:text-secondary-300 italic'}`}>
                             "{l.message || l.text || ''}"
                             {(l.message || l.text || '').length > 100 ? '...' : ''}
                           </div>
                         )}
                         {l.details && (
-                          <div className="text-red-600 mt-1 text-[9px] font-mono opacity-75">
+                          <div className="text-red-600 dark:text-red-400 mt-1 text-[9px] font-mono opacity-75">
                             {l.details}
                           </div>
                         )}
                         {l.from && l.to && (
-                          <div className="text-secondary-600 mt-1 text-[10px]">
+                          <div className="text-secondary-600 dark:text-secondary-400 mt-1 text-[10px]">
                             {l.from} → {l.to}
                           </div>
                         )}
                       </div>
                     ))}
                     {!progress?.logs?.length && (
-                      <div className="text-xs text-secondary-500 text-center py-4">
-                        <InformationCircleIcon className="h-5 w-5 text-secondary-300 mx-auto mb-1" />
+                      <div className="text-xs text-secondary-500 dark:text-secondary-400 text-center py-4">
+                        <InformationCircleIcon className="h-5 w-5 text-secondary-300 dark:text-secondary-600 mx-auto mb-1" />
                         Aguardando início das conversas...
                       </div>
                     )}
@@ -1391,20 +1391,20 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
 
             {/* Informação quando não há maturação ativa */}
             {!maturationId && (
-              <div className="bg-secondary-50 border border-secondary-200 rounded-lg p-4">
-                <div className="text-xs text-secondary-600 text-center">
-                  <InformationCircleIcon className="h-6 w-6 text-secondary-400 mx-auto mb-2" />
+              <div className="bg-secondary-50 dark:bg-secondary-900 border border-secondary-200 dark:border-secondary-700 rounded-lg p-4">
+                <div className="text-xs text-secondary-600 dark:text-secondary-400 text-center">
+                  <InformationCircleIcon className="h-6 w-6 text-secondary-400 dark:text-secondary-600 mx-auto mb-2" />
                   <p>Inicie a maturação para acompanhar o progresso em tempo real.</p>
                 </div>
               </div>
             )}
           </div>
-          <div className="px-5 py-4 border-t border-secondary-200 flex items-center justify-between bg-secondary-50">
-            <div className="text-xs text-secondary-600">
+          <div className="px-5 py-4 border-t border-secondary-200 dark:border-secondary-700 flex items-center justify-between bg-secondary-50 dark:bg-secondary-900">
+            <div className="text-xs text-secondary-600 dark:text-secondary-400">
               {selected.length >= 2 ? (
-                <span className="text-green-600 font-medium">✓ {selected.length} sessões selecionadas</span>
+                <span className="text-green-600 dark:text-green-400 font-medium">✓ {selected.length} sessões selecionadas</span>
               ) : (
-                <span className="text-amber-600">⚠️ Selecione pelo menos 2 sessões</span>
+                <span className="text-amber-600 dark:text-amber-400">⚠️ Selecione pelo menos 2 sessões</span>
               )}
             </div>
             <div className="flex items-center gap-2">

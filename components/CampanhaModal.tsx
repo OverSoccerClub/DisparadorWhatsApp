@@ -9,7 +9,9 @@ import {
   CalendarIcon,
   DocumentTextIcon,
   EyeIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  PlusIcon,
+  CheckIcon
 } from '@heroicons/react/24/outline'
 import WhatsAppPreview from './WhatsAppPreview'
 import { 
@@ -127,28 +129,37 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform transition-all">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-secondary-200">
-          <div className="flex items-center">
-            <MegaphoneIcon className="h-6 w-6 text-primary-600 mr-3" />
-            <h2 className="text-xl font-semibold text-secondary-900">
-              Nova Campanha de Disparo
-            </h2>
+        <div className="flex items-center justify-between p-6 border-b border-secondary-200 dark:border-secondary-700">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
+              <MegaphoneIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-secondary-900 dark:text-secondary-100">
+                Nova Campanha de Disparo
+              </h2>
+              <p className="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
+                Configure sua campanha de disparo em massa
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="text-secondary-400 hover:text-secondary-600"
+            className="p-2 text-secondary-400 dark:text-secondary-500 hover:text-secondary-600 dark:hover:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 rounded-lg transition-colors"
+            title="Fechar"
           >
-            <XMarkIcon className="h-6 w-6" />
+            <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Nome da Campanha */}
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">
+            <label className="flex items-center text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+              <MegaphoneIcon className="h-4 w-4 mr-2 text-secondary-500 dark:text-secondary-400" />
               Nome da Campanha *
             </label>
             <input
@@ -163,8 +174,8 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
 
           {/* Seleção de Clientes */}
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-3">
-              <UsersIcon className="h-5 w-5 inline mr-2" />
+            <label className="flex items-center text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-3">
+              <UsersIcon className="h-5 w-5 mr-2 text-secondary-500 dark:text-secondary-400" />
               Seleção de Clientes
             </label>
             <div className="space-y-2">
@@ -180,7 +191,7 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
                   })}
                   className="mr-3"
                 />
-                <span className="text-sm text-secondary-700">Todos os clientes ativos</span>
+                <span className="text-sm text-secondary-700 dark:text-secondary-300">Todos os clientes ativos</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -194,7 +205,7 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
                   })}
                   className="mr-3"
                 />
-                <span className="text-sm text-secondary-700">Todos os clientes inativos</span>
+                <span className="text-sm text-secondary-700 dark:text-secondary-300">Todos os clientes inativos</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -208,7 +219,7 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
                   })}
                   className="mr-3"
                 />
-                <span className="text-sm text-secondary-700">Todos os clientes</span>
+                <span className="text-sm text-secondary-700 dark:text-secondary-300">Todos os clientes</span>
               </label>
             </div>
           </div>
@@ -216,7 +227,8 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
           {/* Configurações */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">
+              <label className="flex items-center text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                <UsersIcon className="h-4 w-4 mr-2 text-secondary-500 dark:text-secondary-400" />
                 Clientes por Lote
               </label>
               <select
@@ -235,7 +247,8 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">
+              <label className="flex items-center text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                <ClockIcon className="h-4 w-4 mr-2 text-secondary-500 dark:text-secondary-400" />
                 Intervalo entre Mensagens (segundos)
               </label>
               <select
@@ -257,8 +270,8 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
 
           {/* Agendamento */}
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-3">
-              <ClockIcon className="h-5 w-5 inline mr-2" />
+            <label className="flex items-center text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-3">
+              <CalendarIcon className="h-5 w-5 mr-2 text-secondary-500 dark:text-secondary-400" />
               Agendamento
             </label>
             <div className="space-y-3">
@@ -274,7 +287,7 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
                   })}
                   className="mr-3"
                 />
-                <span className="text-sm text-secondary-700">Enviar agora</span>
+                <span className="text-sm text-secondary-700 dark:text-secondary-300">Enviar agora</span>
               </label>
               
               <label className="flex items-center">
@@ -289,7 +302,7 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
                   })}
                   className="mr-3"
                 />
-                <span className="text-sm text-secondary-700">Agendar para:</span>
+                <span className="text-sm text-secondary-700 dark:text-secondary-300">Agendar para:</span>
               </label>
               
               {formData.configuracao.agendamento !== 'imediato' && (
@@ -314,8 +327,8 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
 
           {/* Mensagem */}
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">
-              <DocumentTextIcon className="h-5 w-5 inline mr-2" />
+            <label className="flex items-center text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+              <DocumentTextIcon className="h-5 w-5 mr-2 text-secondary-500 dark:text-secondary-400" />
               Mensagem *
             </label>
             <textarea
@@ -327,10 +340,10 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
               maxLength={1000}
             />
             <div className="flex justify-between items-center mt-1">
-              <span className="text-xs text-secondary-500">
+              <span className="text-xs text-secondary-500 dark:text-secondary-400">
                 Use variáveis como {`{{nome}}`}, {`{{telefone}}`}
               </span>
-              <span className={`text-xs ${formData.mensagem.length > 900 ? 'text-error-600' : 'text-secondary-500'}`}>
+              <span className={`text-xs ${formData.mensagem.length > 900 ? 'text-error-600 dark:text-error-400' : 'text-secondary-500 dark:text-secondary-400'}`}>
                 {formData.mensagem.length}/1000
               </span>
             </div>
@@ -349,53 +362,54 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
 
           {/* Preview */}
           {previewData && (
-            <div className="bg-secondary-50 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-secondary-900 mb-3 flex items-center">
+            <div className="bg-secondary-50 dark:bg-secondary-700/50 rounded-lg p-4">
+              <h3 className="text-sm font-medium text-secondary-900 dark:text-secondary-100 mb-3 flex items-center">
                 <EyeIcon className="h-4 w-4 mr-2" />
                 Preview da Campanha
               </h3>
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
-                  <span className="text-secondary-600">Clientes:</span>
-                  <div className="font-medium">{previewData.totalClientes.toLocaleString()}</div>
+                  <span className="text-secondary-600 dark:text-secondary-400">Clientes:</span>
+                  <div className="font-medium text-secondary-900 dark:text-secondary-100">{previewData.totalClientes.toLocaleString()}</div>
                 </div>
                 <div>
-                  <span className="text-secondary-600">Lotes:</span>
-                  <div className="font-medium">{previewData.totalLotes}</div>
+                  <span className="text-secondary-600 dark:text-secondary-400">Lotes:</span>
+                  <div className="font-medium text-secondary-900 dark:text-secondary-100">{previewData.totalLotes}</div>
                 </div>
                 <div>
-                  <span className="text-secondary-600">Tempo estimado:</span>
-                  <div className="font-medium">{previewData.tempoEstimado} min</div>
+                  <span className="text-secondary-600 dark:text-secondary-400">Tempo estimado:</span>
+                  <div className="font-medium text-secondary-900 dark:text-secondary-100">{previewData.tempoEstimado} min</div>
                 </div>
               </div>
             </div>
           )}
 
           {/* Botões */}
-          <div className="flex justify-end space-x-3 pt-4 border-t border-secondary-200">
+          <div className="flex justify-end space-x-3 pt-6 border-t border-secondary-200 dark:border-secondary-700">
             <button
               type="button"
               onClick={onClose}
-              className="btn btn-secondary"
+              className="inline-flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-secondary-700 dark:text-secondary-300 bg-white dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 hover:bg-secondary-50 dark:hover:bg-secondary-600 hover:border-secondary-400 dark:hover:border-secondary-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary-500 dark:focus:ring-secondary-400 transition-all duration-200"
               disabled={loading}
             >
+              <XMarkIcon className="h-4 w-4 mr-2" />
               Cancelar
             </button>
             <button
               type="submit"
-              className="btn btn-primary"
+              className="inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-lg text-white bg-primary-600 dark:bg-primary-500 hover:bg-primary-700 dark:hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-primary-400 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
             >
               {loading ? (
-                <div className="flex items-center">
+                <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   Criando...
-                </div>
+                </>
               ) : (
-                <div className="flex items-center">
-                  <CheckCircleIcon className="h-4 w-4 mr-2" />
+                <>
+                  <PlusIcon className="h-4 w-4 mr-2" />
                   Criar Campanha
-                </div>
+                </>
               )}
             </button>
           </div>

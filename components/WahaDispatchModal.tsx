@@ -779,44 +779,44 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
         }}
       />
       <div className="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 bg-secondary-500 bg-opacity-75 transition-opacity" onClick={onClose} />
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 transition-opacity" onClick={onClose} />
 
-        <div className="inline-block transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl sm:align-middle">
+        <div className="inline-block transform overflow-hidden rounded-lg bg-white dark:bg-secondary-800 text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl sm:align-middle">
           {/* Header */}
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+          <div className="bg-white dark:bg-secondary-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-secondary-200 dark:border-secondary-700">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
-                  <DevicePhoneMobileIcon className="h-5 w-5 text-primary-600" />
+                <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
+                  <DevicePhoneMobileIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-medium text-secondary-900 flex items-center">
-                    <DevicePhoneMobileIcon className="h-5 w-5 mr-2 text-primary-600" />
+                  <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
                     Disparo de Mensagens WhatsApp (WAHA)
                   </h3>
-                  <p className="text-sm text-secondary-500">
+                  <p className="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
                     Envie mensagens para clientes cadastrados ou novos números via WAHA
                   </p>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="text-secondary-400 hover:text-secondary-600 transition-colors"
+                className="p-2 text-secondary-400 dark:text-secondary-500 hover:text-secondary-600 dark:hover:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 rounded-lg transition-colors"
+                title="Fechar"
               >
-                <XMarkIcon className="h-6 w-6" />
+                <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
           </div>
 
           {/* Tabs */}
-          <div className="border-b border-secondary-200">
+          <div className="border-b border-secondary-200 dark:border-secondary-700">
             <nav className="-mb-px flex space-x-8 px-6">
               <button
                 onClick={() => setActiveTab('clientes')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center transition-colors ${
                   activeTab === 'clientes'
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-secondary-500 hover:text-secondary-700 hover:border-secondary-300'
+                    ? 'border-primary-500 dark:border-primary-400 text-primary-600 dark:text-primary-400'
+                    : 'border-transparent text-secondary-500 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-300 hover:border-secondary-300 dark:hover:border-secondary-600'
                 }`}
               >
                 <UserGroupIcon className="h-5 w-5 mr-2" />
@@ -826,8 +826,8 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                 onClick={() => setActiveTab('novos')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center transition-colors ${
                   activeTab === 'novos'
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-secondary-500 hover:text-secondary-700 hover:border-secondary-300'
+                    ? 'border-primary-500 dark:border-primary-400 text-primary-600 dark:text-primary-400'
+                    : 'border-transparent text-secondary-500 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-300 hover:border-secondary-300 dark:hover:border-secondary-600'
                 }`}
               >
                 <PhoneIcon className="h-5 w-5 mr-2" />
@@ -837,67 +837,67 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
           </div>
 
           {/* Informações das Sessões WAHA */}
-          <div className="px-6 py-3 bg-blue-50 border-b border-blue-200">
+          <div className="px-6 py-3 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm font-medium text-green-700">
+                  <div className="w-2 h-2 bg-green-500 dark:bg-green-400 rounded-full"></div>
+                  <span className="text-sm font-medium text-green-700 dark:text-green-400">
                     {workingSessions.length} sessão(ões) conectada(s)
                   </span>
                 </div>
                 {wahaSessions.length - workingSessions.length > 0 && (
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                    <span className="text-sm font-medium text-red-700">
+                    <div className="w-2 h-2 bg-red-500 dark:bg-red-400 rounded-full"></div>
+                    <span className="text-sm font-medium text-red-700 dark:text-red-400">
                       {wahaSessions.length - workingSessions.length} desconectada(s)
                     </span>
                   </div>
                 )}
               </div>
-              <div className="text-xs text-blue-600">
+              <div className="text-xs text-blue-600 dark:text-blue-400">
                 Sistema: WAHA
               </div>
             </div>
             {workingSessions.length === 0 && (
-              <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded-md">
-                <p className="text-sm text-yellow-800">
+              <div className="mt-2 p-2 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-800 rounded-md">
+                <p className="text-sm text-yellow-800 dark:text-yellow-400">
                   ⚠️ Nenhuma sessão WAHA conectada. Configure uma sessão em Sessões WAHA.
                 </p>
               </div>
             )}
           </div>
 
-          <div className="px-6 py-4">
+          <div className="px-6 py-4 bg-white dark:bg-secondary-800">
             {/* Tab Content */}
             {activeTab === 'clientes' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-medium text-secondary-900">
+                  <h4 className="text-sm font-medium text-secondary-900 dark:text-secondary-100">
                     Selecionar Clientes ({selectedClientes.length} selecionados)
                   </h4>
                   <button
                     onClick={handleSelectAll}
-                    className="text-sm text-primary-600 hover:text-primary-500"
+                    className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 transition-colors"
                   >
                     {selectedClientes.length === (clientes?.length || 0) ? 'Desmarcar Todos' : 'Selecionar Todos'}
                   </button>
                 </div>
                 
-                <div className="max-h-48 overflow-y-auto border border-secondary-200 rounded-md">
+                <div className="max-h-48 overflow-y-auto border border-secondary-200 dark:border-secondary-700 rounded-md bg-white dark:bg-secondary-900">
                   {(clientes || []).map((cliente) => (
-                    <div key={cliente.id} className="flex items-center px-4 py-3 border-b border-secondary-100 last:border-b-0">
+                    <div key={cliente.id} className="flex items-center px-4 py-3 border-b border-secondary-100 dark:border-secondary-700 last:border-b-0 hover:bg-secondary-50 dark:hover:bg-secondary-800 transition-colors">
                       <input
                         type="checkbox"
                         checked={selectedClientes.includes(cliente.id)}
                         onChange={() => handleSelectCliente(cliente.id)}
-                        className="rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+                        className="rounded border-secondary-300 dark:border-secondary-600 text-primary-600 dark:text-primary-400 focus:ring-primary-500 dark:focus:ring-primary-400 bg-white dark:bg-secondary-800"
                       />
                       <div className="ml-3 flex-1">
-                        <div className="text-sm font-medium text-secondary-900">
+                        <div className="text-sm font-medium text-secondary-900 dark:text-secondary-100">
                           {cliente.nome}
                         </div>
-                        <div className="text-sm text-secondary-500">
+                        <div className="text-sm text-secondary-500 dark:text-secondary-400">
                           {cliente.telefone} • {cliente.email}
                         </div>
                       </div>
@@ -910,7 +910,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
             {activeTab === 'novos' && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                     Números de Telefone
                   </label>
                   <div className="space-y-3">
@@ -937,7 +937,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                           Upload CSV
                         </label>
                       </div>
-                      <div className="text-sm text-secondary-600">
+                      <div className="text-sm text-secondary-600 dark:text-secondary-400">
                         {numerosProcessados.length} número(s) válido(s)
                       </div>
                     </div>
@@ -949,8 +949,8 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
             {/* Mensagem */}
             <div className="mt-6">
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-secondary-700 flex items-center">
-                  <DocumentTextIcon className="h-4 w-4 mr-2" />
+                <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 flex items-center">
+                  <DocumentTextIcon className="h-4 w-4 mr-2 text-secondary-500 dark:text-secondary-400" />
                   Mensagem
                 </label>
                 <div className="flex items-center space-x-2">
@@ -969,7 +969,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                     <ArrowPathIcon className="h-4 w-4 mr-1" />
                     {aiLoading ? 'Gerando...' : 'Gerar Variações'}
                   </button>
-                  <span className={`text-sm flex items-center ${caracteresRestantes < 0 ? 'text-error-600' : 'text-secondary-500'}`}>
+                  <span className={`text-sm flex items-center ${caracteresRestantes < 0 ? 'text-error-600 dark:text-error-400' : 'text-secondary-500 dark:text-secondary-400'}`}>
                     <DocumentTextIcon className="h-3 w-3 mr-1" />
                     {caracteresRestantes} caracteres restantes
                   </span>
@@ -977,17 +977,17 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
               </div>
               
               {previewMode ? (
-                <div className="border border-secondary-200 rounded-md p-4 bg-secondary-50">
+                <div className="border border-secondary-200 dark:border-secondary-700 rounded-md p-4 bg-secondary-50 dark:bg-secondary-900">
                   <div className="flex items-center mb-2">
-                    <div className="w-8 h-8 bg-success-500 rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-success-500 dark:bg-success-600 rounded-full flex items-center justify-center">
                       <span className="text-white text-xs font-bold">W</span>
                     </div>
                     <div className="ml-3">
-                      <div className="text-sm font-medium text-secondary-900">WhatsApp</div>
-                      <div className="text-xs text-secondary-500">agora</div>
+                      <div className="text-sm font-medium text-secondary-900 dark:text-secondary-100">WhatsApp</div>
+                      <div className="text-xs text-secondary-500 dark:text-secondary-400">agora</div>
                     </div>
                   </div>
-                  <div className="text-sm text-secondary-900 whitespace-pre-wrap">
+                  <div className="text-sm text-secondary-900 dark:text-secondary-100 whitespace-pre-wrap">
                     {getPreviewMensagem()}
                   </div>
                 </div>
@@ -1004,11 +1004,11 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
             {/* Seleção de Sessão WAHA */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-secondary-700 mb-2">
+                <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                   Sessão WAHA
                 </label>
                 <div className="flex items-center space-x-2 mb-2">
-                  <span className="text-xs text-secondary-500">
+                  <span className="text-xs text-secondary-500 dark:text-secondary-400">
                     {workingSessions.length} de {wahaSessions.length} sessões conectadas
                   </span>
                 </div>
@@ -1030,7 +1030,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                       }}
                       className="text-primary-600 focus:ring-primary-500"
                     />
-                    <label htmlFor="specific-session" className="text-sm text-secondary-700">
+                    <label htmlFor="specific-session" className="text-sm text-secondary-700 dark:text-secondary-300">
                       Usar sessão específica
                     </label>
                   </div>
@@ -1046,9 +1046,9 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                         setUseLoadBalancing(true)
                         setSelectedSession('')
                       }}
-                      className="text-primary-600 focus:ring-primary-500"
+                      className="text-primary-600 dark:text-primary-400 focus:ring-primary-500 dark:focus:ring-primary-400"
                     />
-                    <label htmlFor="load-balancing" className="text-sm text-secondary-700">
+                    <label htmlFor="load-balancing" className="text-sm text-secondary-700 dark:text-secondary-300">
                       Balanceamento automático entre sessões
                     </label>
                   </div>
@@ -1074,7 +1074,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                       ))}
                     </select>
                     {workingSessions.length === 0 && (
-                      <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
+                      <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-xs text-yellow-700 dark:text-yellow-400">
                         ⚠️ Nenhuma sessão conectada. Conecte uma sessão em Sessões WAHA ou use o balanceamento automático.
                       </div>
                     )}
@@ -1083,10 +1083,10 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
 
                 {/* Mensagens de Status */}
                 {useLoadBalancing && (
-                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                  <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
                     <div className="flex items-center">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                      <p className="text-xs text-blue-700">
+                      <div className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full mr-2"></div>
+                      <p className="text-xs text-blue-700 dark:text-blue-400">
                         As mensagens serão distribuídas automaticamente entre todas as sessões conectadas
                       </p>
                     </div>
@@ -1111,27 +1111,27 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
             {variationsPreview.length > 0 && (
               <div className="mt-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-medium text-secondary-700 flex items-center">
+                  <h4 className="text-sm font-medium text-secondary-700 dark:text-secondary-300 flex items-center">
                     <ArrowPathIcon className="h-4 w-4 mr-2" />
                     Variações Geradas ({variationsPreview.length})
                   </h4>
                   <button
                     onClick={() => setVariationsPreview([])}
-                    className="text-xs text-secondary-500 hover:text-secondary-700"
+                    className="text-xs text-secondary-500 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-300 transition-colors"
                   >
                     Limpar
                   </button>
                 </div>
                 
-                <div className="max-h-48 overflow-y-auto border border-secondary-200 rounded-md">
+                <div className="max-h-48 overflow-y-auto border border-secondary-200 dark:border-secondary-700 rounded-md bg-white dark:bg-secondary-900">
                   {variationsPreview.map((variation, index) => (
-                    <div key={index} className="p-3 border-b border-secondary-100 last:border-b-0 hover:bg-secondary-50">
+                    <div key={index} className="p-3 border-b border-secondary-100 dark:border-secondary-700 last:border-b-0 hover:bg-secondary-50 dark:hover:bg-secondary-800 transition-colors">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="text-xs text-secondary-500 mb-1">
+                          <div className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">
                             Variação {index + 1}
                           </div>
-                          <div className="text-sm text-secondary-900 whitespace-pre-wrap">
+                          <div className="text-sm text-secondary-900 dark:text-secondary-100 whitespace-pre-wrap">
                             {variation}
                           </div>
                         </div>
@@ -1140,7 +1140,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                             setMensagem(variation)
                             setPreviewMode(true)
                           }}
-                          className="ml-2 text-primary-600 hover:text-primary-800 text-xs"
+                          className="ml-2 text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 text-xs transition-colors"
                         >
                           <EyeIcon className="h-3 w-3" />
                         </button>
@@ -1149,10 +1149,10 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                   ))}
                 </div>
                 
-                <div className="mt-3 p-3 bg-primary-50 border border-primary-200 rounded-md">
+                <div className="mt-3 p-3 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-md">
                   <div className="flex items-center">
-                    <CheckCircleIcon className="h-4 w-4 text-primary-600 mr-2" />
-                    <div className="text-sm text-primary-800">
+                    <CheckCircleIcon className="h-4 w-4 text-primary-600 dark:text-primary-400 mr-2" />
+                    <div className="text-sm text-primary-800 dark:text-primary-300">
                       <strong>Variações ativadas!</strong> Cada destinatário receberá uma versão diferente da mensagem, 
                       mantendo o contexto mas com pequenas variações para evitar spam.
                     </div>
@@ -1164,7 +1164,7 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
             {/* Configurações de Variações */}
             <div className="mt-6">
               <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-medium text-secondary-700 flex items-center">
+                <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 flex items-center">
                   <ArrowPathIcon className="h-4 w-4 mr-2" />
                   Configurações de Variações
                 </label>
@@ -1175,9 +1175,9 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                       id="useAI"
                       checked={useAI}
                       onChange={(e) => setUseAI(e.target.checked)}
-                      className="rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+                      className="rounded border-secondary-300 dark:border-secondary-600 text-primary-600 dark:text-primary-400 focus:ring-primary-500 dark:focus:ring-primary-400 bg-white dark:bg-secondary-800"
                     />
-                    <label htmlFor="useAI" className="text-sm text-secondary-700">
+                    <label htmlFor="useAI" className="text-sm text-secondary-700 dark:text-secondary-300">
                       Variações por IA (Gemini)
                     </label>
                   </div>
@@ -1186,9 +1186,9 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
                     id="enableVariations"
                     checked={enableVariations}
                     onChange={(e) => setEnableVariations(e.target.checked)}
-                    className="rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+                    className="rounded border-secondary-300 dark:border-secondary-600 text-primary-600 dark:text-primary-400 focus:ring-primary-500 dark:focus:ring-primary-400 bg-white dark:bg-secondary-800"
                   />
-                  <label htmlFor="enableVariations" className="text-sm text-secondary-700">
+                  <label htmlFor="enableVariations" className="text-sm text-secondary-700 dark:text-secondary-300">
                     Ativar variações automáticas
                   </label>
                 </div>
@@ -1197,23 +1197,29 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
           </div>
 
           {/* Footer */}
-          <div className="bg-secondary-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+          <div className="bg-secondary-50 dark:bg-secondary-900 px-4 py-4 sm:flex sm:flex-row-reverse sm:px-6 border-t border-secondary-200 dark:border-secondary-700">
             <button
               onClick={handleEnviar}
               disabled={loading || !isMensagemValida}
-              className="btn btn-primary btn-md w-full sm:w-auto sm:ml-3"
+              className="inline-flex items-center px-5 py-2.5 text-sm font-medium rounded-lg text-white bg-primary-600 dark:bg-primary-500 hover:bg-primary-700 dark:hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-primary-400 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto sm:ml-3"
             >
               {loading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Enviando...
+                </>
               ) : (
-                <PaperAirplaneIcon className="h-4 w-4 mr-2" />
+                <>
+                  <PaperAirplaneIcon className="h-4 w-4 mr-2" />
+                  Enviar Mensagens
+                </>
               )}
-              {loading ? 'Enviando...' : 'Enviar Mensagens'}
             </button>
             <button
               onClick={onClose}
-              className="btn btn-secondary btn-md w-full sm:w-auto mt-3 sm:mt-0"
+              className="inline-flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-secondary-700 dark:text-secondary-300 bg-white dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 hover:bg-secondary-50 dark:hover:bg-secondary-600 hover:border-secondary-400 dark:hover:border-secondary-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary-500 dark:focus:ring-secondary-400 transition-all duration-200 w-full sm:w-auto mt-3 sm:mt-0"
             >
+              <XMarkIcon className="h-4 w-4 mr-2" />
               Cancelar
             </button>
           </div>

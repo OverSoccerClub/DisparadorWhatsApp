@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { 
   ChartBarIcon,
   DocumentArrowDownIcon,
@@ -10,6 +10,7 @@ import {
 import PageHeader from './PageHeader'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts'
 import { formatDate } from '@/lib/utils'
+import { useTheme } from '@/lib/contexts/ThemeContext'
 
 // Mock data para relatórios
 const mockRelatorioData = [
@@ -50,6 +51,7 @@ const mockHorariosData = [
 ]
 
 export default function RelatoriosPage() {
+  const { theme } = useTheme()
   const [periodo, setPeriodo] = useState('30d')
   const [tipoRelatorio, setTipoRelatorio] = useState('geral')
   const [loading, setLoading] = useState(false)
@@ -111,7 +113,7 @@ export default function RelatoriosPage() {
         <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
           <div className="flex items-center space-x-4">
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-1">
+              <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
                 Período
               </label>
               <select
@@ -126,7 +128,7 @@ export default function RelatoriosPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-1">
+              <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
                 Tipo de Relatório
               </label>
               <select
@@ -149,14 +151,14 @@ export default function RelatoriosPage() {
         <div className="card p-6">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
-                <ChartBarIcon className="h-5 w-5 text-primary-600" />
+              <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex items-center justify-center">
+                <ChartBarIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
               </div>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-secondary-500">Total Enviadas</p>
-              <p className="text-2xl font-semibold text-secondary-900">13,160</p>
-              <p className="text-sm text-success-600">+12% vs mês anterior</p>
+              <p className="text-sm font-medium text-secondary-500 dark:text-secondary-400">Total Enviadas</p>
+              <p className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100">13,160</p>
+              <p className="text-sm text-success-600 dark:text-success-400">+12% vs mês anterior</p>
             </div>
           </div>
         </div>
@@ -164,14 +166,14 @@ export default function RelatoriosPage() {
         <div className="card p-6">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-success-100 rounded-lg flex items-center justify-center">
-                <ChartBarIcon className="h-5 w-5 text-success-600" />
+              <div className="w-8 h-8 bg-success-100 dark:bg-success-900/20 rounded-lg flex items-center justify-center">
+                <ChartBarIcon className="h-5 w-5 text-success-600 dark:text-success-400" />
               </div>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-secondary-500">Taxa de Entrega</p>
-              <p className="text-2xl font-semibold text-secondary-900">94.2%</p>
-              <p className="text-sm text-success-600">+2.1% vs mês anterior</p>
+              <p className="text-sm font-medium text-secondary-500 dark:text-secondary-400">Taxa de Entrega</p>
+              <p className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100">94.2%</p>
+              <p className="text-sm text-success-600 dark:text-success-400">+2.1% vs mês anterior</p>
             </div>
           </div>
         </div>
@@ -179,14 +181,14 @@ export default function RelatoriosPage() {
         <div className="card p-6">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-warning-100 rounded-lg flex items-center justify-center">
-                <ChartBarIcon className="h-5 w-5 text-warning-600" />
+              <div className="w-8 h-8 bg-warning-100 dark:bg-warning-900/20 rounded-lg flex items-center justify-center">
+                <ChartBarIcon className="h-5 w-5 text-warning-600 dark:text-warning-400" />
               </div>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-secondary-500">Taxa de Leitura</p>
-              <p className="text-2xl font-semibold text-secondary-900">78.5%</p>
-              <p className="text-sm text-success-600">+5.3% vs mês anterior</p>
+              <p className="text-sm font-medium text-secondary-500 dark:text-secondary-400">Taxa de Leitura</p>
+              <p className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100">78.5%</p>
+              <p className="text-sm text-success-600 dark:text-success-400">+5.3% vs mês anterior</p>
             </div>
           </div>
         </div>
@@ -194,14 +196,14 @@ export default function RelatoriosPage() {
         <div className="card p-6">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-error-100 rounded-lg flex items-center justify-center">
-                <ChartBarIcon className="h-5 w-5 text-error-600" />
+              <div className="w-8 h-8 bg-error-100 dark:bg-error-900/20 rounded-lg flex items-center justify-center">
+                <ChartBarIcon className="h-5 w-5 text-error-600 dark:text-error-400" />
               </div>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-secondary-500">Taxa de Erro</p>
-              <p className="text-2xl font-semibold text-secondary-900">2.0%</p>
-              <p className="text-sm text-success-600">-0.8% vs mês anterior</p>
+              <p className="text-sm font-medium text-secondary-500 dark:text-secondary-400">Taxa de Erro</p>
+              <p className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100">2.0%</p>
+              <p className="text-sm text-success-600 dark:text-success-400">-0.8% vs mês anterior</p>
             </div>
           </div>
         </div>
@@ -211,16 +213,23 @@ export default function RelatoriosPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Evolução Mensal */}
         <div className="card p-6">
-          <h3 className="text-lg font-medium text-secondary-900 mb-4">
+          <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100 mb-4">
             Evolução Mensal de Envios
           </h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={mockRelatorioData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
+                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#475569' : '#e5e7eb'} />
+                <XAxis dataKey="name" stroke={theme === 'dark' ? '#cbd5e1' : '#6b7280'} />
+                <YAxis stroke={theme === 'dark' ? '#cbd5e1' : '#6b7280'} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: theme === 'dark' ? '#1e293b' : '#fff',
+                    border: theme === 'dark' ? '1px solid #334155' : '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    color: theme === 'dark' ? '#f1f5f9' : '#111827'
+                  }}
+                />
                 <Area type="monotone" dataKey="enviadas" stackId="1" stroke="#2563eb" fill="#2563eb" fillOpacity={0.6} />
                 <Area type="monotone" dataKey="entregues" stackId="2" stroke="#10b981" fill="#10b981" fillOpacity={0.6} />
                 <Area type="monotone" dataKey="lidas" stackId="3" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.6} />
@@ -231,7 +240,7 @@ export default function RelatoriosPage() {
 
         {/* Distribuição por Status */}
         <div className="card p-6">
-          <h3 className="text-lg font-medium text-secondary-900 mb-4">
+          <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100 mb-4">
             Distribuição por Status
           </h3>
           <div className="h-80">
@@ -250,7 +259,14 @@ export default function RelatoriosPage() {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: theme === 'dark' ? '#1e293b' : '#fff',
+                    border: theme === 'dark' ? '1px solid #334155' : '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    color: theme === 'dark' ? '#f1f5f9' : '#111827'
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -262,9 +278,9 @@ export default function RelatoriosPage() {
                     className="w-3 h-3 rounded-full mr-2" 
                     style={{ backgroundColor: item.color }}
                   />
-                  <span className="text-sm text-secondary-600">{item.name}</span>
+                  <span className="text-sm text-secondary-600 dark:text-secondary-400">{item.name}</span>
                 </div>
-                <span className="text-sm font-medium text-secondary-900">
+                <span className="text-sm font-medium text-secondary-900 dark:text-secondary-100">
                   {item.value}%
                 </span>
               </div>
@@ -275,48 +291,48 @@ export default function RelatoriosPage() {
 
       {/* Performance por Campanha */}
       <div className="card p-6">
-        <h3 className="text-lg font-medium text-secondary-900 mb-4">
+        <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100 mb-4">
           Performance por Campanha
         </h3>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-secondary-200">
-            <thead className="bg-secondary-50">
+          <table className="min-w-full divide-y divide-secondary-200 dark:divide-secondary-700">
+            <thead className="bg-secondary-50 dark:bg-secondary-900">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">
                   Campanha
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">
                   Enviadas
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">
                   Entregues
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">
                   Taxa de Entrega
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-secondary-200">
+            <tbody className="bg-white dark:bg-secondary-800 divide-y divide-secondary-200 dark:divide-secondary-700">
               {mockCampanhasData.map((campanha, index) => (
-                <tr key={index} className="hover:bg-secondary-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-secondary-900">
+                <tr key={index} className="hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-secondary-900 dark:text-secondary-100">
                     {campanha.nome}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900 dark:text-secondary-100">
                     {campanha.enviadas.toLocaleString()}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900 dark:text-secondary-100">
                     {campanha.entregues.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="w-16 bg-secondary-200 rounded-full h-2 mr-2">
+                      <div className="w-16 bg-secondary-200 dark:bg-secondary-700 rounded-full h-2 mr-2">
                         <div 
-                          className="bg-success-500 h-2 rounded-full" 
+                          className="bg-success-500 dark:bg-success-400 h-2 rounded-full" 
                           style={{ width: `${campanha.taxaEntrega}%` }}
                         />
                       </div>
-                      <span className="text-sm font-medium text-secondary-900">
+                      <span className="text-sm font-medium text-secondary-900 dark:text-secondary-100">
                         {campanha.taxaEntrega}%
                       </span>
                     </div>
@@ -330,16 +346,23 @@ export default function RelatoriosPage() {
 
       {/* Horários de Maior Engajamento */}
       <div className="card p-6">
-        <h3 className="text-lg font-medium text-secondary-900 mb-4">
+        <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100 mb-4">
           Horários de Maior Engajamento
         </h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={mockHorariosData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="hora" />
-              <YAxis />
-              <Tooltip />
+              <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#475569' : '#e5e7eb'} />
+              <XAxis dataKey="hora" stroke={theme === 'dark' ? '#cbd5e1' : '#6b7280'} />
+              <YAxis stroke={theme === 'dark' ? '#cbd5e1' : '#6b7280'} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: theme === 'dark' ? '#1e293b' : '#fff',
+                  border: theme === 'dark' ? '1px solid #334155' : '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  color: theme === 'dark' ? '#f1f5f9' : '#111827'
+                }}
+              />
               <Bar dataKey="envios" fill="#2563eb" />
             </BarChart>
           </ResponsiveContainer>
@@ -348,40 +371,40 @@ export default function RelatoriosPage() {
 
       {/* Resumo Executivo */}
       <div className="card p-6">
-        <h3 className="text-lg font-medium text-secondary-900 mb-4">
+        <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100 mb-4">
           Resumo Executivo
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h4 className="text-sm font-medium text-secondary-700 mb-2">Pontos Positivos</h4>
-            <ul className="space-y-2 text-sm text-secondary-600">
+            <h4 className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Pontos Positivos</h4>
+            <ul className="space-y-2 text-sm text-secondary-600 dark:text-secondary-400">
               <li className="flex items-center">
-                <div className="w-2 h-2 bg-success-500 rounded-full mr-2" />
+                <div className="w-2 h-2 bg-success-500 dark:bg-success-400 rounded-full mr-2" />
                 Taxa de entrega acima da média (94.2%)
               </li>
               <li className="flex items-center">
-                <div className="w-2 h-2 bg-success-500 rounded-full mr-2" />
+                <div className="w-2 h-2 bg-success-500 dark:bg-success-400 rounded-full mr-2" />
                 Crescimento consistente no volume de envios
               </li>
               <li className="flex items-center">
-                <div className="w-2 h-2 bg-success-500 rounded-full mr-2" />
+                <div className="w-2 h-2 bg-success-500 dark:bg-success-400 rounded-full mr-2" />
                 Baixa taxa de erro (2.0%)
               </li>
             </ul>
           </div>
           <div>
-            <h4 className="text-sm font-medium text-secondary-700 mb-2">Oportunidades de Melhoria</h4>
-            <ul className="space-y-2 text-sm text-secondary-600">
+            <h4 className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Oportunidades de Melhoria</h4>
+            <ul className="space-y-2 text-sm text-secondary-600 dark:text-secondary-400">
               <li className="flex items-center">
-                <div className="w-2 h-2 bg-warning-500 rounded-full mr-2" />
+                <div className="w-2 h-2 bg-warning-500 dark:bg-warning-400 rounded-full mr-2" />
                 Aumentar taxa de leitura (atual: 78.5%)
               </li>
               <li className="flex items-center">
-                <div className="w-2 h-2 bg-warning-500 rounded-full mr-2" />
+                <div className="w-2 h-2 bg-warning-500 dark:bg-warning-400 rounded-full mr-2" />
                 Otimizar horários de envio
               </li>
               <li className="flex items-center">
-                <div className="w-2 h-2 bg-warning-500 rounded-full mr-2" />
+                <div className="w-2 h-2 bg-warning-500 dark:bg-warning-400 rounded-full mr-2" />
                 Personalizar mensagens por segmento
               </li>
             </ul>

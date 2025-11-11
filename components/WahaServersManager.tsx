@@ -366,7 +366,7 @@ export default function WahaServersManager({ userId }: Props) {
   return (
     <div className="card p-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-medium text-secondary-900 flex items-center">
+        <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100 flex items-center">
           <DevicePhoneMobileIcon className="h-5 w-5 mr-2" />
           Servidores WAHA
         </h3>
@@ -398,29 +398,29 @@ export default function WahaServersManager({ userId }: Props) {
 
       {/* Resumo de Status */}
       {servers.length > 0 && (
-        <div className="mb-6 p-4 bg-secondary-50 rounded-lg">
+        <div className="mb-6 p-4 bg-secondary-50 dark:bg-secondary-800 rounded-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
               <div className="flex items-center">
-                <div className="w-3 h-3 bg-success-500 rounded-full mr-2"></div>
-                <span className="text-sm text-secondary-700">
+                <div className="w-3 h-3 bg-success-500 dark:bg-success-400 rounded-full mr-2"></div>
+                <span className="text-sm text-secondary-700 dark:text-secondary-300">
                   Online: {servers.filter(s => s.status?.connected).length}
                 </span>
               </div>
               <div className="flex items-center">
-                <div className="w-3 h-3 bg-error-500 rounded-full mr-2"></div>
-                <span className="text-sm text-secondary-700">
+                <div className="w-3 h-3 bg-error-500 dark:bg-error-400 rounded-full mr-2"></div>
+                <span className="text-sm text-secondary-700 dark:text-secondary-300">
                   Offline: {servers.filter(s => s.status && !s.status.connected).length}
                 </span>
               </div>
               <div className="flex items-center">
-                <div className="w-3 h-3 bg-secondary-400 rounded-full mr-2"></div>
-                <span className="text-sm text-secondary-700">
+                <div className="w-3 h-3 bg-secondary-400 dark:bg-secondary-500 rounded-full mr-2"></div>
+                <span className="text-sm text-secondary-700 dark:text-secondary-300">
                   Não testado: {servers.filter(s => !s.status).length}
                 </span>
               </div>
             </div>
-            <div className="text-sm text-secondary-600">
+            <div className="text-sm text-secondary-600 dark:text-secondary-400">
               Total: {servers.length} servidor{servers.length !== 1 ? 'es' : ''}
             </div>
           </div>
@@ -429,9 +429,9 @@ export default function WahaServersManager({ userId }: Props) {
 
       {/* Lista de Servidores */}
       {servers.length === 0 ? (
-        <div className="text-center py-12 bg-secondary-50 rounded-lg">
-          <ServerIcon className="h-12 w-12 mx-auto text-secondary-400 mb-4" />
-          <p className="text-secondary-600 mb-4">Nenhum servidor WAHA configurado</p>
+        <div className="text-center py-12 bg-secondary-50 dark:bg-secondary-800 rounded-lg">
+          <ServerIcon className="h-12 w-12 mx-auto text-secondary-400 dark:text-secondary-600 mb-4" />
+          <p className="text-secondary-600 dark:text-secondary-400 mb-4">Nenhum servidor WAHA configurado</p>
           <button
             onClick={handleAdd}
             className="btn btn-primary btn-sm"
@@ -441,57 +441,57 @@ export default function WahaServersManager({ userId }: Props) {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {servers.map((server) => (
             <div
               key={server.id}
-              className="border border-secondary-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+              className="border border-secondary-200 dark:border-secondary-700 rounded-lg p-4 hover:shadow-md transition-shadow bg-white dark:bg-secondary-800"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
-                  <h4 className="font-medium text-secondary-900 flex items-center">
+                  <h4 className="font-medium text-secondary-900 dark:text-secondary-100 flex items-center">
                     {server.name}
                     {server.status ? (
                       <span
                         className={`ml-2 px-2 py-1 text-xs rounded-full font-medium ${
                           server.status.connected 
-                            ? 'bg-success-100 text-success-800' 
-                            : 'bg-error-100 text-error-800'
+                            ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-300' 
+                            : 'bg-error-100 dark:bg-error-900/30 text-error-800 dark:text-error-300'
                         }`}
                       >
                         {server.status.connected ? 'ONLINE' : 'OFFLINE'}
                       </span>
                     ) : (
-                      <span className="ml-2 px-2 py-1 text-xs rounded-full font-medium bg-secondary-100 text-secondary-600">
+                      <span className="ml-2 px-2 py-1 text-xs rounded-full font-medium bg-secondary-100 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-400">
                         NÃO TESTADO
                       </span>
                     )}
                   </h4>
-                  <p className="text-sm text-secondary-600 truncate mt-1">
+                  <p className="text-xs text-secondary-600 dark:text-secondary-400 break-all mt-1 leading-tight">
                     {server.apiUrl}
                   </p>
                 </div>
                 <div className="flex space-x-1">
                   <button
                     onClick={() => handleEdit(server)}
-                    className="p-1 hover:bg-secondary-100 rounded"
+                    className="p-1 hover:bg-secondary-100 dark:hover:bg-secondary-700 rounded transition-colors"
                     title="Editar"
                   >
-                    <PencilIcon className="h-4 w-4 text-secondary-600" />
+                    <PencilIcon className="h-4 w-4 text-secondary-600 dark:text-secondary-400" />
                   </button>
                   <button
                     onClick={() => server.id && handleDelete(server.id, server.name)}
-                    className="p-1 hover:bg-error-50 rounded"
+                    className="p-1 hover:bg-error-50 dark:hover:bg-error-900/30 rounded transition-colors"
                     title="Excluir"
                   >
-                    <TrashIcon className="h-4 w-4 text-error-600" />
+                    <TrashIcon className="h-4 w-4 text-error-600 dark:text-error-400" />
                   </button>
                 </div>
               </div>
 
               {/* Status */}
               {server.status && (
-                <div className="text-xs text-secondary-600 space-y-1 mb-3">
+                <div className="text-xs text-secondary-600 dark:text-secondary-400 space-y-1 mb-3">
                   {server.status.lastTest && (
                     <div className="flex items-center">
                       <ClockIcon className="h-3 w-3 mr-1" />
@@ -528,11 +528,11 @@ export default function WahaServersManager({ userId }: Props) {
 
       {/* Modal de Edição/Criação */}
       {showModal && editingServer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-secondary-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-medium text-secondary-900">
+                <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100">
                   {editingServer.id ? 'Editar Servidor WAHA' : 'Novo Servidor WAHA'}
                 </h3>
                 <button
@@ -540,7 +540,7 @@ export default function WahaServersManager({ userId }: Props) {
                     setShowModal(false)
                     setEditingServer(null)
                   }}
-                  className="text-secondary-400 hover:text-secondary-600"
+                  className="text-secondary-400 dark:text-secondary-500 hover:text-secondary-600 dark:hover:text-secondary-300 transition-colors"
                 >
                   <XMarkIcon className="h-6 w-6" />
                 </button>
@@ -549,7 +549,7 @@ export default function WahaServersManager({ userId }: Props) {
               <div className="space-y-4">
                 {/* Nome */}
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                     Nome do Servidor *
                   </label>
                   <input
@@ -563,7 +563,7 @@ export default function WahaServersManager({ userId }: Props) {
 
                 {/* URL */}
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                     URL da API *
                   </label>
                   <input
@@ -577,7 +577,7 @@ export default function WahaServersManager({ userId }: Props) {
 
                 {/* API Key */}
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                     API Key
                   </label>
                   <input
@@ -591,7 +591,7 @@ export default function WahaServersManager({ userId }: Props) {
 
                 {/* Webhook URL */}
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                     Webhook URL (opcional)
                   </label>
                   <input
@@ -605,7 +605,7 @@ export default function WahaServersManager({ userId }: Props) {
 
                 {/* Webhook Secret */}
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                     Chave Secreta do Webhook
                   </label>
                   <input
@@ -620,7 +620,7 @@ export default function WahaServersManager({ userId }: Props) {
                 {/* Configurações Numéricas */}
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                       Timeout (s)
                     </label>
                     <input
@@ -633,7 +633,7 @@ export default function WahaServersManager({ userId }: Props) {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                       Tentativas
                     </label>
                     <input
@@ -646,7 +646,7 @@ export default function WahaServersManager({ userId }: Props) {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                       Rate Limit
                     </label>
                     <input
@@ -661,8 +661,8 @@ export default function WahaServersManager({ userId }: Props) {
                 </div>
 
                 {/* Configurações Avançadas */}
-                <div className="p-4 bg-secondary-50 rounded-lg">
-                  <h4 className="text-sm font-medium text-secondary-900 mb-3 flex items-center">
+                <div className="p-4 bg-secondary-50 dark:bg-secondary-700/50 rounded-lg">
+                  <h4 className="text-sm font-medium text-secondary-900 dark:text-secondary-100 mb-3 flex items-center">
                     <CogIcon className="h-4 w-4 mr-2" />
                     Configurações Avançadas
                   </h4>
@@ -673,9 +673,9 @@ export default function WahaServersManager({ userId }: Props) {
                         id="enableAutoReconnect"
                         checked={editingServer.enableAutoReconnect}
                         onChange={(e) => setEditingServer({ ...editingServer, enableAutoReconnect: e.target.checked })}
-                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 rounded"
+                        className="h-4 w-4 text-primary-600 dark:text-primary-400 focus:ring-primary-500 dark:focus:ring-primary-400 border-secondary-300 dark:border-secondary-600 rounded bg-white dark:bg-secondary-700"
                       />
-                      <label htmlFor="enableAutoReconnect" className="ml-2 text-sm text-secondary-700">
+                      <label htmlFor="enableAutoReconnect" className="ml-2 text-sm text-secondary-700 dark:text-secondary-300">
                         Reconexão Automática
                       </label>
                     </div>
@@ -685,9 +685,9 @@ export default function WahaServersManager({ userId }: Props) {
                         id="enableQrCode"
                         checked={editingServer.enableQrCode}
                         onChange={(e) => setEditingServer({ ...editingServer, enableQrCode: e.target.checked })}
-                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 rounded"
+                        className="h-4 w-4 text-primary-600 dark:text-primary-400 focus:ring-primary-500 dark:focus:ring-primary-400 border-secondary-300 dark:border-secondary-600 rounded bg-white dark:bg-secondary-700"
                       />
-                      <label htmlFor="enableQrCode" className="ml-2 text-sm text-secondary-700">
+                      <label htmlFor="enableQrCode" className="ml-2 text-sm text-secondary-700 dark:text-secondary-300">
                         QR Code Automático
                       </label>
                     </div>
@@ -697,9 +697,9 @@ export default function WahaServersManager({ userId }: Props) {
                         id="enablePresence"
                         checked={editingServer.enablePresence}
                         onChange={(e) => setEditingServer({ ...editingServer, enablePresence: e.target.checked })}
-                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 rounded"
+                        className="h-4 w-4 text-primary-600 dark:text-primary-400 focus:ring-primary-500 dark:focus:ring-primary-400 border-secondary-300 dark:border-secondary-600 rounded bg-white dark:bg-secondary-700"
                       />
-                      <label htmlFor="enablePresence" className="ml-2 text-sm text-secondary-700">
+                      <label htmlFor="enablePresence" className="ml-2 text-sm text-secondary-700 dark:text-secondary-300">
                         Status de Presença
                       </label>
                     </div>
@@ -710,47 +710,47 @@ export default function WahaServersManager({ userId }: Props) {
                 {testStatus.lastTest && (
                   <div className={`p-4 rounded-lg border-2 ${
                     testStatus.connected 
-                      ? 'bg-success-50 border-success-200' 
-                      : 'bg-error-50 border-error-200'
+                      ? 'bg-success-50 dark:bg-success-900/20 border-success-200 dark:border-success-800' 
+                      : 'bg-error-50 dark:bg-error-900/20 border-error-200 dark:border-error-800'
                   }`}>
                     <div className="flex items-start justify-between mb-2">
                       <h4 className="text-sm font-medium flex items-center">
                         {testStatus.connected ? (
                           <>
-                            <CheckCircleIcon className="h-5 w-5 text-success-600 mr-2" />
-                            <span className="text-success-900">Conexão Testada com Sucesso!</span>
+                            <CheckCircleIcon className="h-5 w-5 text-success-600 dark:text-success-400 mr-2" />
+                            <span className="text-success-900 dark:text-success-200">Conexão Testada com Sucesso!</span>
                           </>
                         ) : (
                           <>
-                            <XCircleIcon className="h-5 w-5 text-error-600 mr-2" />
-                            <span className="text-error-900">Erro na Conexão</span>
+                            <XCircleIcon className="h-5 w-5 text-error-600 dark:text-error-400 mr-2" />
+                            <span className="text-error-900 dark:text-error-200">Erro na Conexão</span>
                           </>
                         )}
                       </h4>
                     </div>
                     
                     <div className="space-y-1 text-xs">
-                      <div className="flex items-center text-secondary-700">
+                      <div className="flex items-center text-secondary-700 dark:text-secondary-300">
                         <ClockIcon className="h-3 w-3 mr-1" />
                         Último teste: {new Date(testStatus.lastTest).toLocaleString('pt-BR')}
                       </div>
                       
                       {testStatus.responseTime && (
-                        <div className="flex items-center text-secondary-700">
+                        <div className="flex items-center text-secondary-700 dark:text-secondary-300">
                           <ServerIcon className="h-3 w-3 mr-1" />
                           Tempo de resposta: {testStatus.responseTime}ms
                         </div>
                       )}
                       
                       {testStatus.connected && testStatus.instances > 0 && (
-                        <div className="flex items-center text-secondary-700">
+                        <div className="flex items-center text-secondary-700 dark:text-secondary-300">
                           <DevicePhoneMobileIcon className="h-3 w-3 mr-1" />
                           Instâncias: {testStatus.instances} ({testStatus.activeConnections} ativas)
                         </div>
                       )}
                       
                       {testStatus.error && (
-                        <div className="text-error-700 mt-2">
+                        <div className="text-error-700 dark:text-error-300 mt-2">
                           <strong>Erro:</strong> {testStatus.error}
                         </div>
                       )}
