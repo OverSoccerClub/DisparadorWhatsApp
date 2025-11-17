@@ -95,7 +95,7 @@ export class EvolutionConfigService {
       console.log('💾 [EvolutionConfigService] Salvando instância:', {
         user_id: instance.user_id,
         instance_name: instance.instance_name,
-        connection_status: instance.connection_status
+        status: instance.status
       })
 
       // Usar upsert para evitar duplicatas (baseado no índice único user_id + instance_name)
