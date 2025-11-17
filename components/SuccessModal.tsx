@@ -36,39 +36,51 @@ export default function SuccessModal({
   
   // useEffect para controlar o timer
   useEffect(() => {
-    if (open) {
-      // Reset do contador quando modal abre
-      setTimeLeft(Math.ceil(autoCloseDelay / 1000))
-      
-      // Timer para fechar o modal
-      const timer = setTimeout(() => {
-        if (onAutoCloseRef.current) onAutoCloseRef.current()
-        if (onCloseRef.current) onCloseRef.current()
-      }, autoCloseDelay)
-      
-      // Contador visual - fechar quando chegar a 1 segundo (antes de mostrar 0)
-      const countdown = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            clearInterval(countdown)
-            // Fechar imediatamente quando chegar a 1 segundo
-            if (onAutoCloseRef.current) onAutoCloseRef.current()
-            if (onCloseRef.current) onCloseRef.current()
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-      
-      return () => {
-        clearTimeout(timer)
-        clearInterval(countdown)
-      }
-    } else {
+    if (!open) {
       // Reset do contador quando modal fecha
       setTimeLeft(Math.ceil(autoCloseDelay / 1000))
+      return
+    }
+
+    // Reset do contador quando modal abre
+    const initialTime = Math.ceil(autoCloseDelay / 1000)
+    setTimeLeft(initialTime)
+    
+    // Timer principal para fechar o modal após o delay completo
+    const timer = setTimeout(() => {
+      if (onAutoCloseRef.current) onAutoCloseRef.current()
+      if (onCloseRef.current) onCloseRef.current()
+    }, autoCloseDelay)
+    
+    // Contador visual - decrementar a cada segundo
+    const countdown = setInterval(() => {
+      setTimeLeft(prev => {
+        const newTime = prev - 1
+        // Quando chegar a 0 ou menos, fechar o modal
+        if (newTime <= 0) {
+          clearInterval(countdown)
+          // Fechar imediatamente
+          if (onAutoCloseRef.current) onAutoCloseRef.current()
+          if (onCloseRef.current) onCloseRef.current()
+          return 0
+        }
+        return newTime
+      })
+    }, 1000)
+    
+    return () => {
+      clearTimeout(timer)
+      clearInterval(countdown)
     }
   }, [open, autoCloseDelay])
+
+  // Fechar modal quando timeLeft chegar a 0
+  useEffect(() => {
+    if (open && timeLeft <= 0) {
+      if (onAutoCloseRef.current) onAutoCloseRef.current()
+      if (onCloseRef.current) onCloseRef.current()
+    }
+  }, [open, timeLeft])
   
   if (!open) return null
   

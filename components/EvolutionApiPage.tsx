@@ -662,7 +662,10 @@ export default function EvolutionApiPage() {
       />
 
       <LoadingOverlay {...loadingOverlay} />
-      <SuccessModal {...successModal} />
+      <SuccessModal 
+        {...successModal}
+        onClose={() => setSuccessModal(prev => ({ ...prev, open: false }))}
+      />
 
       {/* Configuração da Evolution API */}
       <div className="card p-6">
