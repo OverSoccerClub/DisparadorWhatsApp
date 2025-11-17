@@ -1,9 +1,17 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import ClientLayoutWrapper from '@/components/ClientLayoutWrapper'
+import dynamic from 'next/dynamic'
 
 const inter = Inter({ subsets: ['latin'] })
+
+// Dynamic import para evitar problemas de SSR na landing page
+const ClientLayoutWrapper = dynamic(
+  () => import('@/components/ClientLayoutWrapper'),
+  { 
+    ssr: true, // Manter SSR mas com carregamento dinâmico
+  }
+)
 
 export const metadata: Metadata = {
   title: 'WhatsApp Dispatcher - Automação Inteligente',

@@ -25,12 +25,18 @@ export default function ClientLayoutWrapper({ children }: ClientLayoutWrapperPro
     setMounted(true)
   }, [])
 
-  // Se for a página raiz (landing page), renderizar apenas children sem providers
-  if (mounted && pathname === '/') {
+  // Durante SSR ou antes da montagem, renderizar apenas children
+  // Isso evita problemas de hidratação
+  if (!mounted) {
     return <>{children}</>
   }
 
-  // Para outras rotas ou durante SSR, usar providers completos
+  // Se for a página raiz (landing page), renderizar apenas children sem providers
+  if (pathname === '/') {
+    return <>{children}</>
+  }
+
+  // Para outras rotas, usar providers completos
   return (
     <>
       <GlobalLoading />
