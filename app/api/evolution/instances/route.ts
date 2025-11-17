@@ -1,25 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { EvolutionConfigService } from '@/lib/supabase/evolution-config-service'
-import { AuthService } from '@/lib/auth/auth-service'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 export async function GET(request: NextRequest) {
   try {
-    // Buscar token do cookie
-    const token = request.cookies.get('auth-token')?.value
+    // Usar autenticação Supabase
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+        },
+      }
+    )
 
-    if (!token) {
+    // Verificar autenticação
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
       return NextResponse.json(
-        { success: false, error: 'Token não encontrado' },
-        { status: 401 }
-      )
-    }
-
-    // Verificar token e buscar usuário
-    const user = await AuthService.verifyAuth(token)
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Token inválido' },
+        { success: false, error: 'Usuário não autenticado' },
         { status: 401 }
       )
     }
