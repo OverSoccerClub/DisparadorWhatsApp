@@ -1,5 +1,7 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import Footer from '@/components/Footer'
 import NotificationProvider from '@/components/NotificationProvider'
 import ChunkErrorHandler from '@/components/ChunkErrorHandler'
@@ -16,6 +18,19 @@ interface ClientLayoutWrapperProps {
 }
 
 export default function ClientLayoutWrapper({ children }: ClientLayoutWrapperProps) {
+  const pathname = usePathname()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Se for a página raiz (landing page), renderizar apenas children sem providers
+  if (mounted && pathname === '/') {
+    return <>{children}</>
+  }
+
+  // Para outras rotas ou durante SSR, usar providers completos
   return (
     <>
       <GlobalLoading />
