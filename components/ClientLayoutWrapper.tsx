@@ -18,15 +18,11 @@ interface ClientLayoutWrapperProps {
 }
 
 export default function ClientLayoutWrapper({ children }: ClientLayoutWrapperProps) {
+  const pathname = usePathname() // Sempre chamar hooks no topo
   const [mounted, setMounted] = useState(false)
-  const [isLandingPage, setIsLandingPage] = useState(false)
   
   useEffect(() => {
     setMounted(true)
-    // Verificar pathname apenas no cliente
-    if (typeof window !== 'undefined') {
-      setIsLandingPage(window.location.pathname === '/')
-    }
   }, [])
   
   // Durante SSR ou antes da montagem, renderizar apenas children
@@ -36,14 +32,6 @@ export default function ClientLayoutWrapper({ children }: ClientLayoutWrapperPro
   }
   
   // Se estiver na página raiz (landing page), não usar componentes do sistema
-  if (isLandingPage) {
-    return <>{children}</>
-  }
-  
-  // Usar pathname apenas após montagem para outras rotas
-  const pathname = usePathname()
-  
-  // Verificação adicional com pathname (fallback)
   if (pathname === '/') {
     return <>{children}</>
   }
