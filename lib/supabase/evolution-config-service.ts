@@ -86,36 +86,48 @@ export class EvolutionConfigService {
     }
   }
 
-  // Salvar instância criada
+  // Salvar instância criada (usa upsert para evitar duplicatas)
   static async saveInstance(instance: Omit<EvolutionInstance, 'id' | 'created_at' | 'updated_at'>) {
     try {
+      console.log('💾 [EvolutionConfigService] Salvando instância:', {
+        user_id: instance.user_id,
+        instance_name: instance.instance_name,
+        connection_status: instance.connection_status
+      })
+
+      // Usar upsert para evitar duplicatas (baseado em user_id + instance_name)
       const { data, error } = await supabase
         .from('evolution_instances')
-        .insert({
+        .upsert({
           user_id: instance.user_id,
           instance_name: instance.instance_name,
-          connection_status: instance.connection_status,
+          connection_status: instance.connection_status || 'close',
           phone_number: instance.phone_number,
           last_seen: instance.last_seen
+        }, {
+          onConflict: 'user_id,instance_name'
         })
         .select()
         .single()
 
       if (error) {
-        console.error('Erro ao salvar instância:', error)
+        console.error('❌ [EvolutionConfigService] Erro ao salvar instância:', error)
         throw error
       }
 
+      console.log('✅ [EvolutionConfigService] Instância salva com sucesso:', data)
       return { success: true, data }
-    } catch (error) {
-      console.error('Erro no EvolutionConfigService.saveInstance:', error)
-      return { success: false, error: error.message }
+    } catch (error: any) {
+      console.error('❌ [EvolutionConfigService] Erro no saveInstance:', error)
+      return { success: false, error: error?.message || 'Erro desconhecido ao salvar instância' }
     }
   }
 
   // Buscar instâncias do usuário
   static async getUserInstances(userId: string) {
     try {
+      console.log('🔍 [EvolutionConfigService] Buscando instâncias para usuário:', userId)
+      
       const { data, error } = await supabase
         .from('evolution_instances')
         .select('*')
@@ -123,14 +135,19 @@ export class EvolutionConfigService {
         .order('created_at', { ascending: false })
 
       if (error) {
-        console.error('Erro ao buscar instâncias:', error)
+        console.error('❌ [EvolutionConfigService] Erro ao buscar instâncias:', error)
         throw error
       }
 
+      console.log(`✅ [EvolutionConfigService] Encontradas ${data?.length || 0} instâncias para usuário ${userId}`)
+      if (data && data.length > 0) {
+        console.log('📋 [EvolutionConfigService] Instâncias encontradas:', data.map(i => i.instance_name))
+      }
+
       return { success: true, data: data || [] }
-    } catch (error) {
-      console.error('Erro no EvolutionConfigService.getUserInstances:', error)
-      return { success: false, error: error.message }
+    } catch (error: any) {
+      console.error('❌ [EvolutionConfigService] Erro no getUserInstances:', error)
+      return { success: false, error: error?.message || 'Erro desconhecido ao buscar instâncias' }
     }
   }
 
