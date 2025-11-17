@@ -46,11 +46,14 @@ export default function SuccessModal({
         if (onCloseRef.current) onCloseRef.current()
       }, autoCloseDelay)
       
-      // Contador visual
+      // Contador visual - fechar quando chegar a 1 segundo (antes de mostrar 0)
       const countdown = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
             clearInterval(countdown)
+            // Fechar imediatamente quando chegar a 1 segundo
+            if (onAutoCloseRef.current) onAutoCloseRef.current()
+            if (onCloseRef.current) onCloseRef.current()
             return 0
           }
           return prev - 1
@@ -61,6 +64,9 @@ export default function SuccessModal({
         clearTimeout(timer)
         clearInterval(countdown)
       }
+    } else {
+      // Reset do contador quando modal fecha
+      setTimeLeft(Math.ceil(autoCloseDelay / 1000))
     }
   }, [open, autoCloseDelay])
   
@@ -81,9 +87,11 @@ export default function SuccessModal({
               {children}
             </div>
           )}
-          <div className="mt-4 text-xs text-secondary-500">
-            Fechando automaticamente em {timeLeft} segundos...
-          </div>
+          {timeLeft > 0 && (
+            <div className="mt-4 text-xs text-secondary-500">
+              Fechando automaticamente em {timeLeft} segundos...
+            </div>
+          )}
         </div>
       </div>
     </div>
