@@ -1,0 +1,62 @@
+'use client'
+
+import Footer from '@/components/Footer'
+import NotificationProvider from '@/components/NotificationProvider'
+import ChunkErrorHandler from '@/components/ChunkErrorHandler'
+import GlobalLoading from '@/components/GlobalLoading'
+import { AuthProvider } from '@/lib/hooks/useAuth'
+import { SidebarProvider } from '@/lib/contexts/SidebarContext'
+import { ThemeProvider } from '@/lib/contexts/ThemeContext'
+import PendingMaturationChecker from '@/components/PendingMaturationChecker'
+import BackgroundMaturationWidget from '@/components/BackgroundMaturationWidget'
+import { Toaster } from 'react-hot-toast'
+
+interface AppProvidersProps {
+  children: React.ReactNode
+}
+
+export default function AppProviders({ children }: AppProvidersProps) {
+  return (
+    <>
+      <GlobalLoading />
+      <ChunkErrorHandler />
+      <AuthProvider>
+        <ThemeProvider>
+          <SidebarProvider>
+            <NotificationProvider>
+              <PendingMaturationChecker />
+              {children}
+              <BackgroundMaturationWidget />
+              <Footer />
+            </NotificationProvider>
+          </SidebarProvider>
+        </ThemeProvider>
+      </AuthProvider>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 5000,
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
+    </>
+  )
+}
+

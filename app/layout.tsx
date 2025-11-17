@@ -1,9 +1,18 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import ClientLayoutWrapper from '@/components/ClientLayoutWrapper'
+import dynamic from 'next/dynamic'
 
 const inter = Inter({ subsets: ['latin'] })
+
+// Carregar ClientLayoutWrapper dinamicamente sem SSR para evitar problemas de hidratação
+const ClientLayoutWrapper = dynamic(
+  () => import('@/components/ClientLayoutWrapper'),
+  { 
+    ssr: false,
+    loading: () => <>{/* Fallback vazio durante carregamento */}</>
+  }
+)
 
 export const metadata: Metadata = {
   title: 'Fluxus Menssager - Automação Inteligente',

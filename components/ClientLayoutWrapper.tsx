@@ -2,82 +2,43 @@
 
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import Footer from '@/components/Footer'
-import NotificationProvider from '@/components/NotificationProvider'
-import ChunkErrorHandler from '@/components/ChunkErrorHandler'
-import GlobalLoading from '@/components/GlobalLoading'
-import { AuthProvider } from '@/lib/hooks/useAuth'
-import { SidebarProvider } from '@/lib/contexts/SidebarContext'
-import { ThemeProvider } from '@/lib/contexts/ThemeContext'
-import PendingMaturationChecker from '@/components/PendingMaturationChecker'
-import BackgroundMaturationWidget from '@/components/BackgroundMaturationWidget'
-import { Toaster } from 'react-hot-toast'
+import dynamic from 'next/dynamic'
 
 interface ClientLayoutWrapperProps {
   children: React.ReactNode
 }
 
+// Carregar componentes dinamicamente apenas quando necessário
+const AppProviders = dynamic(
+  () => import('@/components/AppProviders'),
+  { ssr: false }
+)
+
 export default function ClientLayoutWrapper({ children }: ClientLayoutWrapperProps) {
   const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
+  const [isLandingPage, setIsLandingPage] = useState(false)
 
   useEffect(() => {
     setMounted(true)
-  }, [])
+    setIsLandingPage(pathname === '/')
+  }, [pathname])
 
-  // Durante SSR, sempre renderizar apenas children para evitar problemas de hidratação
-  // Após montagem, verificar pathname e aplicar providers se necessário
+  // Durante SSR e antes da montagem, sempre renderizar apenas children
   if (!mounted) {
     return <>{children}</>
   }
 
   // Se for a página raiz (landing page), renderizar apenas children sem providers
-  if (pathname === '/') {
+  if (isLandingPage) {
     return <>{children}</>
   }
 
-  // Para outras rotas, usar providers completos
+  // Para outras rotas, usar providers completos (carregados dinamicamente)
   return (
-    <>
-      <GlobalLoading />
-      <ChunkErrorHandler />
-      <AuthProvider>
-        <ThemeProvider>
-          <SidebarProvider>
-            <NotificationProvider>
-              <PendingMaturationChecker />
-              {children}
-              <BackgroundMaturationWidget />
-              <Footer />
-            </NotificationProvider>
-          </SidebarProvider>
-        </ThemeProvider>
-      </AuthProvider>
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: '#363636',
-            color: '#fff',
-          },
-          success: {
-            duration: 3000,
-            iconTheme: {
-              primary: '#10b981',
-              secondary: '#fff',
-            },
-          },
-          error: {
-            duration: 5000,
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
-            },
-          },
-        }}
-      />
-    </>
+    <AppProviders>
+      {children}
+    </AppProviders>
   )
 }
 
