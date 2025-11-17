@@ -1,7 +1,5 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
 import Footer from '@/components/Footer'
 import NotificationProvider from '@/components/NotificationProvider'
 import ChunkErrorHandler from '@/components/ChunkErrorHandler'
@@ -18,24 +16,6 @@ interface ClientLayoutWrapperProps {
 }
 
 export default function ClientLayoutWrapper({ children }: ClientLayoutWrapperProps) {
-  const pathname = usePathname() // Sempre chamar hooks no topo
-  const [mounted, setMounted] = useState(false)
-  
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-  
-  // Durante SSR ou antes da montagem, renderizar apenas children
-  // Isso evita problemas de hidratação
-  if (!mounted) {
-    return <>{children}</>
-  }
-  
-  // Se estiver na página raiz (landing page), não usar componentes do sistema
-  if (pathname === '/') {
-    return <>{children}</>
-  }
-
   return (
     <>
       <GlobalLoading />
