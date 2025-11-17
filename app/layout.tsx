@@ -7,8 +7,8 @@ import ClientLayoutWrapper from '@/components/ClientLayoutWrapper'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'WhatsApp Dispatcher - Automação Inteligente',
-  description: 'Plataforma profissional para automação e disparo de mensagens WhatsApp com integração Supabase e Evolution API',
+  title: 'Fluxus Menssager - Automação Inteligente',
+  description: 'Plataforma profissional para automação e disparo de mensagens WhatsApp e Telegram com integração Supabase, Evolution API e WAHA',
   icons: {
     icon: '/favicon.ico',
   },

@@ -9,7 +9,7 @@ import {
   ClockIcon,
   CheckCircleIcon,
   BoltIcon,
-  ShieldCheckIcon,
+  PaperAirplaneIcon,
   CpuChipIcon,
   QueueListIcon,
   DocumentTextIcon,
@@ -70,10 +70,10 @@ export default function LandingPage() {
       color: 'text-accent-600'
     },
     {
-      icon: ShieldCheckIcon,
-      title: 'Segurança Avançada',
-      description: 'Row Level Security (RLS), autenticação Supabase, isolamento de dados por usuário e criptografia.',
-      color: 'text-success-600'
+      icon: PaperAirplaneIcon,
+      title: 'Integração Telegram',
+      description: 'Envie mensagens para canais e grupos do Telegram com agendamento, formatação rica e gerenciamento completo de múltiplos bots.',
+      color: 'text-blue-500'
     },
     {
       icon: BoltIcon,
@@ -128,11 +128,11 @@ export default function LandingPage() {
             <div className="flex items-center space-x-3">
               <img 
                 src="/img/logo_marca_02_trasp.png" 
-                alt="WhatsApp Dispatcher" 
+                alt="Fluxus Menssager" 
                 className="h-10 w-auto"
               />
               <span className="text-xl font-bold text-secondary-900 dark:text-secondary-100">
-                WhatsApp Dispatcher
+                Fluxus Menssager
               </span>
             </div>
             <div className="flex items-center space-x-4">
@@ -250,7 +250,7 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-4xl md:text-5xl font-bold text-secondary-900 dark:text-secondary-100 mb-6">
-                Por que escolher o WhatsApp Dispatcher?
+                Por que escolher o Fluxus Menssager?
               </h2>
               <p className="text-lg text-secondary-600 dark:text-secondary-400 mb-8">
                 Uma plataforma completa que transforma a forma como você se comunica com seus clientes.
@@ -305,13 +305,13 @@ export default function LandingPage() {
             <div className="flex items-center space-x-3 mb-4 md:mb-0">
               <img 
                 src="/img/logo_marca_02_trasp.png" 
-                alt="WhatsApp Dispatcher" 
+                alt="Fluxus Menssager" 
                 className="h-8 w-auto"
               />
-              <span className="text-secondary-400">WhatsApp Dispatcher v0.1.6</span>
+              <span className="text-secondary-400">Fluxus Menssager v0.1.6</span>
             </div>
             <div className="text-secondary-400 text-sm">
-              © {mounted ? new Date().getFullYear() : '2025'} WhatsApp Dispatcher. Todos os direitos reservados.
+              © {mounted ? new Date().getFullYear() : '2025'} Fluxus Menssager. Todos os direitos reservados.
             </div>
           </div>
         </div>

@@ -8,7 +8,7 @@ export default function NotFound() {
         <div className="flex justify-center mb-6">
           <Image
             src="/img/logo_marca_02_trasp.png"
-            alt="WhatsApp Dispatcher"
+            alt="Fluxus Menssager"
             width={200}
             height={200}
             className="h-auto w-auto"

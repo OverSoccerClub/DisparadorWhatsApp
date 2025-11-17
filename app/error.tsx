@@ -14,7 +14,7 @@ export default function Error({
         <div className="flex justify-center mb-6">
           <img 
             src="/img/logo_marca_02_trasp.png" 
-            alt="WhatsApp Dispatcher" 
+            alt="Fluxus Menssager" 
             className="h-16 w-auto"
           />
         </div>

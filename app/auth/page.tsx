@@ -238,7 +238,7 @@ export default function AuthPage() {
             <div className="flex justify-center mb-4">
               <img 
                 src="/img/logo_marca_02_trasp.png" 
-                alt="WhatsApp Dispatcher" 
+                alt="Fluxus Menssager" 
                 className="h-32 md:h-40 lg:h-48 w-auto drop-shadow-lg"
               />
             </div>
@@ -466,7 +466,7 @@ export default function AuthPage() {
         {/* Informações de versão */}
         <div className="mt-6 text-center">
           <p className="text-xs text-secondary-500 dark:text-secondary-400">
-            WhatsApp Dispatcher v0.1.6
+            Fluxus Menssager v0.1.6
           </p>
         </div>
       </div>

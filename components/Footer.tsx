@@ -38,7 +38,7 @@ export default function Footer({ className = '' }: FooterProps) {
         <div className="px-3 md:px-4 lg:px-6">
           <div className="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-2 text-sm text-secondary-600 dark:text-secondary-400">
-              <span>© 2024 WhatsApp Dispatcher</span>
+                  <span>© 2024 Fluxus Menssager</span>
               <span className="hidden sm:inline">•</span>
               <span className="flex items-center">
                 <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
