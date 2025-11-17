@@ -1,5 +1,6 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
 import Footer from '@/components/Footer'
 import NotificationProvider from '@/components/NotificationProvider'
 import ChunkErrorHandler from '@/components/ChunkErrorHandler'
@@ -16,6 +17,13 @@ interface ClientLayoutWrapperProps {
 }
 
 export default function ClientLayoutWrapper({ children }: ClientLayoutWrapperProps) {
+  const pathname = usePathname()
+  
+  // Se estiver na página raiz (landing page), não usar componentes do sistema
+  if (pathname === '/') {
+    return <>{children}</>
+  }
+
   return (
     <>
       <GlobalLoading />
