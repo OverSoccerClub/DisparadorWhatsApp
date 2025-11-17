@@ -1,9 +1,18 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import ConditionalLayoutWrapper from '@/components/ConditionalLayoutWrapper'
+import dynamic from 'next/dynamic'
 
 const inter = Inter({ subsets: ['latin'] })
+
+// Dynamic import para evitar problemas de SSR
+const ConditionalLayoutWrapper = dynamic(
+  () => import('@/components/ConditionalLayoutWrapper'),
+  { 
+    ssr: false,
+    loading: () => <>{null}</>
+  }
+)
 
 export const metadata: Metadata = {
   title: 'WhatsApp Dispatcher - Automação Inteligente',
