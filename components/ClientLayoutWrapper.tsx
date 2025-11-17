@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import Footer from '@/components/Footer'
 import NotificationProvider from '@/components/NotificationProvider'
 import ChunkErrorHandler from '@/components/ChunkErrorHandler'
@@ -17,7 +17,7 @@ interface ClientLayoutWrapperProps {
   children: React.ReactNode
 }
 
-export default function ClientLayoutWrapper({ children }: ClientLayoutWrapperProps) {
+function ConditionalProviders({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
 
@@ -26,7 +26,6 @@ export default function ClientLayoutWrapper({ children }: ClientLayoutWrapperPro
   }, [])
 
   // Durante SSR ou antes da montagem, renderizar apenas children
-  // Isso evita problemas de hidratação
   if (!mounted) {
     return <>{children}</>
   }
@@ -78,6 +77,14 @@ export default function ClientLayoutWrapper({ children }: ClientLayoutWrapperPro
         }}
       />
     </>
+  )
+}
+
+export default function ClientLayoutWrapper({ children }: ClientLayoutWrapperProps) {
+  return (
+    <Suspense fallback={<>{children}</>}>
+      <ConditionalProviders>{children}</ConditionalProviders>
+    </Suspense>
   )
 }
 
