@@ -16,6 +16,12 @@ export default function ConditionalLayoutWrapper({ children }: ConditionalLayout
     setMounted(true)
   }, [])
 
+  // Durante SSR ou antes da montagem, renderizar apenas children
+  // Isso evita problemas de hidratação
+  if (!mounted) {
+    return <>{children}</>
+  }
+
   // Se for a página raiz, renderizar sem wrapper
   if (pathname === '/') {
     return <>{children}</>
