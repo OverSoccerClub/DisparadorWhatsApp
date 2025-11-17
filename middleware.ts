@@ -22,7 +22,7 @@ export function middleware(request: NextRequest) {
 
   // Rotas que não precisam de autenticação
   const publicRoutes = ['/auth', '/debug', '/debug-auth']
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
+  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route)) || pathname === '/'
 
   // Se for uma rota pública, permitir acesso
   if (isPublicRoute) {
