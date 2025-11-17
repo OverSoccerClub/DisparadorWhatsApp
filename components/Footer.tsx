@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 
 interface FooterProps {
@@ -9,9 +9,23 @@ interface FooterProps {
 
 export default function Footer({ className = '' }: FooterProps) {
   const pathname = usePathname()
+  const [mounted, setMounted] = useState(false)
+  const [currentTime, setCurrentTime] = useState<string>('')
+  
   // Usar versão hardcoded para evitar problemas com importação de package.json em client component
-  const currentVersion = '0.1.5'
+  const currentVersion = '0.1.6'
   const buildDate = new Date().toLocaleDateString('pt-BR')
+  
+  // Atualizar data/hora apenas no cliente para evitar erro de hidratação
+  useEffect(() => {
+    setMounted(true)
+    const updateTime = () => {
+      setCurrentTime(new Date().toLocaleString('pt-BR'))
+    }
+    updateTime()
+    const interval = setInterval(updateTime, 1000) // Atualizar a cada segundo
+    return () => clearInterval(interval)
+  }, [])
   
   // Não exibir footer nas páginas de autenticação
   if (pathname?.startsWith('/auth')) {
@@ -62,7 +76,9 @@ export default function Footer({ className = '' }: FooterProps) {
               
               <div className="flex items-center space-x-2">
                 <span>Última atualização:</span>
-                <span className="font-medium">{new Date().toLocaleString('pt-BR')}</span>
+                <span className="font-medium" suppressHydrationWarning>
+                  {mounted ? currentTime : '--/--/----, --:--:--'}
+                </span>
               </div>
             </div>
           </div>
