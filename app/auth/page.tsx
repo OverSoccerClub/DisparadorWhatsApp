@@ -234,12 +234,12 @@ export default function AuthPage() {
         {/* Card do Formulário */}
         <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-2xl border border-secondary-200 dark:border-secondary-700 overflow-hidden">
           {/* Header com Logo e Título */}
-          <div className="bg-white dark:bg-secondary-800 px-6 pt-4 pb-4 text-center border-b border-secondary-200 dark:border-secondary-700">
-            <div className="flex justify-center mb-3">
+          <div className="bg-white dark:bg-secondary-800 px-6 pt-6 pb-4 text-center border-b border-secondary-200 dark:border-secondary-700">
+            <div className="flex justify-center mb-4">
               <img 
                 src="/img/logo_marca_02_trasp.png" 
                 alt="WhatsApp Dispatcher" 
-                className="h-48 md:h-64 lg:h-72 w-auto drop-shadow-lg"
+                className="h-32 md:h-40 lg:h-48 w-auto drop-shadow-lg"
               />
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-secondary-900 dark:text-secondary-100 mb-2">
@@ -466,7 +466,7 @@ export default function AuthPage() {
         {/* Informações de versão */}
         <div className="mt-6 text-center">
           <p className="text-xs text-secondary-500 dark:text-secondary-400">
-            WhatsApp Dispatcher v0.1.5
+            WhatsApp Dispatcher v0.1.6
           </p>
         </div>
       </div>
