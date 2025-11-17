@@ -72,12 +72,27 @@ export async function GET() {
     const results = await Promise.allSettled(
       (servers || []).map(async (server) => {
         console.log(`🔍 Buscando sessões no servidor: ${server.nome} (${server.api_url})`)
+        
+        // Preparar headers de autenticação
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json'
+        }
+        
+        // Adicionar autenticação se API key estiver disponível
+        if (server.api_key && server.api_key.trim() !== '') {
+          // WAHA aceita tanto X-Api-Key quanto Authorization Bearer
+          headers['X-Api-Key'] = server.api_key.trim()
+          headers['Authorization'] = `Bearer ${server.api_key.trim()}`
+        }
+        
         const res = await fetchWithTimeout(`${server.api_url}/api/sessions`, {
           method: 'GET',
-          headers: server.api_key ? { 'X-Api-Key': server.api_key, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
+          headers,
         })
+        
         if (!res.ok) {
-          console.log(`❌ Erro no servidor ${server.nome}: ${res.status}`)
+          const errorText = await res.text().catch(() => '')
+          console.log(`❌ Erro no servidor WAHA - ${server.nome}: ${res.status}${errorText ? ` - ${errorText.substring(0, 100)}` : ''}`)
           return []
         }
         const list = await res.json()
@@ -94,9 +109,15 @@ export async function GET() {
           if (s.status === 'WORKING' && s.me?.id) {
             try {
               // Buscar foto de perfil do usuário conectado
+              const profileHeaders: HeadersInit = {}
+              if (server.api_key && server.api_key.trim() !== '') {
+                profileHeaders['X-Api-Key'] = server.api_key.trim()
+                profileHeaders['Authorization'] = `Bearer ${server.api_key.trim()}`
+              }
+              
               const profileResponse = await fetchWithTimeout(`${server.api_url}/api/${s.name}/profile-picture/${s.me.id}`, {
                 method: 'GET',
-                headers: server.api_key ? { 'X-Api-Key': server.api_key } : {},
+                headers: profileHeaders,
               }, 5000)
               
               if (profileResponse.ok) {

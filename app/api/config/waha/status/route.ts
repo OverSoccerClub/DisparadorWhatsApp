@@ -53,27 +53,42 @@ export async function POST(request: NextRequest) {
         const startTime = Date.now();
         
         try {
-          const response = await fetch(`${server.api_url}/health`, {
+          // Preparar headers de autenticação
+          const headers: HeadersInit = {
+            'Content-Type': 'application/json'
+          }
+          
+          // Adicionar autenticação se API key estiver disponível
+          if (server.api_key && server.api_key.trim() !== '') {
+            // WAHA aceita tanto X-Api-Key quanto Authorization Bearer
+            headers['X-Api-Key'] = server.api_key.trim()
+            headers['Authorization'] = `Bearer ${server.api_key.trim()}`
+          }
+          
+          // WAHA não tem endpoint /health, usar /api/sessions para verificar status
+          const response = await fetch(`${server.api_url}/api/sessions`, {
             method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${server.api_key}`,
-              'Content-Type': 'application/json',
-            },
+            headers,
             signal: AbortSignal.timeout(5000), // 5 segundos de timeout
           });
 
           const responseTime = Date.now() - startTime;
           
           if (response.ok) {
-            const healthData = await response.json();
+            const sessionsData = await response.json();
+            const sessions = Array.isArray(sessionsData) ? sessionsData : [];
+            const activeConnections = sessions.filter((s: any) => 
+              s.status === 'WORKING' || s.status === 'CONNECTED'
+            ).length;
+            
             return {
               id: server.id,
               nome: server.nome,
               status: 'online',
               responseTime,
               lastCheck: new Date().toISOString(),
-              instances: healthData.instances || 0,
-              activeConnections: healthData.activeConnections || 0,
+              instances: sessions.length,
+              activeConnections,
             };
           } else {
             return {

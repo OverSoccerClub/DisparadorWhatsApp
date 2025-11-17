@@ -43,9 +43,10 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json'
       }
 
-      // Adicionar API key se fornecida
-      if (apiKey) {
-        headers['X-Api-Key'] = apiKey
+      // Adicionar API key se fornecida (WAHA aceita ambos os formatos)
+      if (apiKey && apiKey.trim() !== '') {
+        headers['X-Api-Key'] = apiKey.trim()
+        headers['Authorization'] = `Bearer ${apiKey.trim()}`
       }
 
       const response = await fetch(testUrl, {

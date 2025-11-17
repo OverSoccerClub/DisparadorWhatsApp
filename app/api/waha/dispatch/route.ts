@@ -68,10 +68,12 @@ export async function POST(request: NextRequest) {
     const allSessions: any[] = []
     for (const server of wahaServers) {
       try {
+        // Preparar headers de autenticação
         const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-        if (server.api_key) {
-          // Preferido pelo restante do sistema
-          headers['X-Api-Key'] = server.api_key
+        if (server.api_key && server.api_key.trim() !== '') {
+          // WAHA aceita tanto X-Api-Key quanto Authorization Bearer
+          headers['X-Api-Key'] = server.api_key.trim()
+          headers['Authorization'] = `Bearer ${server.api_key.trim()}`
         }
         const response = await fetch(`${server.api_url}/api/sessions`, { headers })
 
