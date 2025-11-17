@@ -24,18 +24,17 @@ export function middleware(request: NextRequest) {
   const publicRoutes = ['/auth', '/debug', '/debug-auth']
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route)) || pathname === '/'
 
-  // Se for uma rota pública, permitir acesso
-  if (isPublicRoute) {
-    return NextResponse.next()
-  }
+  // Adicionar header com pathname para o layout usar
+  const response = isPublicRoute 
+    ? NextResponse.next()
+    : (!legacyToken && !hasSupabaseAuthCookie)
+      ? NextResponse.redirect(new URL('/auth', request.url))
+      : NextResponse.next()
 
-  // Se não há token e não é rota pública, redirecionar para login
-  if (!legacyToken && !hasSupabaseAuthCookie) {
-    return NextResponse.redirect(new URL('/auth', request.url))
-  }
+  // Adicionar header com pathname
+  response.headers.set('x-pathname', pathname)
 
-  // Se há token, permitir acesso
-  return NextResponse.next()
+  return response
 }
 
 export const config = {
