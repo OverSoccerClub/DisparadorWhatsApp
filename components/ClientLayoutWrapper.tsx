@@ -18,22 +18,32 @@ interface ClientLayoutWrapperProps {
 }
 
 export default function ClientLayoutWrapper({ children }: ClientLayoutWrapperProps) {
-  const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
+  const [isLandingPage, setIsLandingPage] = useState(false)
   
   useEffect(() => {
     setMounted(true)
+    // Verificar pathname apenas no cliente
+    if (typeof window !== 'undefined') {
+      setIsLandingPage(window.location.pathname === '/')
+    }
   }, [])
   
-  // Se estiver na página raiz (landing page), não usar componentes do sistema
-  // Aguardar montagem para evitar problemas de hidratação
+  // Durante SSR ou antes da montagem, renderizar apenas children
+  // Isso evita problemas de hidratação
   if (!mounted) {
-    // Durante SSR, renderizar apenas children para página raiz
-    if (typeof window === 'undefined') {
-      return <>{children}</>
-    }
+    return <>{children}</>
   }
   
+  // Se estiver na página raiz (landing page), não usar componentes do sistema
+  if (isLandingPage) {
+    return <>{children}</>
+  }
+  
+  // Usar pathname apenas após montagem para outras rotas
+  const pathname = usePathname()
+  
+  // Verificação adicional com pathname (fallback)
   if (pathname === '/') {
     return <>{children}</>
   }
