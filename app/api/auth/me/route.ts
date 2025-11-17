@@ -2,11 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
 export async function GET(request: NextRequest) {
   try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    // Validar variáveis de ambiente
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Variáveis de ambiente do Supabase não configuradas:', {
+        url: supabaseUrl ? '✅' : '❌',
+        key: supabaseAnonKey ? '✅' : '❌'
+      })
+      return NextResponse.json(
+        { success: false, message: 'Configuração do servidor incompleta' },
+        { status: 500 }
+      )
+    }
+
     const cookieStore = cookies()
 
     // Criar cliente Supabase com gerenciamento de cookies

@@ -63,11 +63,26 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    // Buscar usuário usando admin API
+    // Buscar usuário usando admin API para confirmar que foi ativado
     const { createClient } = await import('@supabase/supabase-js')
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    
+    if (!supabaseServiceKey) {
+      return NextResponse.json(
+        { success: false, message: 'Configuração do servidor incompleta' },
+        { status: 500 }
+      )
+    }
+
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      supabaseServiceKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
     )
 
     const { data: user, error: userError } = await supabaseAdmin.auth.admin.getUserById(validationResult.userId!)
@@ -77,6 +92,20 @@ export async function POST(request: NextRequest) {
         { success: false, message: 'Erro ao buscar usuário' },
         { status: 400 }
       )
+    }
+
+    // Verificar se o email foi confirmado (deve ter sido feito pelo validateActivationCode)
+    // Se não foi confirmado, confirmar agora
+    if (!user.user.email_confirmed_at) {
+      const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(
+        validationResult.userId!,
+        { email_verify: true }
+      )
+
+      if (confirmError) {
+        console.error('Erro ao confirmar email:', confirmError)
+        // Continuar mesmo assim - código foi validado
+      }
     }
 
     // Retornar sucesso (o usuário precisará fazer login após ativação)

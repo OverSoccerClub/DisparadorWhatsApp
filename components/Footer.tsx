@@ -1,13 +1,22 @@
+'use client'
+
 import React from 'react'
-import packageJson from '../package.json'
+import { usePathname } from 'next/navigation'
 
 interface FooterProps {
   className?: string
 }
 
 export default function Footer({ className = '' }: FooterProps) {
-  const currentVersion = packageJson.version
+  const pathname = usePathname()
+  // Usar versão hardcoded para evitar problemas com importação de package.json em client component
+  const currentVersion = '0.1.5'
   const buildDate = new Date().toLocaleDateString('pt-BR')
+  
+  // Não exibir footer nas páginas de autenticação
+  if (pathname?.startsWith('/auth')) {
+    return null
+  }
   
   return (
     <footer className={`bg-secondary-50 dark:bg-secondary-900 border-t border-secondary-200 dark:border-secondary-700 py-4 ${className}`}>

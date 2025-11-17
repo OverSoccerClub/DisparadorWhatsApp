@@ -21,7 +21,7 @@ Uma plataforma completa e profissional para disparo de mensagens WhatsApp integr
 
 ### 🎨 Design System
 
-- **Paleta de Cores Profissional**: Azul primário (#2563eb), cinza elegante (#64748b)
+- **Paleta de Cores Profissional**: Azul vibrante (#007BFF), azul escuro base (#0F3F7A), ciano destaque (#00C2FF)
 - **Tipografia**: Inter font para máxima legibilidade
 - **Componentes Reutilizáveis**: Cards, botões, modais e tabelas
 - **Animações Suaves**: Transições e micro-interações

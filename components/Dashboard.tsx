@@ -198,7 +198,7 @@ export default function Dashboard() {
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="enviadas" fill="#2563eb" name="Enviadas" />
+                <Bar dataKey="enviadas" fill="#007BFF" name="Enviadas" />
                 <Bar dataKey="entregues" fill="#10b981" name="Entregues" />
               </BarChart>
             </ResponsiveContainer>

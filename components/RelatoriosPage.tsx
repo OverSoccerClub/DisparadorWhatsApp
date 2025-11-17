@@ -230,7 +230,7 @@ export default function RelatoriosPage() {
                     color: theme === 'dark' ? '#f1f5f9' : '#111827'
                   }}
                 />
-                <Area type="monotone" dataKey="enviadas" stackId="1" stroke="#2563eb" fill="#2563eb" fillOpacity={0.6} />
+                <Area type="monotone" dataKey="enviadas" stackId="1" stroke="#007BFF" fill="#007BFF" fillOpacity={0.6} />
                 <Area type="monotone" dataKey="entregues" stackId="2" stroke="#10b981" fill="#10b981" fillOpacity={0.6} />
                 <Area type="monotone" dataKey="lidas" stackId="3" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.6} />
               </AreaChart>
@@ -363,7 +363,7 @@ export default function RelatoriosPage() {
                   color: theme === 'dark' ? '#f1f5f9' : '#111827'
                 }}
               />
-              <Bar dataKey="envios" fill="#2563eb" />
+              <Bar dataKey="envios" fill="#007BFF" />
             </BarChart>
           </ResponsiveContainer>
         </div>

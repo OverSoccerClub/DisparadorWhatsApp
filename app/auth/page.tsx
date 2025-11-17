@@ -158,7 +158,7 @@ export default function AuthPage() {
             setSuccessModal({
               open: true,
               title: 'Conta Criada com Sucesso!',
-              message: data.message || 'Verifique seu email para ativar sua conta.'
+              message: data.message || 'Você receberá o código de ativação no seu WhatsApp em instantes.'
             })
           } else {
             // Conta já ativada (não deveria acontecer, mas por segurança)
@@ -215,12 +215,7 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 dark:from-secondary-900 dark:via-secondary-900 dark:to-secondary-800 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Background decorativo */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-200 dark:bg-primary-900/20 rounded-full blur-3xl opacity-20"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-secondary-200 dark:bg-secondary-700/20 rounded-full blur-3xl opacity-20"></div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-primary-50/50 via-white to-accent-50/30 dark:from-secondary-900 dark:via-secondary-800 dark:to-secondary-900 flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
 
       <LoadingOverlay 
         open={loadingOverlay.open}
@@ -235,57 +230,48 @@ export default function AuthPage() {
         autoCloseDelay={5000}
       />
 
-      <div className="relative z-10 sm:mx-auto sm:w-full sm:max-w-md">
-        {/* Logo e Header */}
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary-500 rounded-2xl blur-lg opacity-30"></div>
-              <div className="relative bg-white dark:bg-secondary-800 p-4 rounded-2xl shadow-xl">
-                <img 
-                  src="/img/logo_dispatcher.png" 
-                  alt="WhatsApp Dispatcher" 
-                  className="h-12 w-auto"
-                />
-              </div>
-            </div>
-          </div>
-          <h1 className="text-3xl font-bold text-secondary-900 dark:text-secondary-100 mb-2">
-            {isLogin ? 'Bem-vindo de volta!' : 'Crie sua conta'}
-          </h1>
-          <p className="text-sm text-secondary-600 dark:text-secondary-400">
-            {isLogin 
-              ? 'Entre para gerenciar suas automações' 
-              : 'Comece a usar nossa plataforma hoje mesmo'}
-          </p>
-        </div>
-
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
         {/* Card do Formulário */}
         <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-2xl border border-secondary-200 dark:border-secondary-700 overflow-hidden">
+          {/* Header com Logo e Título */}
+          <div className="bg-white dark:bg-secondary-800 px-6 pt-4 pb-4 text-center border-b border-secondary-200 dark:border-secondary-700">
+            <div className="flex justify-center mb-3">
+              <img 
+                src="/img/logo_marca_02_trasp.png" 
+                alt="WhatsApp Dispatcher" 
+                className="h-48 md:h-64 lg:h-72 w-auto drop-shadow-lg"
+              />
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-secondary-900 dark:text-secondary-100 mb-2">
+              {isLogin ? 'Bem-vindo de volta' : 'Crie sua conta'}
+            </h1>
+            <p className="text-sm text-secondary-600 dark:text-secondary-400">
+              {isLogin 
+                ? 'Entre para continuar' 
+                : 'Comece a usar nossa plataforma'}
+            </p>
+          </div>
+
           {/* Indicador de modo (Login/Registro) */}
-          <div className="bg-gradient-to-r from-primary-500 to-primary-600 dark:from-primary-600 dark:to-primary-700 px-6 py-4">
+          <div className="bg-primary-50 dark:bg-primary-900/20 px-6 py-3 border-b border-primary-100 dark:border-primary-800/30">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <SparklesIcon className="h-5 w-5 text-white" />
-                <span className="text-white font-semibold">
-                  {isLogin ? 'Login' : 'Registro'}
-                </span>
-              </div>
+              <span className="text-primary-700 dark:text-primary-300 font-semibold text-sm">
+                {isLogin ? 'Login' : 'Registro'}
+              </span>
               <button
                 onClick={() => {
                   setIsLogin(!isLogin)
                   setErrors({})
                   setFormData({ email: '', password: '', name: '', phone: '' })
                 }}
-                className="text-white/90 hover:text-white text-sm font-medium transition-colors flex items-center gap-1"
+                className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium transition-colors"
               >
                 {isLogin ? 'Criar conta' : 'Já tenho conta'}
-                <ArrowRightIcon className="h-4 w-4" />
               </button>
             </div>
           </div>
 
-          <form className="p-6 space-y-5" onSubmit={handleSubmit}>
+          <form className="p-6 md:p-8 space-y-5" onSubmit={handleSubmit}>
             {/* Campo Nome (apenas no registro) */}
             {!isLogin && (
               <div className="space-y-2">
@@ -303,11 +289,11 @@ export default function AuthPage() {
                     required={!isLogin}
                     value={formData.name}
                     onChange={handleInputChange}
-                    className={`block w-full pl-10 pr-3 py-3 border ${
+                    className={`block w-full pl-10 pr-3 py-2.5 border ${
                       errors.name 
                         ? 'border-error-500 dark:border-error-500' 
                         : 'border-secondary-300 dark:border-secondary-600'
-                    } bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-lg shadow-sm placeholder-secondary-400 dark:placeholder-secondary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+                    } bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-lg placeholder-secondary-400 dark:placeholder-secondary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all`}
                     placeholder="Seu nome completo"
                   />
                 </div>
@@ -358,11 +344,11 @@ export default function AuthPage() {
                         }
                       }
                     }}
-                    className={`block w-full pl-10 pr-3 py-3 border ${
+                    className={`block w-full pl-10 pr-3 py-2.5 border ${
                       errors.phone 
                         ? 'border-error-500 dark:border-error-500' 
                         : 'border-secondary-300 dark:border-secondary-600'
-                    } bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-lg shadow-sm placeholder-secondary-400 dark:placeholder-secondary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+                    } bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-lg placeholder-secondary-400 dark:placeholder-secondary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all`}
                     placeholder="(XX) XXXXX-XXXX"
                   />
                 </div>
@@ -391,11 +377,11 @@ export default function AuthPage() {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className={`block w-full pl-10 pr-3 py-3 border ${
+                  className={`block w-full pl-10 pr-3 py-2.5 border ${
                     errors.email 
                       ? 'border-error-500 dark:border-error-500' 
                       : 'border-secondary-300 dark:border-secondary-600'
-                  } bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-lg shadow-sm placeholder-secondary-400 dark:placeholder-secondary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+                  } bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-lg placeholder-secondary-400 dark:placeholder-secondary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all`}
                   placeholder="seu@email.com"
                 />
               </div>
@@ -423,11 +409,11 @@ export default function AuthPage() {
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className={`block w-full pl-10 pr-10 py-3 border ${
+                  className={`block w-full pl-10 pr-10 py-2.5 border ${
                     errors.password 
                       ? 'border-error-500 dark:border-error-500' 
                       : 'border-secondary-300 dark:border-secondary-600'
-                  } bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-lg shadow-sm placeholder-secondary-400 dark:placeholder-secondary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+                  } bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-lg placeholder-secondary-400 dark:placeholder-secondary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all`}
                   placeholder="Sua senha"
                 />
                 <button
@@ -459,17 +445,17 @@ export default function AuthPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-3.5 px-4 border border-transparent rounded-lg shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                     <span>{isLogin ? 'Fazendo login...' : 'Criando conta...'}</span>
                   </>
                 ) : (
                   <>
                     <span>{isLogin ? 'Entrar' : 'Criar conta'}</span>
-                    <ArrowRightIcon className="h-5 w-5" />
+                    <ArrowRightIcon className="h-4 w-4" />
                   </>
                 )}
               </button>
@@ -479,28 +465,25 @@ export default function AuthPage() {
 
         {/* Informações de versão */}
         <div className="mt-6 text-center">
-          <p className="text-sm text-secondary-600 dark:text-secondary-400 font-medium">
-            WhatsApp Dispatcher
-          </p>
-          <p className="text-xs text-secondary-400 dark:text-secondary-500 mt-1">
-            Automação Inteligente • Versão v0.1.5
+          <p className="text-xs text-secondary-500 dark:text-secondary-400">
+            WhatsApp Dispatcher v0.1.5
           </p>
         </div>
       </div>
 
       {/* Modal de Ativação de Conta */}
       {showActivationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-xl max-w-md w-full p-6 border border-secondary-200 dark:border-secondary-700">
             <div className="text-center mb-6">
-              <div className="mx-auto w-16 h-16 bg-primary-100 dark:bg-primary-900/20 rounded-full flex items-center justify-center mb-4">
-                <CheckCircleIcon className="h-8 w-8 text-primary-600 dark:text-primary-400" />
+              <div className="mx-auto w-12 h-12 bg-primary-100 dark:bg-primary-900/20 rounded-full flex items-center justify-center mb-4">
+                <CheckCircleIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
               </div>
-              <h2 className="text-2xl font-bold text-secondary-900 dark:text-secondary-100 mb-2">
+              <h2 className="text-xl font-semibold text-secondary-900 dark:text-secondary-100 mb-2">
                 Ativar Conta
               </h2>
               <p className="text-sm text-secondary-600 dark:text-secondary-400">
-                Digite o código de ativação enviado para seu email
+                Digite o código de ativação enviado para seu WhatsApp
               </p>
             </div>
 
@@ -570,7 +553,7 @@ export default function AuthPage() {
                     errors.activationCode 
                       ? 'border-error-500 dark:border-error-500' 
                       : 'border-secondary-300 dark:border-secondary-600'
-                  } bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all`}
+                  } bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all`}
                   placeholder="000000"
                 />
                 {errors.activationCode && (
@@ -603,7 +586,14 @@ export default function AuthPage() {
                   disabled={activating || activationCode.length !== 6}
                   className="flex-1 btn btn-primary btn-md"
                 >
-                  {activating ? 'Ativando...' : 'Ativar Conta'}
+                  {activating ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      Ativando...
+                    </span>
+                  ) : (
+                    'Ativar Conta'
+                  )}
                 </button>
               </div>
             </form>

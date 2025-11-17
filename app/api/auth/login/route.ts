@@ -2,11 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
 export async function POST(request: NextRequest) {
   try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    // Validar variáveis de ambiente
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Variáveis de ambiente do Supabase não configuradas:', {
+        url: supabaseUrl ? '✅' : '❌',
+        key: supabaseAnonKey ? '✅' : '❌'
+      })
+      return NextResponse.json(
+        { success: false, message: 'Configuração do servidor incompleta' },
+        { status: 500 }
+      )
+    }
+
     const body = await request.json()
     const { email, password } = body
 
@@ -62,6 +74,19 @@ export async function POST(request: NextRequest) {
 
     if (authError) {
       console.error('Erro ao fazer login no Supabase Auth:', authError)
+      
+      // Tratar erro específico de email não confirmado
+      if (authError.message?.includes('Email not confirmed') || authError.message?.includes('email_not_confirmed')) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: 'Sua conta ainda não foi ativada. Por favor, ative sua conta usando o código enviado no seu WhatsApp.',
+            requiresActivation: true
+          },
+          { status: 401 }
+        )
+      }
+      
       return NextResponse.json(
         { success: false, message: 'Email ou senha incorretos' },
         { status: 401 }
@@ -75,10 +100,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verificar se o email foi confirmado
+    // Verificar se o email foi confirmado (ativado)
     if (!authData.user.email_confirmed_at) {
       return NextResponse.json(
-        { success: false, message: 'Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada.' },
+        { 
+          success: false, 
+          message: 'Sua conta ainda não foi ativada. Por favor, ative sua conta usando o código enviado no seu WhatsApp.',
+          requiresActivation: true
+        },
         { status: 401 }
       )
     }

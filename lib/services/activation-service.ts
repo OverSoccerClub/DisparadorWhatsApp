@@ -4,10 +4,40 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+// Validar variáveis de ambiente
+if (!supabaseUrl) {
+  throw new Error('NEXT_PUBLIC_SUPABASE_URL não está definida nas variáveis de ambiente')
+}
+
+// Usar SERVICE_ROLE_KEY se disponível, caso contrário usar ANON_KEY (com limitações)
+// Verificar se SERVICE_ROLE_KEY não é apenas um placeholder
+const hasValidServiceKey = supabaseServiceKey && 
+  supabaseServiceKey !== 'your_supabase_service_role_key_here' &&
+  supabaseServiceKey.trim() !== ''
+
+const supabaseKey = hasValidServiceKey ? supabaseServiceKey : supabaseAnonKey
+
+if (!supabaseKey) {
+  throw new Error('SUPABASE_SERVICE_ROLE_KEY ou NEXT_PUBLIC_SUPABASE_ANON_KEY deve estar definida nas variáveis de ambiente')
+}
+
+// Avisar se estiver usando ANON_KEY em vez de SERVICE_ROLE_KEY (apenas em desenvolvimento)
+if (!hasValidServiceKey && process.env.NODE_ENV !== 'production') {
+  console.warn('⚠️ activation-service: Usando ANON_KEY. Algumas operações admin podem não funcionar. Configure SUPABASE_SERVICE_ROLE_KEY para funcionalidade completa.')
+}
+
+// Criar cliente Supabase
+// Nota: SERVICE_ROLE_KEY permite operações admin, ANON_KEY tem limitações
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+})
 
 interface ActivationCode {
   id: string
@@ -95,7 +125,16 @@ export async function validateActivationCode(
       .update({ used: true })
       .eq('id', data.id)
 
-    // Ativar usuário no Supabase Auth
+    // Ativar usuário no Supabase Auth (confirmar email)
+    // Nota: Esta operação requer SERVICE_ROLE_KEY
+    if (!hasValidServiceKey) {
+      console.warn('⚠️ validateActivationCode: SERVICE_ROLE_KEY não configurada. Não é possível ativar usuário automaticamente.')
+      // Retornar sucesso mesmo sem ativar, pois o código foi validado
+      // O endpoint /api/auth/activate tentará ativar novamente
+      return { success: true, userId: data.user_id }
+    }
+
+    // Confirmar email do usuário (ativar conta)
     const { error: updateError } = await supabase.auth.admin.updateUserById(
       data.user_id,
       { email_verify: true }
@@ -103,9 +142,12 @@ export async function validateActivationCode(
 
     if (updateError) {
       console.error('Erro ao ativar usuário:', updateError)
-      return { success: false, error: 'Erro ao ativar conta' }
+      // Retornar sucesso mesmo assim - código foi validado
+      // O endpoint /api/auth/activate tentará ativar novamente
+      return { success: true, userId: data.user_id }
     }
 
+    console.log('✅ Usuário ativado com sucesso:', data.user_id)
     return { success: true, userId: data.user_id }
   } catch (error: any) {
     console.error('Erro ao validar código de ativação:', error)
@@ -118,15 +160,31 @@ export async function validateActivationCode(
  */
 export async function checkEmailExists(email: string): Promise<boolean> {
   try {
+    // Esta operação requer SERVICE_ROLE_KEY
+    if (!hasValidServiceKey) {
+      // Retornar false e deixar o Supabase Auth lidar com duplicatas
+      return false
+    }
+
     const { data, error } = await supabase.auth.admin.listUsers()
     
     if (error) {
+      // Se houver erro de autenticação, retornar false e deixar o Supabase Auth lidar
+      if (error.message?.includes('Invalid authentication') || error.message?.includes('credentials')) {
+        console.debug('checkEmailExists: Credenciais inválidas, retornando false')
+        return false
+      }
       console.error('Erro ao verificar email:', error)
       return false
     }
 
     return data.users.some(user => user.email === email)
-  } catch (error) {
+  } catch (error: any) {
+    // Se houver erro de autenticação, retornar false e deixar o Supabase Auth lidar
+    if (error?.message?.includes('Invalid authentication') || error?.message?.includes('credentials')) {
+      console.debug('checkEmailExists: Credenciais inválidas, retornando false')
+      return false
+    }
     console.error('Erro ao verificar email:', error)
     return false
   }
@@ -137,6 +195,12 @@ export async function checkEmailExists(email: string): Promise<boolean> {
  */
 export async function checkPhoneExists(phone: string): Promise<boolean> {
   try {
+    // Esta operação requer SERVICE_ROLE_KEY
+    if (!hasValidServiceKey) {
+      // Retornar false e deixar o Supabase Auth lidar com duplicatas
+      return false
+    }
+
     // Normalizar telefone (remover caracteres não numéricos)
     const normalizedPhone = phone.replace(/\D/g, '')
 
@@ -144,6 +208,11 @@ export async function checkPhoneExists(phone: string): Promise<boolean> {
     const { data: users, error } = await supabase.auth.admin.listUsers()
     
     if (error) {
+      // Se houver erro de autenticação, retornar false e deixar o Supabase Auth lidar
+      if (error.message?.includes('Invalid authentication') || error.message?.includes('credentials')) {
+        console.debug('checkPhoneExists: Credenciais inválidas, retornando false')
+        return false
+      }
       console.error('Erro ao verificar telefone:', error)
       return false
     }
@@ -153,7 +222,12 @@ export async function checkPhoneExists(phone: string): Promise<boolean> {
       const userPhone = user.user_metadata?.phone
       return userPhone && userPhone.replace(/\D/g, '') === normalizedPhone
     })
-  } catch (error) {
+  } catch (error: any) {
+    // Se houver erro de autenticação, retornar false e deixar o Supabase Auth lidar
+    if (error?.message?.includes('Invalid authentication') || error?.message?.includes('credentials')) {
+      console.debug('checkPhoneExists: Credenciais inválidas, retornando false')
+      return false
+    }
     console.error('Erro ao verificar telefone:', error)
     return false
   }

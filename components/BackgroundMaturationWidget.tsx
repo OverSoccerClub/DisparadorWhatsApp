@@ -64,7 +64,10 @@ export default function BackgroundMaturationWidget() {
 
         // 1. Buscar agendamentos executando
         try {
-          const res = await fetch('/api/maturacao/execute-scheduled')
+          const res = await fetch('/api/maturacao/execute-scheduled', {
+            method: 'GET',
+            credentials: 'include'
+          })
           if (res.ok) {
             const data = await res.json()
             if (data.success && data.schedules) {
@@ -80,9 +83,13 @@ export default function BackgroundMaturationWidget() {
                 maturationIds.push(maturationId)
               }
             }
+          } else if (res.status === 401 || res.status === 404) {
+            // Usuário não autenticado ou tabela não existe - ignorar silenciosamente
+            return
           }
         } catch (error) {
-          // Erro silencioso
+          // Erro silencioso - pode ser que o banco ainda não esteja configurado
+          console.debug('BackgroundMaturationWidget: Erro ao verificar agendamentos (pode ser normal se banco não estiver configurado)', error)
         }
 
         // 2. Buscar progresso de todas as maturações conhecidas

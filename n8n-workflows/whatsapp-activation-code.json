@@ -1,0 +1,224 @@
+{
+  "name": "WhatsApp - Envio de Código de Ativação",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "activation-code",
+        "responseMode": "lastNode",
+        "responseData": "firstEntryJson"
+      },
+      "id": "webhook-node",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [250, 300],
+      "webhookId": "activation-code-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrair dados do webhook\nconst phone = $input.item.json.phone;\nconst message = $input.item.json.message;\nconst code = $input.item.json.code;\nconst name = $input.item.json.name;\nconst email = $input.item.json.email || '';\n\n// Validar dados obrigatórios\nif (!phone || !code) {\n  throw new Error('Telefone e código são obrigatórios');\n}\n\n// Normalizar telefone (remover caracteres não numéricos, exceto +)\nlet normalizedPhone = phone.replace(/[^\\d+]/g, '');\n\n// Garantir formato internacional se necessário\nif (normalizedPhone.length === 11 && !normalizedPhone.startsWith('+')) {\n  // Número brasileiro: adicionar código do país\n  normalizedPhone = `55${normalizedPhone}`;\n}\n\n// Retornar dados formatados\nreturn {\n  json: {\n    phone: normalizedPhone,\n    message: message,\n    code: code,\n    name: name || 'Usuário',\n    email: email,\n    originalPhone: phone\n  }\n};"
+      },
+      "id": "function-process",
+      "name": "Processar Dados",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_API_URL || 'https://sua-evolution-api.com' }}/message/sendText/{{ $env.EVOLUTION_INSTANCE_NAME || 'default' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": []
+        },
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $json.phone }}\",\n  \"text\": \"{{ $json.message }}\",\n  \"delay\": 1200,\n  \"linkPreview\": false\n}",
+        "options": {}
+      },
+      "id": "http-evolution",
+      "name": "Enviar via Evolution API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [650, 200],
+      "notes": "Configure EVOLUTION_API_URL, EVOLUTION_INSTANCE_NAME e EVOLUTION_API_KEY nas variáveis de ambiente do n8n"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WAHA_API_URL || 'https://sua-waha.com' }}/api/sendText",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WAHA_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": []
+        },
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"session\": \"{{ $env.WAHA_SESSION_NAME || 'default' }}\",\n  \"chatId\": \"{{ $json.phone }}@c.us\",\n  \"text\": \"{{ $json.message }}\"\n}",
+        "options": {}
+      },
+      "id": "http-waha",
+      "name": "Enviar via WAHA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [650, 400],
+      "notes": "Configure WAHA_API_URL, WAHA_SESSION_NAME e WAHA_API_KEY nas variáveis de ambiente do n8n"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-1",
+              "leftValue": "={{ $env.WHATSAPP_PROVIDER || 'evolution' }}",
+              "rightValue": "evolution",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-provider",
+      "name": "Escolher Provedor",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Código enviado com sucesso\",\n  \"phone\": \"{{ $('Processar Dados').item.json.phone }}\",\n  \"code\": \"{{ $('Processar Dados').item.json.code }}\",\n  \"timestamp\": \"{{ $now }}\"\n}"
+      },
+      "id": "respond-success",
+      "name": "Resposta de Sucesso",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"{{ $json.error || $json.message || 'Erro desconhecido' }}\",\n  \"phone\": \"{{ $('Processar Dados').item.json.phone }}\"\n}"
+      },
+      "id": "respond-error",
+      "name": "Resposta de Erro",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [850, 500]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Processar Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Dados": {
+      "main": [
+        [
+          {
+            "node": "Escolher Provedor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escolher Provedor": {
+      "main": [
+        [
+          {
+            "node": "Enviar via Evolution API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar via WAHA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar via Evolution API": {
+      "main": [
+        [
+          {
+            "node": "Resposta de Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar via WAHA": {
+      "main": [
+        [
+          {
+            "node": "Resposta de Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2025-01-XX",
+  "versionId": "1"
+}
+

@@ -53,14 +53,18 @@ export default function GlobalLoading() {
     <div className="fixed inset-0 z-[99999] bg-secondary-50">
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8 text-center">
-          {/* Logo/Ícone */}
+          {/* Logo */}
           <div className="flex items-center justify-center mb-6">
             <div className="relative">
               <div className="absolute inset-0 animate-ping">
                 <div className="h-16 w-16 rounded-full bg-primary-400 opacity-30"></div>
               </div>
               <div className="relative h-16 w-16 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-lg">
-                <ArrowPathIcon className="h-8 w-8 text-white animate-spin" />
+                <img 
+                  src="/img/logo_marca_02_trasp.png" 
+                  alt="WhatsApp Dispatcher" 
+                  className="h-12 w-auto object-contain"
+                />
               </div>
             </div>
           </div>

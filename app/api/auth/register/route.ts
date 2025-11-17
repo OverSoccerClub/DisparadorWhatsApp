@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { createClient } from '@supabase/supabase-js'
 import { createActivationCode, checkEmailExists, checkPhoneExists } from '@/lib/services/activation-service'
-import EmailService from '@/lib/services/email-service'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// Cliente Supabase com service role para operações administrativas
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+// Validar variáveis de ambiente
+if (!supabaseUrl) {
+  throw new Error('NEXT_PUBLIC_SUPABASE_URL não está definida nas variáveis de ambiente')
+}
+
+if (!supabaseAnonKey) {
+  throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY não está definida nas variáveis de ambiente')
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,22 +55,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verificar se email já existe
-    const emailExists = await checkEmailExists(email)
-    if (emailExists) {
-      return NextResponse.json(
-        { success: false, message: 'Este email já está cadastrado' },
-        { status: 400 }
-      )
+    // Verificar se email já existe (opcional - requer SERVICE_ROLE_KEY)
+    // Se não tiver SERVICE_ROLE_KEY, tentará registrar e o Supabase retornará erro se já existir
+    try {
+      const emailExists = await checkEmailExists(email)
+      if (emailExists) {
+        return NextResponse.json(
+          { success: false, message: 'Este email já está cadastrado' },
+          { status: 400 }
+        )
+      }
+    } catch (error) {
+      // Ignorar erro - tentará registrar mesmo assim
+      console.debug('Não foi possível verificar email (pode ser normal se SERVICE_ROLE_KEY não estiver configurada)')
     }
 
-    // Verificar se telefone já existe
-    const phoneExists = await checkPhoneExists(normalizedPhone)
-    if (phoneExists) {
-      return NextResponse.json(
-        { success: false, message: 'Este telefone já está cadastrado' },
-        { status: 400 }
-      )
+    // Verificar se telefone já existe (opcional - requer SERVICE_ROLE_KEY)
+    try {
+      const phoneExists = await checkPhoneExists(normalizedPhone)
+      if (phoneExists) {
+        return NextResponse.json(
+          { success: false, message: 'Este telefone já está cadastrado' },
+          { status: 400 }
+        )
+      }
+    } catch (error) {
+      // Ignorar erro - tentará registrar mesmo assim
+      console.debug('Não foi possível verificar telefone (pode ser normal se SERVICE_ROLE_KEY não estiver configurada)')
     }
 
     const cookieStore = await cookies()
@@ -106,18 +120,42 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    // Registrar usuário no Supabase Auth (sem confirmar email automaticamente)
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // Registrar usuário usando API Admin para evitar envio de email
+    // A ativação será feita via código enviado por WhatsApp
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    
+    // Verificar se SERVICE_ROLE_KEY não é apenas um placeholder
+    const hasValidServiceKey = supabaseServiceKey && 
+      supabaseServiceKey !== 'your_supabase_service_role_key_here' &&
+      supabaseServiceKey.trim() !== '' &&
+      supabaseServiceKey.length > 50 // Chaves reais são longas
+    
+    if (!hasValidServiceKey) {
+      console.error('SUPABASE_SERVICE_ROLE_KEY não configurada ou inválida')
+      return NextResponse.json(
+        { success: false, message: 'Configuração do servidor incompleta. SERVICE_ROLE_KEY é obrigatória para registro.' },
+        { status: 500 }
+      )
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+
+    // Criar usuário usando API Admin (não envia email)
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      options: {
-        data: {
-          name: name,
-          display_name: name,
-          phone: normalizedPhone,
-          full_name: name // Garantir que o nome completo seja salvo
-        },
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/activate`
+      email_confirm: false, // Não confirmar email automaticamente
+      user_metadata: {
+        name: name,
+        display_name: name,
+        phone: normalizedPhone,
+        full_name: name
       }
     })
 
@@ -141,23 +179,36 @@ export async function POST(request: NextRequest) {
     
     if (!activationResult.success || !activationResult.code) {
       console.error('Erro ao criar código de ativação:', activationResult.error)
-      // Continuar mesmo se falhar o código, mas avisar
+      return NextResponse.json(
+        { success: false, message: 'Erro ao gerar código de ativação' },
+        { status: 500 }
+      )
     }
 
-    // Enviar email de confirmação
-    if (activationResult.code) {
-      const emailTemplate = EmailService.generateActivationEmail(name, activationResult.code)
-      const emailResult = await EmailService.sendEmail({
-        to: email,
-        subject: 'Confirme seu cadastro - WhatsApp Dispatcher',
-        html: emailTemplate.html,
-        text: emailTemplate.text
+    // Enviar código via WhatsApp através do n8n
+    const { sendActivationCodeViaWhatsApp } = await import('@/lib/services/n8n-webhook-service')
+    
+    try {
+      const webhookResult = await sendActivationCodeViaWhatsApp({
+        name: name,
+        phone: normalizedPhone,
+        code: activationResult.code,
+        email: email
       })
 
-      if (!emailResult.success) {
-        console.error('Erro ao enviar email:', emailResult.error)
-        // Continuar mesmo se falhar o envio de email
+      if (!webhookResult.success) {
+        console.error('Erro ao enviar código via WhatsApp:', webhookResult.message || webhookResult.error)
+        // Continuar mesmo se falhar - código ainda será válido
+        // Em desenvolvimento, mostrar código na resposta
+      } else {
+        console.log('✅ Código de ativação enviado via WhatsApp:', {
+          phone: webhookResult.phone,
+          name: name
+        })
       }
+    } catch (error) {
+      console.error('Erro ao chamar webhook n8n:', error)
+      // Continuar mesmo se falhar - código ainda será válido
     }
 
     // Retornar sucesso (não fazer login automático - precisa ativar conta)
@@ -173,10 +224,10 @@ export async function POST(request: NextRequest) {
         created_at: authData.user.created_at
       },
       message: activationResult.code 
-        ? 'Conta criada com sucesso! Verifique seu email para ativar sua conta com o código de confirmação.'
+        ? 'Conta criada com sucesso! Você receberá o código de ativação no seu WhatsApp em instantes.'
         : 'Conta criada com sucesso! Entre em contato com o suporte para ativar sua conta.',
       requiresActivation: true,
-      activationCode: process.env.NODE_ENV === 'development' ? activationResult.code : undefined // Mostrar código apenas em dev
+      activationCode: process.env.NODE_ENV === 'development' ? activationResult.code : undefined // Mostrar código apenas em dev para debug
     }, {
       headers: response.headers
     })

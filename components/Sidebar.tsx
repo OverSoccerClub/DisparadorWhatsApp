@@ -194,7 +194,7 @@ function Sidebar() {
         <div className="flex-1 flex flex-col pt-0 pb-4 overflow-y-auto">
           <div className="flex items-center flex-shrink-0 px-0 py-0">
             <img 
-              src="/img/logo_dispatcher.png" 
+              src="/img/logo_marca_02_trasp.png" 
               alt="WhatsApp Dispatcher" 
               className="w-full h-auto object-contain"
               loading="lazy"

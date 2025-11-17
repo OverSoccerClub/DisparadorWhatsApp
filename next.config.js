@@ -1,21 +1,31 @@
 /** @type {import('next').NextConfig} */
+const isProduction = process.env.NODE_ENV === 'production'
+
 const nextConfig = {
-  // Configurações de produção otimizadas (apenas em produção)
-  // output: 'standalone', // Removido temporariamente para evitar problemas de chunking
-  
   // Compressão e otimizações
   compress: true,
   poweredByHeader: false,
   
-  // Desabilitar verificação de tipos durante o build (para produção rápida)
+  // TypeScript - Em produção, manter verificação (comentado para desenvolvimento rápido)
+  // Para produção, recomenda-se habilitar verificação de tipos
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: !isProduction, // false em produção, true em desenvolvimento
   },
   
-  // Desabilitar ESLint durante o build
+  // ESLint - Em produção, manter verificação (comentado para desenvolvimento rápido)
+  // Para produção, recomenda-se habilitar verificação de lint
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: !isProduction, // false em produção, true em desenvolvimento
   },
+  
+  // SWC Minify para melhor performance
+  swcMinify: true,
+  
+  // React Strict Mode para detectar problemas
+  reactStrictMode: true,
+  
+  // Output standalone para Docker (apenas em produção)
+  output: isProduction ? 'standalone' : undefined,
   
   // Configurações de imagem otimizadas
   images: {
@@ -25,44 +35,75 @@ const nextConfig = {
     dangerouslyAllowSVG: false,
   },
   
-  // Removido override de webpack para estabilizar o build
-  
-  // Configurações experimentais para performance (simplificadas para estabilidade)
+  // Configurações experimentais para performance
   experimental: {
     optimizeCss: true,
-    // optimizePackageImports removido temporariamente para evitar quebras de chunk
   },
-  
-  // Forçar App Router (evitar confusão com Pages Router)
-  // Não há configuração específica necessária - o Next.js detecta automaticamente pela estrutura app/
   
   // Headers de segurança e performance
   async headers() {
+    const securityHeaders = [
+      {
+        key: 'X-Content-Type-Options',
+        value: 'nosniff',
+      },
+      {
+        key: 'X-Frame-Options',
+        value: 'DENY',
+      },
+      {
+        key: 'X-XSS-Protection',
+        value: '1; mode=block',
+      },
+      {
+        key: 'Referrer-Policy',
+        value: 'strict-origin-when-cross-origin',
+      },
+    ]
+
+    // Adicionar headers adicionais em produção
+    if (isProduction) {
+      securityHeaders.push(
+        {
+          key: 'Strict-Transport-Security',
+          value: 'max-age=31536000; includeSubDomains; preload',
+        },
+        {
+          key: 'Content-Security-Policy',
+          value: [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+            "style-src 'self' 'unsafe-inline'",
+            "img-src 'self' data: https:",
+            "font-src 'self' data:",
+            "connect-src 'self' https://*.supabase.co https://supabase.innovarecode.com.br",
+          ].join('; '),
+        },
+        {
+          key: 'Permissions-Policy',
+          value: 'camera=(), microphone=(), geolocation=()',
+        }
+      )
+    }
+
     return [
       {
         source: '/(.*)',
+        headers: securityHeaders,
+      },
+      // Cache para arquivos estáticos
+      {
+        source: '/static/(.*)',
         headers: [
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
           },
         ],
       },
-      // Deixar o Next gerenciar Content-Type de assets estáticos
+      // Cache para assets do Next.js
       {
-        source: '/static/(.*)',
+        source: '/_next/static/(.*)',
         headers: [
           {
             key: 'Cache-Control',
