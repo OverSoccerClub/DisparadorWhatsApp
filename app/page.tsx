@@ -170,7 +170,7 @@ export default function LandingPage() {
           </h1>
           
           <p className="text-xl md:text-2xl text-secondary-600 dark:text-secondary-400 mb-10 max-w-3xl mx-auto leading-relaxed">
-            Dispare mensagens em massa, gerencie campanhas, automatize processos e aumente sua produtividade com a plataforma mais completa do mercado.
+            Dispare mensagens em massa via WhatsApp e Telegram, gerencie campanhas, automatize processos e aumente sua produtividade com a plataforma mais completa do mercado.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
