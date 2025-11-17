@@ -19,9 +19,12 @@ export interface EvolutionInstance {
   id?: string
   user_id: string
   instance_name: string
-  connection_status: 'open' | 'close' | 'connecting'
+  status: 'connected' | 'disconnected' | 'connecting' | 'error' // Coluna no banco é 'status', não 'connection_status'
   phone_number?: string
-  last_seen?: string
+  profile_name?: string
+  profile_picture_url?: string
+  qr_code?: string
+  last_connected_at?: string
   created_at?: string
   updated_at?: string
 }
@@ -95,17 +98,22 @@ export class EvolutionConfigService {
         connection_status: instance.connection_status
       })
 
-      // Usar upsert para evitar duplicatas (baseado em user_id + instance_name)
+      // Usar upsert para evitar duplicatas (baseado no índice único user_id + instance_name)
+      // IMPORTANTE: A coluna no banco é 'status', não 'connection_status'
       const { data, error } = await supabase
         .from('evolution_instances')
         .upsert({
           user_id: instance.user_id,
           instance_name: instance.instance_name,
-          connection_status: instance.connection_status || 'close',
+          status: instance.status || 'disconnected', // Coluna correta: 'status'
           phone_number: instance.phone_number,
-          last_seen: instance.last_seen
+          profile_name: instance.profile_name,
+          profile_picture_url: instance.profile_picture_url,
+          qr_code: instance.qr_code,
+          last_connected_at: instance.last_connected_at
         }, {
-          onConflict: 'user_id,instance_name'
+          onConflict: 'user_id,instance_name',
+          ignoreDuplicates: false // Atualizar se já existir
         })
         .select()
         .single()
@@ -155,9 +163,11 @@ export class EvolutionConfigService {
   static async updateInstanceStatus(
     userId: string, 
     instanceName: string, 
-    updates: Partial<Pick<EvolutionInstance, 'connection_status' | 'phone_number' | 'last_seen'>>
+    updates: Partial<Pick<EvolutionInstance, 'status' | 'phone_number' | 'profile_name' | 'profile_picture_url' | 'qr_code' | 'last_connected_at'>>
   ) {
     try {
+      console.log('🔄 [EvolutionConfigService] Atualizando instância:', { userId, instanceName, updates })
+      
       const { data, error } = await supabase
         .from('evolution_instances')
         .update(updates)
@@ -167,14 +177,15 @@ export class EvolutionConfigService {
         .single()
 
       if (error) {
-        console.error('Erro ao atualizar instância:', error)
+        console.error('❌ [EvolutionConfigService] Erro ao atualizar instância:', error)
         throw error
       }
 
+      console.log('✅ [EvolutionConfigService] Instância atualizada:', data)
       return { success: true, data }
-    } catch (error) {
-      console.error('Erro no EvolutionConfigService.updateInstanceStatus:', error)
-      return { success: false, error: error.message }
+    } catch (error: any) {
+      console.error('❌ [EvolutionConfigService] Erro no updateInstanceStatus:', error)
+      return { success: false, error: error?.message || 'Erro desconhecido ao atualizar instância' }
     }
   }
 

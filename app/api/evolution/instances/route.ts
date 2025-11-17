@@ -120,11 +120,12 @@ export async function GET(request: NextRequest) {
           }
           
           // Retornar dados básicos se não conseguir verificar status
+          // IMPORTANTE: A coluna no banco é 'status', não 'connection_status'
           return {
             instanceName: instance.instance_name,
-            connectionStatus: instance.connection_status === 'open' ? 'connected' : 'disconnected',
+            connectionStatus: instance.status === 'connected' ? 'connected' : 'disconnected',
             phoneNumber: instance.phone_number,
-            lastSeen: instance.last_seen,
+            lastSeen: instance.last_connected_at,
             createdAt: instance.created_at,
             profile: null
           }
