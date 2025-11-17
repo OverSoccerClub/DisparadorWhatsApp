@@ -112,3 +112,17 @@ curl -X POST https://mass-connect-n8n.zk02fr.easypanel.host/webhook/SEU_WEBHOOK_
 **Última Atualização:** 2025  
 **Status:** ✅ Script Pronto para Usar
 
+
+
+# Waha
+WAHA_API_KEY=051d8e33d2584e73a10b13ac6c51ee7f
+WAHA_API_KEY_PLAIN=alguma_chave_secreta
+WAHA_APPS_ENABLED=true
+WAHA_BACKEND_ENGINE=gows
+WAHA_DASHBOARD_USERNAME=admin
+WAHA_DASHBOARD_PASSWORD=d8a15fd9bd4044b3aade8979c521f6e0
+WHATSAPP_SWAGGER_USERNAME=admin
+WHATSAPP_SWAGGER_PASSWORD=d8a15fd9bd4044b3aade8979c521f6e0
+
+# Configuração Redis (USE APENAS ESTA FORMA)
+REDIS_URL=redis://:2fe89a68ec3c2f6c51dd@redis:6379
