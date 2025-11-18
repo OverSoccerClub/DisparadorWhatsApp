@@ -28,10 +28,10 @@
     "version:major": "node scripts/version.js major",
     "version:set": "node scripts/version.js set",
     "version:show": "node scripts/version.js show",
-  "smoke": "node scripts/smoke-check.js",
-  "worker": "ts-node -r tsconfig-paths/register scripts/worker.ts",
-  "build:worker": "tsc -p tsconfig.worker.json",
-  "worker:prod": "node dist/scripts/worker.js",
+    "smoke": "node scripts/smoke-check.js",
+    "worker": "ts-node -r tsconfig-paths/register scripts/worker.ts",
+    "build:worker": "tsup scripts/worker.ts --format cjs --out-dir dist/scripts --platform node --bundle --silent",
+    "worker:prod": "node dist/scripts/worker.js",
     "version:push": "git push origin main && git push --tags",
     "version:init": "git init && git add . && git commit -m \"Initial commit\" && node scripts/version.js set 0.1.0",
     "git:setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-git.ps1"
@@ -79,8 +79,9 @@
     "eslint-config-next": "14.0.4",
     "postcss": "^8",
     "tailwindcss": "^3.3.0",
-    "typescript": "^5",
     "ts-node": "^10.9.1",
-    "tsconfig-paths": "^4.1.0"
+    "tsconfig-paths": "^4.1.0",
+    "tsup": "^6.7.0",
+    "typescript": "^5"
   }
 }
