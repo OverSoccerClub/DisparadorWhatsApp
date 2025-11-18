@@ -28,9 +28,11 @@ function setVersion(newVersion) {
   packageJson.version = newVersion;
   fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
   
-  // Atualizar VERSION.txt se existir
-  if (fs.existsSync(versionFile)) {
+  // Atualizar ou criar VERSION.txt para manter rastreabilidade
+  try {
     fs.writeFileSync(versionFile, newVersion + '\n');
+  } catch (err) {
+    console.warn('⚠️ Não foi possível escrever VERSION.txt:', err.message);
   }
   
   return newVersion;
