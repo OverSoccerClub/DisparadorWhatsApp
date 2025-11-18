@@ -308,7 +308,7 @@ export default function LandingPage() {
                 alt="Fluxus Menssager" 
                 className="h-8 w-auto"
               />
-               <span className="text-secondary-400">Fluxus Menssager v{process.env.NEXT_PUBLIC_APP_VERSION || require('../package.json').version}</span>
+               <span className="text-secondary-400">Fluxus Menssager{process.env.NEXT_PUBLIC_APP_VERSION ? ` v${process.env.NEXT_PUBLIC_APP_VERSION}` : ''}</span>
             </div>
             <div className="text-secondary-400 text-sm">
               © {mounted ? new Date().getFullYear() : '2025'} Fluxus Menssager. Todos os direitos reservados.

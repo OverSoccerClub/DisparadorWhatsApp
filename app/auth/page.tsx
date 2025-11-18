@@ -466,7 +466,7 @@ export default function AuthPage() {
         {/* Informações de versão */}
         <div className="mt-6 text-center">
           <p className="text-xs text-secondary-500 dark:text-secondary-400">
-            Fluxus Menssager v{process.env.NEXT_PUBLIC_APP_VERSION || require('../../package.json').version}
+            Fluxus Menssager{process.env.NEXT_PUBLIC_APP_VERSION ? ` v${process.env.NEXT_PUBLIC_APP_VERSION}` : ''}
           </p>
         </div>
       </div>
