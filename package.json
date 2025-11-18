@@ -30,7 +30,7 @@
     "version:show": "node scripts/version.js show",
     "smoke": "node scripts/smoke-check.js",
     "worker": "ts-node -r tsconfig-paths/register scripts/worker.ts",
-    "build:worker": "tsup scripts/worker.ts --format cjs --out-dir dist/scripts --platform node --bundle --silent",
+  "build:worker": "tsup scripts/worker.ts --format cjs --out-dir dist/scripts --platform node --silent",
     "worker:prod": "node dist/scripts/worker.js",
     "version:push": "git push origin main && git push --tags",
     "version:init": "git init && git add . && git commit -m \"Initial commit\" && node scripts/version.js set 0.1.0",
