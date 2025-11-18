@@ -7,10 +7,11 @@ export function middleware(request: NextRequest) {
   // Permitir acesso direto a arquivos estáticos e recursos do Next.js
   // Verificar se é um arquivo estático (com extensão) ou recurso do Next.js
   const isStaticFile = pathname.match(/\.(ico|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf|eot|json)$/)
-  const isNextStatic = pathname.startsWith('/_next/static') || pathname.startsWith('/_next/image')
+  const isNextStatic = pathname.startsWith('/_next/') // Inclui static, image, webpack, etc
   const isApiRoute = pathname.startsWith('/api/')
   const isPublicStatic = pathname.startsWith('/img/') || pathname.startsWith('/favicon.ico')
   
+  // Retornar imediatamente para recursos estáticos sem processar autenticação
   if (isNextStatic || isApiRoute || isPublicStatic || isStaticFile) {
     return NextResponse.next()
   }
@@ -42,13 +43,11 @@ export const config = {
     /*
      * Match all request paths except for the ones starting with:
      * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - _next/webpack (webpack chunks)
+     * - _next (all Next.js internal routes - static, image, webpack, etc)
      * - favicon.ico (favicon file)
      * - img (public images folder)
      */
-    '/((?!api|_next/static|_next/image|_next/webpack|favicon.ico|img/).*)',
+    '/((?!api|_next|favicon.ico|img/).*)',
   ],
 }
 

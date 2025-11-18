@@ -94,19 +94,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verificar se o email foi confirmado (deve ter sido feito pelo validateActivationCode)
-    // Se não foi confirmado, confirmar agora
-    if (!user.user.email_confirmed_at) {
-      const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(
-        validationResult.userId!,
-        { email_verify: true }
-      )
-
-      if (confirmError) {
-        console.error('Erro ao confirmar email:', confirmError)
-        // Continuar mesmo assim - código foi validado
-      }
-    }
+    // O email já foi confirmado pelo validateActivationCode
+    // Se não foi confirmado, isso é um problema mas não bloqueia a ativação
+    // O usuário pode tentar fazer login e será redirecionado para ativação se necessário
 
     // Retornar sucesso (o usuário precisará fazer login após ativação)
     return NextResponse.json({

@@ -43,8 +43,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Função helper para verificar se deve parar
-export function shouldStop(maturationId: string): boolean {
+// Função helper para verificar se deve parar (não exportada - uso interno apenas)
+function shouldStop(maturationId: string): boolean {
   return stopFlags.get(maturationId) === true
 }
+
+// Tornar função disponível globalmente para outras rotas
+// @ts-ignore
+globalThis.__shouldStopMaturation = shouldStop
 

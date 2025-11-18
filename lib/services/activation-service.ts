@@ -135,9 +135,14 @@ export async function validateActivationCode(
     }
 
     // Confirmar email do usuário (ativar conta)
+    // Usar email_confirmed_at diretamente via updateUserById
+    // @ts-ignore - email_confirmed_at pode não estar no tipo mas funciona na API
     const { error: updateError } = await supabase.auth.admin.updateUserById(
       data.user_id,
-      { email_verify: true }
+      { 
+        // @ts-ignore
+        email_confirmed_at: new Date().toISOString()
+      }
     )
 
     if (updateError) {
