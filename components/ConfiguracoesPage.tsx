@@ -82,43 +82,28 @@ export default function ConfiguracoesPage() {
     })
   }
   // Confirmacao bonita (modal)
-  const [confirmDialog, setConfirmDialog] = useState({
+  const [confirmModal, setConfirmModal] = useState({
     open: false,
     title: '',
     message: '',
-    confirmText: 'Confirmar',
-    cancelText: 'Cancelar',
-    variant: 'warning' as 'warning' | 'danger'
+    variant: 'danger' as 'danger' | 'warning',
+    onConfirm: () => {},
+    resolveRef: null as ((value: boolean) => void) | null
   })
-  const confirmResolveRef = useRef<null | ((v: boolean) => void)>(null)
 
-  // Debug: monitorar mudanças no confirmDialog
-  useEffect(() => {
-    console.log('[useEffect] confirmDialog state changed:', confirmDialog)
-    if (confirmDialog.open) {
-      console.log('[useEffect] Modal should be visible now!')
-    }
-  }, [confirmDialog])
-
-  const openConfirm = (opts: { title: string; message: string; confirmText?: string; cancelText?: string; variant?: 'warning' | 'danger' }) => {
-    console.log('[openConfirm] opening', opts.title)
-    console.log('[openConfirm] current confirmDialog state:', confirmDialog)
-    
-    const newDialogState = {
-      open: true,
-      title: opts.title,
-      message: opts.message,
-      confirmText: opts.confirmText || 'Confirmar',
-      cancelText: opts.cancelText || 'Cancelar',
-      variant: opts.variant || 'warning'
-    }
-    
-    console.log('[openConfirm] setting new dialog state:', newDialogState)
-    setConfirmDialog(newDialogState)
-    
+  const openConfirm = (opts: { title: string; message: string; confirmText?: string; cancelText?: string; variant?: 'warning' | 'danger' }): Promise<boolean> => {
     return new Promise<boolean>((resolve) => {
-      confirmResolveRef.current = resolve
-      console.log('[openConfirm] promise created, waiting for user response')
+      setConfirmModal({
+        open: true,
+        title: opts.title,
+        message: opts.message,
+        variant: opts.variant || 'danger',
+        onConfirm: () => {
+          setConfirmModal({ open: false, title: '', message: '', variant: 'danger', onConfirm: () => {}, resolveRef: null })
+          resolve(true)
+        },
+        resolveRef: resolve
+      })
     })
   }
   
