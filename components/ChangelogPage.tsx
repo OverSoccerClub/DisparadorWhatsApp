@@ -89,17 +89,22 @@ export default function ChangelogPage({ content }: ChangelogPageProps) {
         {htmlContent ? (
           <div 
             className="prose prose-sm dark:prose-invert max-w-none
-              prose-headings:text-secondary-900 dark:prose-headings:text-secondary-100
-              prose-p:text-secondary-700 dark:prose-p:text-secondary-300
-              prose-a:text-primary-600 dark:prose-a:text-primary-400
-              prose-strong:text-secondary-900 dark:prose-strong:text-secondary-100
-              prose-code:text-primary-600 dark:prose-code:text-primary-400
-              prose-pre:bg-secondary-100 dark:prose-pre:bg-secondary-800
-              prose-blockquote:border-primary-500 dark:prose-blockquote:border-primary-400
-              prose-table:border-secondary-200 dark:prose-table:border-secondary-700
-              prose-th:bg-secondary-100 dark:prose-th:bg-secondary-800
-              prose-td:border-secondary-200 dark:prose-td:border-secondary-700
-              text-secondary-700 dark:text-secondary-300"
+              prose-headings:!text-secondary-900 dark:prose-headings:!text-secondary-100
+              prose-p:!text-secondary-700 dark:prose-p:!text-secondary-300
+              prose-a:!text-primary-600 dark:prose-a:!text-primary-400
+              prose-strong:!text-secondary-900 dark:prose-strong:!text-secondary-100
+              prose-code:!text-primary-600 dark:prose-code:!text-primary-400
+              prose-pre:!bg-secondary-100 dark:prose-pre:!bg-secondary-800
+              prose-pre:!text-secondary-900 dark:prose-pre:!text-secondary-100
+              prose-blockquote:!border-primary-500 dark:prose-blockquote:!border-primary-400
+              prose-blockquote:!text-secondary-700 dark:prose-blockquote:!text-secondary-300
+              prose-table:!border-secondary-200 dark:prose-table:!border-secondary-700
+              prose-th:!bg-secondary-100 dark:prose-th:!bg-secondary-800
+              prose-th:!text-secondary-900 dark:prose-th:!text-secondary-100
+              prose-td:!border-secondary-200 dark:prose-td:!border-secondary-700
+              prose-td:!text-secondary-700 dark:prose-td:!text-secondary-300
+              prose-li:!text-secondary-700 dark:prose-li:!text-secondary-300
+              !text-secondary-700 dark:!text-secondary-300"
             dangerouslySetInnerHTML={{ __html: htmlContent }}
           />
         ) : (
