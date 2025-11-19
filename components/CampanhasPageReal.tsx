@@ -178,7 +178,7 @@ export default function CampanhasPageReal() {
     setConfirmModal({
       open: true,
       title: 'Confirmar exclusão de campanha',
-      message: mensagemDetalhada.replace(/\n/g, '<br/>'),
+      message: mensagemDetalhada,
       onConfirm: () => {
         setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })
         confirmarExclusao(campanhaId)
