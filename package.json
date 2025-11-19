@@ -1,6 +1,6 @@
 {
   "name": "whatsapp-dispatcher",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "private": true,
   "engines": {
     "node": ">=20.0.0",
@@ -10,7 +10,7 @@
     "dev": "cross-env FAST_REFRESH=false NODE_ENV=production next dev --turbo",
     "dev:safe": "npm run build && npm start",
     "build": "next build",
-    "start": "next start",
+    "start": "node .next/standalone/server.js",
     "lint": "next lint",
     "setup": "node scripts/setup.js",
     "update-supabase-env": "node scripts/update-supabase-env.js",
@@ -24,7 +24,7 @@
     "deploy": "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1",
     "deploy-unix": "bash scripts/deploy.sh",
     "build:prod": "cross-env NODE_ENV=production next build",
-    "start:prod": "cross-env NODE_ENV=production next start",
+    "start:prod": "cross-env NODE_ENV=production node .next/standalone/server.js",
     "docker:build": "docker build -t whatsapp-dispatcher .",
     "docker:run": "docker-compose up -d",
     "docker:stop": "docker-compose down",
