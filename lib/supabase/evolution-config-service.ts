@@ -1,18 +1,31 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error('Supabase URL ou SUPABASE_SERVICE_ROLE_KEY não configurados no servidor.')
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('NEXT_PUBLIC_SUPABASE_URL ou NEXT_PUBLIC_SUPABASE_ANON_KEY não configurados.')
 }
 
-const supabase = createClient(supabaseUrl, serviceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-})
+type GenericClient = SupabaseClient<any, 'public', any>
+
+let cachedAdminClient: GenericClient | null = null
+
+const getAdminClient = (): GenericClient => {
+  if (cachedAdminClient) return cachedAdminClient
+
+  const key =
+    serviceRoleKey && !serviceRoleKey?.includes('sua-chave')
+      ? serviceRoleKey
+      : supabaseAnonKey
+
+  cachedAdminClient = createClient(supabaseUrl!, key, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  })
+
+  return cachedAdminClient
+}
 
 export interface EvolutionConfig {
   id?: string
@@ -40,9 +53,13 @@ export interface EvolutionInstance {
 
 export class EvolutionConfigService {
   // Salvar configuração da Evolution API
-  static async saveConfig(config: Omit<EvolutionConfig, 'id' | 'created_at' | 'updated_at'>) {
+  static async saveConfig(
+    config: Omit<EvolutionConfig, 'id' | 'created_at' | 'updated_at'>,
+    client?: GenericClient
+  ) {
     try {
-      const { data, error } = await supabase
+      const db = client ?? getAdminClient()
+      const { data, error } = await db
         .from('evolution_configs')
         .upsert({
           user_id: config.user_id,
@@ -68,11 +85,12 @@ export class EvolutionConfigService {
   }
 
   // Buscar configuração do usuário
-  static async getConfig(userId: string) {
+  static async getConfig(userId: string, client?: GenericClient) {
     try {
       console.log(`🔍 [EvolutionConfigService] Buscando configuração para usuário: ${userId}`)
       
-      const { data, error } = await supabase
+      const db = client ?? getAdminClient()
+      const { data, error } = await db
         .from('evolution_configs')
         .select('*')
         .eq('user_id', userId)
@@ -99,7 +117,10 @@ export class EvolutionConfigService {
   }
 
   // Salvar instância criada (usa upsert para evitar duplicatas)
-  static async saveInstance(instance: Omit<EvolutionInstance, 'id' | 'created_at' | 'updated_at'>) {
+  static async saveInstance(
+    instance: Omit<EvolutionInstance, 'id' | 'created_at' | 'updated_at'>,
+    client?: GenericClient
+  ) {
     try {
       console.log('💾 [EvolutionConfigService] Salvando instância:', {
         user_id: instance.user_id,
@@ -109,7 +130,8 @@ export class EvolutionConfigService {
 
       // Usar upsert para evitar duplicatas (baseado no índice único user_id + instance_name)
       // IMPORTANTE: A coluna no banco é 'status', não 'connection_status'
-      const { data, error } = await supabase
+      const db = client ?? getAdminClient()
+      const { data, error } = await db
         .from('evolution_instances')
         .upsert({
           user_id: instance.user_id,
@@ -141,11 +163,12 @@ export class EvolutionConfigService {
   }
 
   // Buscar instâncias do usuário
-  static async getUserInstances(userId: string) {
+  static async getUserInstances(userId: string, client?: GenericClient) {
     try {
       console.log('🔍 [EvolutionConfigService] Buscando instâncias para usuário:', userId)
       
-      const { data, error } = await supabase
+      const db = client ?? getAdminClient()
+      const { data, error } = await db
         .from('evolution_instances')
         .select('*')
         .eq('user_id', userId)
@@ -172,12 +195,14 @@ export class EvolutionConfigService {
   static async updateInstanceStatus(
     userId: string, 
     instanceName: string, 
-    updates: Partial<Pick<EvolutionInstance, 'status' | 'phone_number' | 'profile_name' | 'profile_picture_url' | 'qr_code' | 'last_connected_at'>>
+    updates: Partial<Pick<EvolutionInstance, 'status' | 'phone_number' | 'profile_name' | 'profile_picture_url' | 'qr_code' | 'last_connected_at'>>,
+    client?: GenericClient
   ) {
     try {
       console.log('🔄 [EvolutionConfigService] Atualizando instância:', { userId, instanceName, updates })
       
-      const { data, error } = await supabase
+      const db = client ?? getAdminClient()
+      const { data, error } = await db
         .from('evolution_instances')
         .update(updates)
         .eq('user_id', userId)
@@ -199,9 +224,10 @@ export class EvolutionConfigService {
   }
 
   // Excluir instância
-  static async deleteInstance(userId: string, instanceName: string) {
+  static async deleteInstance(userId: string, instanceName: string, client?: GenericClient) {
     try {
-      const { data, error } = await supabase
+      const db = client ?? getAdminClient()
+      const { data, error } = await db
         .from('evolution_instances')
         .delete()
         .eq('user_id', userId)
@@ -222,9 +248,10 @@ export class EvolutionConfigService {
   }
 
   // Buscar instância específica
-  static async getInstance(userId: string, instanceName: string) {
+  static async getInstance(userId: string, instanceName: string, client?: GenericClient) {
     try {
-      const { data, error } = await supabase
+      const db = client ?? getAdminClient()
+      const { data, error } = await db
         .from('evolution_instances')
         .select('*')
         .eq('user_id', userId)

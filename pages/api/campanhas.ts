@@ -38,7 +38,7 @@ export default async function handler(
       const limit = parseInt((req.query.limit as string) || '10')
       const status = (req.query.status as string) || 'todos'
 
-      const campanhas = await CampaignService.getCampanhas(user.id)
+      const campanhas = await CampaignService.getCampanhas(user.id, supabase)
 
       // Aplicar filtros
       let campanhasFiltradas = campanhas
@@ -126,7 +126,7 @@ export default async function handler(
         mensagem,
         criterios,
         configuracao
-      }, user.id)
+      }, user.id, supabase)
 
       if (!campanha) {
         return res.status(500).json({ 

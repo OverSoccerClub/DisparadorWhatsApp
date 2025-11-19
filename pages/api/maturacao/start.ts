@@ -157,12 +157,12 @@ export default async function handler(
         console.log('[MATURACAO] Servidores WAHA encontrados:', wahaServers?.length || 0, wahaServers?.map((s: any) => ({ id: s.id, nome: s.nome })))
         
         // Buscar instâncias Evolution API
-        const evolutionResult = await EvolutionConfigService.getUserInstances(user.id)
+        const evolutionResult = await EvolutionConfigService.getUserInstances(user.id, supabase)
         const evolutionInstances = evolutionResult.success && evolutionResult.data ? evolutionResult.data : []
         console.log('[MATURACAO] Instâncias Evolution encontradas:', evolutionInstances?.length || 0)
         
         // Buscar configuração Evolution para obter api_url e api_key
-        const evolutionConfig = await EvolutionConfigService.getConfig(user.id)
+        const evolutionConfig = await EvolutionConfigService.getConfig(user.id, supabase)
         const evolutionApiUrl = evolutionConfig.success && evolutionConfig.data ? evolutionConfig.data.api_url : null
         const evolutionApiKey = evolutionConfig.success && evolutionConfig.data ? evolutionConfig.data.global_api_key : null
         

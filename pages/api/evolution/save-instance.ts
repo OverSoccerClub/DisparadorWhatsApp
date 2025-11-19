@@ -54,16 +54,19 @@ export default async function handler(
     })
 
     // Salvar instância usando o serviço
-    const result = await EvolutionConfigService.saveInstance({
-      user_id: userId,
-      instance_name: instanceName,
-      status: connectionStatus || 'disconnected',
-      phone_number: phoneNumber || null,
-      profile_name: profileName || null,
-      profile_picture_url: profilePictureUrl || null,
-      qr_code: qrCode || null,
-      last_connected_at: connectionStatus === 'open' || connectionStatus === 'connected' ? new Date().toISOString() : null
-    })
+    const result = await EvolutionConfigService.saveInstance(
+      {
+        user_id: userId,
+        instance_name: instanceName,
+        status: connectionStatus || 'disconnected',
+        phone_number: phoneNumber || null,
+        profile_name: profileName || null,
+        profile_picture_url: profilePictureUrl || null,
+        qr_code: qrCode || null,
+        last_connected_at: connectionStatus === 'open' || connectionStatus === 'connected' ? new Date().toISOString() : null
+      },
+      supabase
+    )
 
     if (result.success) {
       return res.status(200).json({

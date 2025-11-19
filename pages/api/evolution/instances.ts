@@ -54,7 +54,7 @@ export default async function handler(
     console.log('✅ Usuário autenticado:', user.email)
 
     // Buscar instâncias do usuário usando o serviço
-    const result = await EvolutionConfigService.getUserInstances(user.id)
+    const result = await EvolutionConfigService.getUserInstances(user.id, supabase)
 
     if (!result.success) {
       console.error('Erro ao buscar instâncias:', result.error)

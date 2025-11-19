@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { 
   Campanha, 
   LoteCampanha, 
@@ -10,9 +11,10 @@ import {
 
 export class CampaignService {
   // Buscar todas as campanhas (filtradas por user_id)
-  static async getCampanhas(userId: string): Promise<Campanha[]> {
+  static async getCampanhas(userId: string, client?: SupabaseClient): Promise<Campanha[]> {
     try {
-      const { data, error } = await supabase
+      const db = client || supabase
+      const { data, error } = await db
         .from('campanhas')
         .select('*')
         .eq('user_id', userId)
@@ -32,9 +34,10 @@ export class CampaignService {
 
   // Buscar campanha por ID (filtrada por user_id)
   // userId pode ser opcional em alguns contextos (workers/background)
-  static async getCampanhaById(id: string, userId?: string): Promise<{ data: Campanha | null, error: any }> {
+  static async getCampanhaById(id: string, userId?: string, client?: SupabaseClient): Promise<{ data: Campanha | null, error: any }> {
     try {
-      let query = supabase
+      const db = client || supabase
+      let query = db
         .from('campanhas')
         .select('*')
         .eq('id', id)
@@ -58,9 +61,10 @@ export class CampaignService {
   }
 
   // Criar nova campanha (com user_id)
-  static async criarCampanha(campanha: CriarCampanhaRequest, userId: string): Promise<Campanha | null> {
+  static async criarCampanha(campanha: CriarCampanhaRequest, userId: string, client?: SupabaseClient): Promise<Campanha | null> {
     try {
-      const { data, error } = await supabase
+      const db = client || supabase
+      const { data, error } = await db
         .from('campanhas')
         .insert([{
           nome: campanha.nome,
@@ -106,9 +110,10 @@ export class CampaignService {
   }
 
   // Atualizar campanha (verificando user_id)
-  static async atualizarCampanha(id: string, updates: AtualizarCampanhaRequest, userId: string): Promise<boolean> {
+  static async atualizarCampanha(id: string, updates: AtualizarCampanhaRequest, userId: string, client?: SupabaseClient): Promise<boolean> {
     try {
-      const { error } = await supabase
+      const db = client || supabase
+      const { error } = await db
         .from('campanhas')
         .update(updates)
         .eq('id', id)
@@ -127,9 +132,10 @@ export class CampaignService {
   }
 
   // Deletar campanha (verificando user_id)
-  static async deletarCampanha(id: string, userId: string): Promise<boolean> {
+  static async deletarCampanha(id: string, userId: string, client?: SupabaseClient): Promise<boolean> {
     try {
-      const { error } = await supabase
+      const db = client || supabase
+      const { error } = await db
         .from('campanhas')
         .delete()
         .eq('id', id)
@@ -149,8 +155,9 @@ export class CampaignService {
 
   // Controle de campanha (iniciar, pausar, retomar, cancelar) - verificando user_id
   // userId opcional para permitir controle via workers/background
-  static async controlarCampanha(id: string, controle: ControleCampanhaRequest, userId?: string): Promise<boolean> {
+  static async controlarCampanha(id: string, controle: ControleCampanhaRequest, userId?: string, client?: SupabaseClient): Promise<boolean> {
     try {
+      const db = client || supabase
       const { acao } = controle
       
       let statusUpdate = ''
@@ -184,7 +191,7 @@ export class CampaignService {
           break
       }
 
-      let query = supabase
+      let query = db
         .from('campanhas')
         .update({
           status: statusUpdate,
@@ -211,9 +218,10 @@ export class CampaignService {
   }
 
   // Buscar clientes baseado nos critérios (filtrado por user_id)
-  static async buscarClientesPorCriterios(criterios: any, userId: string): Promise<any[]> {
+  static async buscarClientesPorCriterios(criterios: any, userId: string, client?: SupabaseClient): Promise<any[]> {
     try {
-      let query = supabase
+      const db = client || supabase
+      let query = db
         .from('clientes')
         .select('*')
         .eq('user_id', userId)
@@ -239,8 +247,9 @@ export class CampaignService {
   }
 
   // Criar lotes para uma campanha
-  static async criarLotes(campanhaId: string, clientes: any[], clientesPorLote: number): Promise<boolean> {
+  static async criarLotes(campanhaId: string, clientes: any[], clientesPorLote: number, client?: SupabaseClient): Promise<boolean> {
     try {
+      const db = client || supabase
       const lotes = []
       const totalLotes = Math.ceil(clientes.length / clientesPorLote)
 
@@ -261,7 +270,7 @@ export class CampaignService {
         })
       }
 
-      const { error } = await supabase
+      const { error } = await db
         .from('lotes_campanha')
         .insert(lotes)
 
@@ -271,7 +280,7 @@ export class CampaignService {
       }
 
       // Atualizar progresso da campanha
-      await supabase
+      await db
         .from('campanhas')
         .update({
           progresso: {
@@ -293,9 +302,10 @@ export class CampaignService {
   }
 
   // Buscar lotes de uma campanha
-  static async getLotesCampanha(campanhaId: string): Promise<LoteCampanha[]> {
+  static async getLotesCampanha(campanhaId: string, client?: SupabaseClient): Promise<LoteCampanha[]> {
     try {
-      const { data, error } = await supabase
+      const db = client || supabase
+      const { data, error } = await db
         .from('lotes_campanha')
         .select('*')
         .eq('campanha_id', campanhaId)
@@ -314,13 +324,13 @@ export class CampaignService {
   }
 
   // Gerar relatório de campanha (verificando user_id)
-  static async gerarRelatorio(campanhaId: string, userId: string): Promise<RelatorioCampanha | null> {
+  static async gerarRelatorio(campanhaId: string, userId: string, client?: SupabaseClient): Promise<RelatorioCampanha | null> {
     try {
-      const campanha = await this.getCampanhaById(campanhaId, userId)
+      const campanha = await this.getCampanhaById(campanhaId, userId, client)
       if (!campanha.data) return null
       const campanhaData = campanha.data
 
-      const lotes = await this.getLotesCampanha(campanhaId)
+      const lotes = await this.getLotesCampanha(campanhaId, client)
       
       const estatisticas = {
         totalClientes: campanhaData.progresso.totalClientes,

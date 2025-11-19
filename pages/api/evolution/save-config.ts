@@ -39,7 +39,7 @@ export default async function handler(
         return res.status(403).json({ success: false, error: 'Acesso negado' })
       }
 
-      const result = await EvolutionConfigService.getConfig(userId)
+      const result = await EvolutionConfigService.getConfig(userId, supabase)
 
       if (result.success) {
         return res.status(200).json({
@@ -95,12 +95,15 @@ export default async function handler(
         return res.status(400).json({ success: false, error: 'API URL e Global API Key são obrigatórios' })
       }
 
-      const result = await EvolutionConfigService.saveConfig({
-        user_id: user.id,
-        api_url: apiUrl,
-        global_api_key: globalApiKey,
-        webhook_url: webhookUrl || null
-      })
+      const result = await EvolutionConfigService.saveConfig(
+        {
+          user_id: user.id,
+          api_url: apiUrl,
+          global_api_key: globalApiKey,
+          webhook_url: webhookUrl || null
+        },
+        supabase
+      )
 
       if (result.success) {
         return res.status(200).json({

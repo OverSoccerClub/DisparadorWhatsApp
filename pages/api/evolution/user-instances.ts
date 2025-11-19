@@ -46,7 +46,7 @@ export default async function handler(
 
     console.log('Buscando instâncias para usuário:', userId)
 
-    const result = await EvolutionConfigService.getUserInstances(userId)
+    const result = await EvolutionConfigService.getUserInstances(userId, supabase)
 
     if (result.success) {
       return res.status(200).json({

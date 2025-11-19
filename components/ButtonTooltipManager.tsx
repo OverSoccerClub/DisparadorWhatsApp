@@ -23,8 +23,13 @@ export default function ButtonTooltipManager() {
     }
 
     const handlePointerEnter = (event: Event) => {
-      const node = (event.target as HTMLElement)?.closest('button, [role="button"]')
-      if (node instanceof HTMLElement) {
+      const target = event.target
+      if (!(target instanceof Element) || typeof target.closest !== 'function') {
+        return
+      }
+
+      const node = target.closest('button, [role="button"]') as HTMLElement | null
+      if (node) {
         ensureTooltip(node)
       }
     }
