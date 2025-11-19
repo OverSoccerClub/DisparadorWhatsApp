@@ -71,6 +71,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
   }
 
   return (
+    <>
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
         <Transition.Child

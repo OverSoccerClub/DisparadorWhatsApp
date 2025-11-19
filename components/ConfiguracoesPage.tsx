@@ -29,6 +29,7 @@ import {
 } from '@heroicons/react/24/outline'
 import LoadingOverlay from './LoadingOverlay'
 import SuccessModal from './SuccessModal'
+import ConfirmModal from './ConfirmModal'
 import AlertModal from './AlertModal'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useAlert } from '@/lib/hooks/useAlert'
@@ -799,66 +800,22 @@ export default function ConfiguracoesPage() {
         </div>
       </div>
 
-      {/* Modal de Confirmação Visual */}
-      {confirmDialog.open && (
-        <div 
-          className="fixed inset-0 z-[99999] bg-black/80 dark:bg-black/90 flex items-center justify-center"
-        >
-          <div 
-            className="bg-white dark:bg-secondary-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-2xl border-2 border-secondary-200 dark:border-secondary-700"
-          >
-            <div className="flex items-start mb-5">
-              <div className={`mr-3 mt-0.5 rounded-full p-2 ${
-                confirmDialog.variant === 'danger' 
-                  ? 'bg-error-50 dark:bg-error-900/20 text-error-600 dark:text-error-400' 
-                  : 'bg-warning-50 dark:bg-warning-900/20 text-warning-600 dark:text-warning-400'
-              }`}>
-                <ExclamationTriangleIcon className="h-5 w-5" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-base font-semibold mb-2 text-secondary-900 dark:text-secondary-100">
-                  {confirmDialog.title}
-                </h3>
-                <p className="text-sm text-secondary-600 dark:text-secondary-400">
-                  {confirmDialog.message}
-                </p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => {
-                  console.log('[Modal] Cancelar clicado')
-                  if (confirmResolveRef.current) {
-                    confirmResolveRef.current(false)
-                    confirmResolveRef.current = null
-                  }
-                  setConfirmDialog(prev => ({ ...prev, open: false }))
-                }}
-                className="px-4 py-2 bg-secondary-500 dark:bg-secondary-600 text-white rounded-md hover:bg-secondary-600 dark:hover:bg-secondary-700 transition-colors text-sm font-medium"
-              >
-                {confirmDialog.cancelText}
-              </button>
-              <button
-                onClick={() => {
-                  console.log('[Modal] Confirmar clicado')
-                  if (confirmResolveRef.current) {
-                    confirmResolveRef.current(true)
-                    confirmResolveRef.current = null
-                  }
-                  setConfirmDialog(prev => ({ ...prev, open: false }))
-                }}
-                className={`px-4 py-2 text-white rounded-md transition-colors text-sm font-medium ${
-                  confirmDialog.variant === 'danger'
-                    ? 'bg-error-600 dark:bg-error-500 hover:bg-error-700 dark:hover:bg-error-600'
-                    : 'bg-warning-600 dark:bg-warning-500 hover:bg-warning-700 dark:hover:bg-warning-600'
-                }`}
-              >
-                {confirmDialog.confirmText}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal de Confirmação */}
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant={confirmModal.variant}
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => {
+          if (confirmModal.resolveRef) {
+            confirmModal.resolveRef(false)
+          }
+          setConfirmModal({ open: false, title: '', message: '', variant: 'danger', onConfirm: () => {}, resolveRef: null })
+        }}
+      />
     </div>
   )
 }

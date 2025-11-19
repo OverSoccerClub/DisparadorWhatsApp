@@ -95,10 +95,21 @@ export default function TelegramBotsManager({ userId }: Props) {
 
   // Deletar bot
   const handleDelete = async (botId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este bot?')) {
-      return
-    }
+    const bot = bots.find(b => b.id === botId)
+    const nomeBot = bot?.nome || 'este bot'
+    
+    setConfirmModal({
+      open: true,
+      title: 'Excluir bot',
+      message: `Tem certeza que deseja excluir o bot "${nomeBot}"? Esta ação não pode ser desfeita.`,
+      onConfirm: () => {
+        setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })
+        confirmarExclusao(botId)
+      }
+    })
+  }
 
+  const confirmarExclusao = async (botId: string) => {
     try {
       setLoading(true)
       const response = await fetch(`/api/telegram/bots/${botId}`, {
@@ -106,7 +117,8 @@ export default function TelegramBotsManager({ userId }: Props) {
       })
 
       if (response.ok) {
-        showSuccess('Bot excluído com sucesso!')
+        setSuccessMessage('Bot excluído com sucesso!')
+        setShowSuccessModal(true)
         loadBots()
       } else {
         const data = await response.json()

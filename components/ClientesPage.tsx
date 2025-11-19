@@ -14,6 +14,7 @@ import {
 import { Cliente } from '@/lib/supabase'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import ConfirmModal from './ConfirmModal'
 
 // Mock data - em produção viria do Supabase
 const mockClientes: Cliente[] = [
@@ -105,37 +106,61 @@ export default function ClientesPage() {
   }
 
   const handleDeleteCliente = async (clienteId: string) => {
-    if (confirm('Tem certeza que deseja excluir este cliente?')) {
-      setLoading(true)
-      try {
-        // Simular API call
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        setClientes(prev => prev.filter(c => c.id !== clienteId))
-        toast.success('Cliente excluído com sucesso!')
-      } catch (error) {
-        toast.error('Erro ao excluir cliente')
-      } finally {
-        setLoading(false)
+    const cliente = clientes.find(c => c.id === clienteId)
+    const nomeCliente = cliente?.nome || 'este cliente'
+    
+    setConfirmModal({
+      open: true,
+      title: 'Excluir cliente',
+      message: `Tem certeza que deseja excluir o cliente "${nomeCliente}"? Esta ação não pode ser desfeita.`,
+      onConfirm: () => {
+        setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })
+        confirmarExclusao(clienteId)
       }
+    })
+  }
+
+  const confirmarExclusao = async (clienteId: string) => {
+    setLoading(true)
+    try {
+      // Simular API call
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      setClientes(prev => prev.filter(c => c.id !== clienteId))
+      toast.success('Cliente excluído com sucesso!')
+    } catch (error) {
+      toast.error('Erro ao excluir cliente')
+    } finally {
+      setLoading(false)
     }
   }
 
   const handleBulkDelete = async () => {
     if (selectedClientes.length === 0) return
     
-    if (confirm(`Tem certeza que deseja excluir ${selectedClientes.length} cliente(s)?`)) {
-      setLoading(true)
-      try {
-        // Simular API call
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        setClientes(prev => prev.filter(c => !selectedClientes.includes(c.id)))
-        setSelectedClientes([])
-        toast.success(`${selectedClientes.length} cliente(s) excluído(s) com sucesso!`)
-      } catch (error) {
-        toast.error('Erro ao excluir clientes')
-      } finally {
-        setLoading(false)
+    setConfirmModal({
+      open: true,
+      title: 'Excluir clientes',
+      message: `Tem certeza que deseja excluir ${selectedClientes.length} cliente(s)? Esta ação não pode ser desfeita.`,
+      onConfirm: () => {
+        setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })
+        confirmarExclusaoEmLote()
       }
+    })
+  }
+
+  const confirmarExclusaoEmLote = async () => {
+    setLoading(true)
+    try {
+      // Simular API call
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      setClientes(prev => prev.filter(c => !selectedClientes.includes(c.id)))
+      const count = selectedClientes.length
+      setSelectedClientes([])
+      toast.success(`${count} cliente(s) excluído(s) com sucesso!`)
+    } catch (error) {
+      toast.error('Erro ao excluir clientes')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -386,6 +411,18 @@ export default function ClientesPage() {
           <button className="btn btn-ghost btn-sm">Próximo</button>
         </div>
       </div>
+
+      {/* Modal de Confirmação */}
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant="danger"
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })}
+      />
     </div>
   )
 }

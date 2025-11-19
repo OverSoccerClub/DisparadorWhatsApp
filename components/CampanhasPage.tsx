@@ -15,6 +15,7 @@ import {
 import { Campanha } from '@/lib/supabase'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import ConfirmModal from './ConfirmModal'
 
 // Mock data - em produção viria do Supabase
 const mockCampanhas: Campanha[] = [
@@ -69,6 +70,12 @@ export default function CampanhasPage() {
   const [showModal, setShowModal] = useState(false)
   const [modalType, setModalType] = useState<'create' | 'edit' | 'view'>('create')
   const [loading, setLoading] = useState(false)
+  const [confirmModal, setConfirmModal] = useState({
+    open: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  })
 
   // Filtros
   useEffect(() => {
@@ -121,18 +128,31 @@ export default function CampanhasPage() {
   }
 
   const handleDeleteCampanha = async (campanhaId: string) => {
-    if (confirm('Tem certeza que deseja excluir esta campanha?')) {
-      setLoading(true)
-      try {
-        // Simular API call
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        setCampanhas(prev => prev.filter(c => c.id !== campanhaId))
-        toast.success('Campanha excluída com sucesso!')
-      } catch (error) {
-        toast.error('Erro ao excluir campanha')
-      } finally {
-        setLoading(false)
+    const campanha = campanhas.find(c => c.id === campanhaId)
+    const nomeCampanha = campanha?.nome || 'esta campanha'
+    
+    setConfirmModal({
+      open: true,
+      title: 'Excluir campanha',
+      message: `Tem certeza que deseja excluir a campanha "${nomeCampanha}"? Esta ação não pode ser desfeita.`,
+      onConfirm: () => {
+        setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })
+        confirmarExclusao(campanhaId)
       }
+    })
+  }
+
+  const confirmarExclusao = async (campanhaId: string) => {
+    setLoading(true)
+    try {
+      // Simular API call
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      setCampanhas(prev => prev.filter(c => c.id !== campanhaId))
+      toast.success('Campanha excluída com sucesso!')
+    } catch (error) {
+      toast.error('Erro ao excluir campanha')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -450,6 +470,18 @@ export default function CampanhasPage() {
           <button className="btn btn-ghost btn-sm">Próximo</button>
         </div>
       </div>
+
+      {/* Modal de Confirmação */}
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant="danger"
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })}
+      />
     </div>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 
 interface ConfirmModalProps {
   open: boolean
@@ -27,92 +27,35 @@ export default function ConfirmModal({
 
   return (
     <div 
-      style={{ 
-        position: 'fixed', 
-        top: 0, 
-        left: 0, 
-        right: 0, 
-        bottom: 0, 
-        zIndex: 99999,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}
+      className="fixed inset-0 z-[99999] bg-black/80 dark:bg-black/90 flex items-center justify-center p-4"
+      onClick={onCancel}
     >
       <div 
-        style={{
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          padding: '24px',
-          width: '500px',
-          maxWidth: '90vw',
-          margin: '0 16px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-          border: '2px solid #e5e7eb'
-        }}
+        className="bg-white dark:bg-secondary-800 rounded-lg p-6 w-full max-w-md shadow-2xl border-2 border-secondary-200 dark:border-secondary-700"
+        onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '20px' }}>
-          <div style={{ 
-            marginRight: '12px', 
-            marginTop: '2px', 
-            borderRadius: '50%', 
-            padding: '8px',
-            backgroundColor: variant === 'danger' ? '#fef2f2' : '#fef3c7',
-            color: variant === 'danger' ? '#dc2626' : '#d97706'
-          }}>
-            <ExclamationTriangleIcon style={{ width: '20px', height: '20px' }} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '600', margin: '0 0 8px 0', color: '#111827' }}>
-              {title}
-            </h3>
-            <p style={{ fontSize: '14px', margin: 0, color: '#6b7280', whiteSpace: 'pre-line' }}>
-              {message}
-            </p>
-          </div>
-          <button
-            onClick={onCancel}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '4px',
-              borderRadius: '4px',
-              color: '#6b7280'
-            }}
-          >
-            <XMarkIcon style={{ width: '20px', height: '20px' }} />
-          </button>
+        <div className="mb-6">
+          <h3 className="text-base font-semibold mb-2 text-secondary-900 dark:text-secondary-100">
+            {title}
+          </h3>
+          <p className="text-sm text-secondary-600 dark:text-secondary-400 whitespace-pre-line">
+            {message}
+          </p>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+        <div className="flex justify-end gap-3">
           <button
             onClick={onCancel}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '6px',
-              border: '1px solid #d1d5db',
-              backgroundColor: 'white',
-              color: '#374151',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500'
-            }}
+            className="px-4 py-2 text-sm font-medium rounded-lg text-secondary-700 dark:text-secondary-300 bg-white dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 hover:bg-secondary-50 dark:hover:bg-secondary-600 transition-colors"
           >
             {cancelText}
           </button>
           <button
             onClick={onConfirm}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '6px',
-              border: 'none',
-              backgroundColor: variant === 'danger' ? '#dc2626' : '#d97706',
-              color: 'white',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500'
-            }}
+            className={`px-4 py-2 text-sm font-medium rounded-lg text-white transition-colors ${
+              variant === 'danger' 
+                ? 'bg-error-600 dark:bg-error-500 hover:bg-error-700 dark:hover:bg-error-600' 
+                : 'bg-warning-600 dark:bg-warning-500 hover:bg-warning-700 dark:hover:bg-warning-600'
+            }`}
           >
             {confirmText}
           </button>

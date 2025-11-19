@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { WahaCampaign, WahaCampaignContact } from '@/lib/waha-dispatch-service'
 import { WahaLoadBalancer } from '@/lib/waha-load-balancer'
+import ConfirmModal from './ConfirmModal'
 
 interface WahaCampaignsManagerProps {
   userId: string
@@ -17,6 +18,12 @@ export default function WahaCampaignsManager({ userId }: WahaCampaignsManagerPro
   const [selectedCampaign, setSelectedCampaign] = useState<WahaCampaign | null>(null)
   const [contacts, setContacts] = useState<WahaCampaignContact[]>([])
   const [showContactsModal, setShowContactsModal] = useState(false)
+  const [confirmModal, setConfirmModal] = useState({
+    open: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  })
 
   // Estados do formulário
   const [formData, setFormData] = useState({
@@ -146,10 +153,18 @@ export default function WahaCampaignsManager({ userId }: WahaCampaignsManagerPro
   }
 
   const handleDelete = async (campaign: WahaCampaign) => {
-    if (!confirm(`Tem certeza que deseja excluir a campanha "${campaign.nome}"?`)) {
-      return
-    }
+    setConfirmModal({
+      open: true,
+      title: 'Excluir campanha',
+      message: `Tem certeza que deseja excluir a campanha "${campaign.nome}"? Esta ação não pode ser desfeita.`,
+      onConfirm: () => {
+        setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })
+        confirmarExclusao(campaign)
+      }
+    })
+  }
 
+  const confirmarExclusao = async (campaign: WahaCampaign) => {
     try {
       const response = await fetch(`/api/waha/campaigns?id=${campaign.id}`, {
         method: 'DELETE'
@@ -614,6 +629,18 @@ export default function WahaCampaignsManager({ userId }: WahaCampaignsManagerPro
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmação */}
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant="danger"
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })}
+      />
     </div>
   )
 }
