@@ -104,7 +104,6 @@ export default function ManualPage({ content }: ManualPageProps) {
             <p className="mt-4 text-secondary-600 dark:text-secondary-400">Carregando conteúdo...</p>
           </div>
         )}
-      </div>
     </div>
   )
 }
