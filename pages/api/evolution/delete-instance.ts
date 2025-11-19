@@ -100,26 +100,40 @@ export default async function handler(
         }
       })
 
-      console.log('Resposta da Evolution API:', response.status)
+      console.log('📊 Resposta da Evolution API:', response.status, response.statusText)
+      
       let data: any = null
-      const responseText = await response.text().catch(() => '')
-      if (responseText) {
-        try {
-          data = JSON.parse(responseText)
-        } catch {
-          data = responseText
+      let responseText = ''
+      
+      try {
+        responseText = await response.text()
+        if (responseText && responseText.trim()) {
+          try {
+            data = JSON.parse(responseText)
+          } catch {
+            // Se não for JSON, usar como texto
+            data = responseText
+          }
         }
+      } catch (textError) {
+        console.log('⚠️ Não foi possível ler o corpo da resposta')
       }
-      console.log('Dados da resposta da Evolution API:', data)
+      
+      console.log('📦 Dados da resposta da Evolution API:', data || '(vazio)')
 
-      if (response.ok) {
+      // Verificar se a exclusão foi bem-sucedida
+      // Evolution API pode retornar 200, 204 ou 202 para sucesso
+      if (response.ok || response.status === 200 || response.status === 204 || response.status === 202) {
         evolutionApiSuccess = true
-        console.log('Exclusão bem-sucedida na Evolution API')
+        console.log('✅ Exclusão bem-sucedida na Evolution API')
       } else {
+        // Verificar se há mensagem de erro na resposta
         evolutionApiError =
-          (typeof data === 'string' ? data : data?.message || data?.error) ||
-          `Erro ao excluir da Evolution API (status ${response.status})`
-        console.log('Erro na Evolution API:', evolutionApiError)
+          (typeof data === 'string' && data.trim() ? data.trim() : null) ||
+          (data?.message ? String(data.message) : null) ||
+          (data?.error ? String(data.error) : null) ||
+          `Erro HTTP ${response.status}: ${response.statusText || 'Erro desconhecido'}`
+        console.error('❌ Erro na Evolution API:', evolutionApiError)
       }
     } catch (fetchError) {
       console.error('Erro ao conectar com a Evolution API:', fetchError)
