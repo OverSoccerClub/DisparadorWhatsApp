@@ -116,10 +116,13 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
       const responseData = await response.json()
 
       if (response.ok && responseData.data) {
-        // Fechar o modal de criação primeiro
-        onClose()
-        // Exibir modal de sucesso
+        // Exibir modal de sucesso primeiro
         setShowSuccessModal(true)
+        // Fechar o modal de criação após um pequeno delay para garantir que o SuccessModal seja renderizado
+        setTimeout(() => {
+          onClose()
+          onSuccess()
+        }, 100)
       } else {
         showError('Erro ao criar campanha', responseData.error || 'Não foi possível criar a campanha')
       }
@@ -131,9 +134,9 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
     }
   }
 
-  if (!isOpen) return null
-
   return (
+    <>
+    {isOpen && (
     <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform transition-all">
         {/* Header */}
@@ -420,8 +423,10 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
           </div>
         </form>
       </div>
+    </div>
+    )}
 
-      {/* Modal de Sucesso */}
+      {/* Modal de Sucesso - renderizado fora do modal principal para funcionar mesmo após fechar */}
       <SuccessModal
         open={showSuccessModal}
         title="Sucesso!"
@@ -436,6 +441,6 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
           onSuccess()
         }}
       />
-    </div>
+    </>
   )
 }

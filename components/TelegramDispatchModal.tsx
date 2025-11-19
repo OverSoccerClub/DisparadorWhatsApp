@@ -342,16 +342,13 @@ export default function TelegramDispatchModal({ isOpen, onClose, clientes }: Tel
         setNovosChatIds('')
         setMensagem('')
         
-        // Fechar modal e mostrar sucesso
-        onClose()
+        // Mostrar sucesso primeiro, depois fechar o modal
         setShowSuccessModal(true)
         setPreviewMode(false)
         setVariationsPreview([])
-        
-        // Fechar modal após delay
         setTimeout(() => {
           onClose()
-        }, 2000)
+        }, 100)
       } else {
         realtime.setError()
         showError(data.error || 'Erro ao enviar mensagens')
@@ -380,9 +377,9 @@ export default function TelegramDispatchModal({ isOpen, onClose, clientes }: Tel
 
   const activeBots = telegramBots.filter(b => b.status === 'active')
 
-  if (!isOpen) return null
-
   return (
+    <>
+    {isOpen && (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Barra de progresso de envio */}
       {realtime.progress && (
@@ -1018,7 +1015,10 @@ export default function TelegramDispatchModal({ isOpen, onClose, clientes }: Tel
         </div>
       </div>
 
-      {/* Modal de Sucesso */}
+    </div>
+    )}
+
+      {/* Modal de Sucesso - renderizado fora do modal principal */}
       <SuccessModal
         open={showSuccessModal}
         title="Sucesso!"
@@ -1027,7 +1027,7 @@ export default function TelegramDispatchModal({ isOpen, onClose, clientes }: Tel
         onClose={() => setShowSuccessModal(false)}
         onAutoClose={() => setShowSuccessModal(false)}
       />
-    </div>
+    </>
   )
 }
 

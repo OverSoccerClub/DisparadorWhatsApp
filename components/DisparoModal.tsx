@@ -638,10 +638,12 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
           setDisparoSummary(data.summary)
           setShowSummary(true)
         } else {
-          // Fechar o modal e mostrar sucesso
-          onClose()
+          // Mostrar sucesso primeiro, depois fechar o modal
           setShowSuccessModal(true)
           setSendingStatus({ open: false, status: 'sending' })
+          setTimeout(() => {
+            onClose()
+          }, 100)
         }
       } else {
         // Mostrar erro amigável
@@ -1336,8 +1338,10 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
         }}
         summary={disparoSummary}
       />
+    </div>
+    )}
 
-      {/* Modal de Sucesso */}
+      {/* Modal de Sucesso - renderizado fora do modal principal */}
       <SuccessModal
         open={showSuccessModal}
         title="Sucesso!"
@@ -1346,6 +1350,6 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
         onClose={() => setShowSuccessModal(false)}
         onAutoClose={() => setShowSuccessModal(false)}
       />
-    </div>
+    </>
   )
 }

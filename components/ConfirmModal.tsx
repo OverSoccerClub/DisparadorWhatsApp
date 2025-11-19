@@ -35,12 +35,23 @@ export default function ConfirmModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-6">
-          <h3 className="text-base font-semibold mb-2 text-secondary-900 dark:text-secondary-100">
-            {title}
-          </h3>
-          <p className="text-sm text-secondary-600 dark:text-secondary-400 whitespace-pre-line">
-            {message}
-          </p>
+          <div className="flex items-start gap-3 mb-3">
+            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+              variant === 'danger' 
+                ? 'bg-error-100 dark:bg-error-900/20 text-error-600 dark:text-error-400' 
+                : 'bg-warning-100 dark:bg-warning-900/20 text-warning-600 dark:text-warning-400'
+            }`}>
+              <ExclamationTriangleIcon className="w-6 h-6" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-base font-semibold mb-2 text-secondary-900 dark:text-secondary-100">
+                {title}
+              </h3>
+              <p className="text-sm text-secondary-600 dark:text-secondary-400 whitespace-pre-line">
+                {message}
+              </p>
+            </div>
+          </div>
         </div>
         <div className="flex justify-end gap-3">
           <button

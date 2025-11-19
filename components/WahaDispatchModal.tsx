@@ -397,9 +397,11 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
         setPreviewMode(false)
         setVariationsPreview([])
         
-        // Fechar modal e mostrar sucesso
-        onClose()
+        // Mostrar sucesso primeiro, depois fechar o modal
         setShowSuccessModal(true)
+        setTimeout(() => {
+          onClose()
+        }, 100)
       } else {
         realtime.setError()
         showError(data.error || 'Erro ao enviar mensagens')
@@ -430,8 +432,6 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
     const st = String(s.status || '').toUpperCase()
     return st === 'WORKING' || st === 'CONNECTED' || st === 'OPEN' || st === 'READY' || st === 'AUTHENTICATED'
   })
-
-  if (!isOpen) return null
 
   // Componente de cronômetro para próxima mensagem (igual ao da maturação)
   function NextMessageTimer({ nextMessageAt }: { nextMessageAt: number }) {
@@ -480,6 +480,8 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
   }
 
   return (
+    <>
+    {isOpen && (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Barra de progresso de envio */}
       {realtime.progress && (
@@ -1230,7 +1232,10 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
         </div>
       </div>
 
-      {/* Modal de Sucesso */}
+    </div>
+    )}
+
+      {/* Modal de Sucesso - renderizado fora do modal principal */}
       <SuccessModal
         open={showSuccessModal}
         title="Sucesso!"
@@ -1239,6 +1244,6 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
         onClose={() => setShowSuccessModal(false)}
         onAutoClose={() => setShowSuccessModal(false)}
       />
-    </div>
+    </>
   )
 }

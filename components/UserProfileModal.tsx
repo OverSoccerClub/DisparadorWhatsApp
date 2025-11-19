@@ -58,8 +58,10 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
         setNewPassword('')
         setConfirmPassword('')
         await refreshUser()
-        onClose()
         setShowSuccessModal(true)
+        setTimeout(() => {
+          onClose()
+        }, 100)
       } else {
         showError(data?.message || 'Não foi possível atualizar a senha.')
       }
