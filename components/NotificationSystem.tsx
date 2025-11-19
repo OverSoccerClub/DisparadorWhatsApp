@@ -137,7 +137,7 @@ export default function NotificationSystem({
                 </h3>
                 
                 {notification.message && (
-                  <p className="mt-1 text-sm opacity-90">
+                  <p className="mt-1 text-sm opacity-90 whitespace-pre-line">
                     {notification.message}
                   </p>
                 )}
