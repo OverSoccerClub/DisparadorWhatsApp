@@ -323,9 +323,6 @@ export default function ClientesPageReal() {
                         <div className="text-sm font-medium text-secondary-900 dark:text-secondary-100">
                           {cliente.nome}
                         </div>
-                        <div className="text-sm text-secondary-500 dark:text-secondary-400">
-                          ID: {cliente.id}
-                        </div>
                       </div>
                     </div>
                   </td>
