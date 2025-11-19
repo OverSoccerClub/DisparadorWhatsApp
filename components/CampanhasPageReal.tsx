@@ -137,7 +137,8 @@ export default function CampanhasPageReal() {
 
       if (response.ok) {
         const result = await response.json()
-        showSuccess('Campanha controlada com sucesso!', result.message)
+        setSuccessMessage('Campanha controlada com sucesso!')
+        setShowSuccessModal(true)
         loadCampanhas()
       } else {
         const error = await response.json()
