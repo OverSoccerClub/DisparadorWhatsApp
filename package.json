@@ -2,6 +2,10 @@
   "name": "whatsapp-dispatcher",
   "version": "0.1.7",
   "private": true,
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
     "dev": "cross-env FAST_REFRESH=false NODE_ENV=production next dev --turbo",
     "dev:safe": "npm run build && npm start",
