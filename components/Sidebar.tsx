@@ -13,7 +13,8 @@ import {
   DevicePhoneMobileIcon,
   ChevronDownIcon,
   ChevronRightIcon,
-  ServerIcon
+  ServerIcon,
+  BookOpenIcon
 } from '@heroicons/react/24/outline'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/hooks/useAuth'
@@ -32,6 +33,7 @@ const navigation: NavigationItem[] = [
   { name: 'Campanhas', href: '/campanhas', icon: MegaphoneIcon },
   { name: 'Disparos', href: '/disparos', icon: PaperAirplaneIcon },
   { name: 'Relatórios', href: '/relatorios', icon: ChartBarIcon },
+  { name: 'Manual', href: '/manual', icon: BookOpenIcon },
   { 
     name: 'Configurações', 
     href: '/configuracoes', 
