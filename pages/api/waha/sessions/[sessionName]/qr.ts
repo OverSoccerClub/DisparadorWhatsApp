@@ -93,6 +93,45 @@ export default async function handler(
       }
     }
     
+    // Se a sessão não existe, tentar criar/iniciar ela primeiro
+    if (!sessionExists) {
+      console.log(`🔄 Sessão ${normalizedSessionName} não encontrada, tentando criar/iniciar...`)
+      try {
+        // Tentar criar a sessão primeiro
+        const createResponse = await fetch(`${normalizedApiUrl}/api/${encodeURIComponent(normalizedSessionName)}`, {
+          method: 'POST',
+          headers: {
+            ...headers,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({})
+        })
+        
+        if (!createResponse.ok && createResponse.status !== 409) {
+          // 409 = sessão já existe, isso é OK
+          const createErrorText = await createResponse.text().catch(() => '')
+          console.log(`⚠️ Não foi possível criar sessão (pode já existir): ${createResponse.status} - ${createErrorText.substring(0, 100)}`)
+        }
+        
+        // Tentar iniciar a sessão
+        const startResponse = await fetch(`${normalizedApiUrl}/api/${encodeURIComponent(normalizedSessionName)}/start`, {
+          method: 'POST',
+          headers,
+        })
+        
+        if (startResponse.ok) {
+          console.log(`✅ Sessão ${normalizedSessionName} iniciada com sucesso`)
+          // Aguardar um pouco para a sessão inicializar
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        } else {
+          const startErrorText = await startResponse.text().catch(() => '')
+          console.log(`⚠️ Não foi possível iniciar sessão: ${startResponse.status} - ${startErrorText.substring(0, 100)}`)
+        }
+      } catch (startError) {
+        console.error('❌ Erro ao tentar criar/iniciar sessão:', startError)
+      }
+    }
+    
     // Buscar QR code da sessão WAHA
     const qrUrl = `${normalizedApiUrl}/api/${encodeURIComponent(normalizedSessionName)}/auth/qr`
     console.log(`📱 Buscando QR code em: ${qrUrl}`)
@@ -110,65 +149,60 @@ export default async function handler(
         const errorData = errorText ? JSON.parse(errorText) : null
         if (errorData?.message) {
           errorMessage = errorData.message
-        } else if (errorText) {
+        } else if (errorData?.error) {
+          errorMessage = errorData.error
+        } else if (errorText && !errorText.startsWith('<!DOCTYPE')) {
           errorMessage = errorText.substring(0, 200)
         }
       } catch {
-        if (errorText) {
+        if (errorText && !errorText.startsWith('<!DOCTYPE')) {
           errorMessage = errorText.substring(0, 200)
         }
       }
       
       console.error(`❌ Erro ao buscar QR code da sessão ${normalizedSessionName}:`, response.status, errorMessage)
+      console.error(`❌ URL tentada: ${qrUrl}`)
+      console.error(`❌ API URL base: ${normalizedApiUrl}`)
       
-      // Se a sessão não existe, tentar iniciar ela primeiro
-      if (response.status === 404 && !sessionExists) {
-        console.log(`🔄 Tentando iniciar sessão ${normalizedSessionName}...`)
+      // Se ainda for 404, tentar método alternativo (GET ao invés de POST)
+      if (response.status === 404) {
+        console.log(`🔄 Tentando método GET como alternativa...`)
         try {
-          const startResponse = await fetch(`${normalizedApiUrl}/api/${encodeURIComponent(normalizedSessionName)}/start`, {
-            method: 'POST',
+          const getResponse = await fetch(`${normalizedApiUrl}/api/${encodeURIComponent(normalizedSessionName)}/auth/qr`, {
+            method: 'GET',
             headers,
           })
           
-          if (startResponse.ok) {
-            console.log(`✅ Sessão ${normalizedSessionName} iniciada, tentando buscar QR code novamente...`)
-            // Tentar buscar QR code novamente após iniciar
-            const retryResponse = await fetch(qrUrl, {
-              method: 'POST',
-              headers,
-            })
+          if (getResponse.ok) {
+            const getQrData = await getResponse.json()
+            let qrCodeValue = null
+            if (typeof getQrData === 'string') {
+              qrCodeValue = getQrData
+            } else if (getQrData.qr) {
+              qrCodeValue = getQrData.qr
+            } else if (getQrData.qrCode) {
+              qrCodeValue = getQrData.qrCode
+            } else if (getQrData.data) {
+              qrCodeValue = getQrData.data
+            }
             
-            if (retryResponse.ok) {
-              const retryQrData = await retryResponse.json()
-              let qrCodeValue = null
-              if (typeof retryQrData === 'string') {
-                qrCodeValue = retryQrData
-              } else if (retryQrData.qr) {
-                qrCodeValue = retryQrData.qr
-              } else if (retryQrData.qrCode) {
-                qrCodeValue = retryQrData.qrCode
-              } else if (retryQrData.data) {
-                qrCodeValue = retryQrData.data
-              }
-              
-              if (qrCodeValue) {
-                return res.status(200).json({
-                  success: true,
-                  qrCode: qrCodeValue,
-                  sessionName: normalizedSessionName,
-                  serverId
-                })
-              }
+            if (qrCodeValue) {
+              return res.status(200).json({
+                success: true,
+                qrCode: qrCodeValue,
+                sessionName: normalizedSessionName,
+                serverId
+              })
             }
           }
-        } catch (startError) {
-          console.error('❌ Erro ao tentar iniciar sessão:', startError)
+        } catch (getError) {
+          console.error('❌ Erro ao tentar GET:', getError)
         }
       }
       
       return res.status(response.status).json({
         success: false,
-        error: errorMessage
+        error: errorMessage || `Erro ${response.status} ao buscar QR code. Verifique se a sessão existe e se a URL da API WAHA está correta.`
       })
     }
 

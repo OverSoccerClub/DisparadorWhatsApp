@@ -226,6 +226,12 @@ export default function WahaServersManager({ userId }: Props = {}) {
         })
       })
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `Erro ${response.status}: ${response.statusText}` }))
+        showError(errorData.error || `Erro ao buscar QR code (${response.status})`)
+        return
+      }
+
       const data = await response.json()
       
       if (data.success && data.qrCode) {
@@ -235,11 +241,12 @@ export default function WahaServersManager({ userId }: Props = {}) {
         // Iniciar verificação de conexão
         startConnectionCheck(session)
       } else {
-        showError(data.error || 'Erro ao buscar QR code')
+        showError(data.error || 'Erro ao buscar QR code. A sessão pode não existir ou não estar pronta.')
       }
     } catch (error) {
       console.error('Erro ao buscar QR code:', error)
-      showError('Erro ao buscar QR code')
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+      showError(`Erro ao buscar QR code: ${errorMessage}. Verifique se a URL da API WAHA está correta e se a sessão existe.`)
     } finally {
       setLoadingQr(false)
     }
