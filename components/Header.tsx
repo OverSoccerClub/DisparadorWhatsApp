@@ -1,16 +1,27 @@
 'use client'
 
-import { Bars3Icon, BellIcon, MagnifyingGlassIcon, SunIcon, MoonIcon } from '@heroicons/react/24/outline'
+import {
+  Bars3Icon,
+  BellIcon,
+  MagnifyingGlassIcon,
+  SunIcon,
+  MoonIcon,
+  Cog6ToothIcon,
+  ArrowRightOnRectangleIcon,
+  UserIcon
+} from '@heroicons/react/24/outline'
 import { Menu, Transition } from '@headlessui/react'
-import { Fragment } from 'react'
+import { Fragment, useState } from 'react'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useSidebar } from '@/lib/contexts/SidebarContext'
 import { useTheme } from '@/lib/contexts/ThemeContext'
+import UserProfileModal from '@/components/UserProfileModal'
 
 export default function Header() {
   const { isOpen, toggle } = useSidebar()
   const { user, logout } = useAuth()
   const { theme, toggle: toggleTheme } = useTheme()
+  const [showProfileModal, setShowProfileModal] = useState(false)
 
   return (
     <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-900 px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8" suppressHydrationWarning>
@@ -101,29 +112,33 @@ export default function Header() {
               leaveFrom="transform opacity-100 scale-100"
               leaveTo="transform opacity-0 scale-95"
             >
-              <Menu.Items className="absolute right-0 z-10 mt-2.5 w-32 origin-top-right rounded-md bg-white dark:bg-secondary-800 py-2 shadow-lg ring-1 ring-secondary-900/5 dark:ring-secondary-700 focus:outline-none">
+              <Menu.Items className="absolute right-0 z-10 mt-2.5 w-52 origin-top-right rounded-lg bg-white dark:bg-secondary-800 py-3 shadow-xl ring-1 ring-secondary-900/5 dark:ring-secondary-700 focus:outline-none">
                 <Menu.Item>
                   {({ active }) => (
-                    <a
-                      href="#"
+                    <button
+                      onClick={() => {
+                        setShowProfileModal(true)
+                      }}
                       className={`${
                         active ? 'bg-secondary-50 dark:bg-secondary-700' : ''
-                      } block px-3 py-1 text-sm leading-6 text-secondary-900 dark:text-secondary-100`}
+                      } w-full flex items-center gap-2 px-4 py-2 text-sm leading-6 text-secondary-900 dark:text-secondary-100`}
                     >
+                      <UserIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                       Perfil
-                    </a>
+                    </button>
                   )}
                 </Menu.Item>
                 <Menu.Item>
                   {({ active }) => (
-                    <a
-                      href="#"
+                    <Link
+                      href="/configuracoes"
                       className={`${
                         active ? 'bg-secondary-50 dark:bg-secondary-700' : ''
-                      } block px-3 py-1 text-sm leading-6 text-secondary-900 dark:text-secondary-100`}
+                      } flex items-center gap-2 px-4 py-2 text-sm leading-6 text-secondary-900 dark:text-secondary-100`}
                     >
+                      <Cog6ToothIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                       Configurações
-                    </a>
+                    </Link>
                   )}
                 </Menu.Item>
                 <Menu.Item>
@@ -132,8 +147,9 @@ export default function Header() {
                       onClick={logout}
                       className={`${
                         active ? 'bg-secondary-50 dark:bg-secondary-700' : ''
-                      } block w-full text-left px-3 py-1 text-sm leading-6 text-secondary-900 dark:text-secondary-100`}
+                      } flex w-full items-center gap-2 px-4 py-2 text-sm leading-6 text-secondary-900 dark:text-secondary-100`}
                     >
+                      <ArrowRightOnRectangleIcon className="h-5 w-5 text-danger-500" />
                       Sair
                     </button>
                   )}
@@ -141,6 +157,7 @@ export default function Header() {
               </Menu.Items>
             </Transition>
           </Menu>
+          <UserProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
         </div>
       </div>
     </div>

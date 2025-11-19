@@ -1,6 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
+import { formatWahaServer } from '@/lib/server/waha-config-helpers'
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -47,31 +49,7 @@ export default async function handler(
     }
 
     // Formatar servidores para o formato esperado pelo componente
-    const formattedServers = (servers || []).map((server: any) => ({
-      id: server.id,
-      name: server.nome,
-      apiUrl: server.api_url,
-      apiKey: server.api_key,
-      webhookUrl: server.webhook_url,
-      webhookSecret: server.webhook_secret,
-      timeout: server.timeout || 30,
-      retryAttempts: server.retry_attempts || 3,
-      rateLimit: server.rate_limit || 100,
-      enableAutoReconnect: server.enable_auto_reconnect ?? true,
-      enableQrCode: server.enable_qr_code ?? true,
-      enablePresence: server.enable_presence ?? true,
-      ativo: server.ativo ?? true,
-      status: {
-        connected: false,
-        lastTest: null,
-        responseTime: null,
-        errors: 0,
-        instances: 0,
-        activeConnections: 0
-      },
-      createdAt: server.created_at,
-      updatedAt: server.updated_at
-    }))
+    const formattedServers = (servers || []).map(formatWahaServer)
 
     return res.status(200).json({
       success: true,
