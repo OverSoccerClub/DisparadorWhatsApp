@@ -5,9 +5,8 @@ Todas as mudanças importantes do projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
-## [Não Publicado]
 
-### Adicionado
+## [0.1.11] - 2025-11-19### Adicionado
 - Sistema de changelog para registro de implementações importantes
 - Página de manual do usuário acessível via sidebar
 - Hash hexadecimal de 12 dígitos no rodapé para identificação de builds
@@ -22,6 +21,15 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Exclusão de instâncias Evolution API agora funciona corretamente em ambos os lados (API e Supabase)
 - Erro de autenticação JWT em rotas de API (agora usa createServerClient corretamente)
 - Erro `TypeError: r.closest is not a function` em tooltips
+
+## [0.1.11] - 2025-11-19
+### Adicionado
+- Funcionalidades em desenvolvimento
+## [Não Publicado]
+
+### Adicionado
+- Funcionalidades em desenvolvimento
+
 
 ## [0.1.10] - 2025-01-19
 
