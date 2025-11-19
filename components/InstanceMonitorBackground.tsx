@@ -93,10 +93,13 @@ export default function InstanceMonitor({ userId, onStatusChange }: InstanceMoni
     }
   }, [backgroundStatus])
 
-  // Carregar instâncias quando o componente montar
+  // Carregar instâncias quando o componente montar (apenas uma vez)
   useEffect(() => {
-    loadInstances()
-  }, [loadInstances])
+    if (userId) {
+      loadInstances()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]) // Apenas userId como dependência para evitar loops
 
   // Iniciar monitoramento em background
   const handleStartMonitoring = async () => {
@@ -169,10 +172,7 @@ export default function InstanceMonitor({ userId, onStatusChange }: InstanceMoni
     }
   }
 
-  // Carregar instâncias na inicialização
-  useEffect(() => {
-    loadInstances()
-  }, [loadInstances])
+  // Removido - já carregado no useEffect acima
 
   // Atualizar instâncias quando status de background muda
   useEffect(() => {

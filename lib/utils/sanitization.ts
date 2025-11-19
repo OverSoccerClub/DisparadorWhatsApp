@@ -108,25 +108,26 @@ export function sanitizeURL(url: string): string | null {
  * Sanitiza objeto recursivamente
  */
 export function sanitizeObject<T extends Record<string, any>>(obj: T): T {
-  const sanitized = { ...obj }
+  // Usar any internamente para evitar restrições de indexação genérica
+  const sanitized: any = { ...obj }
 
-  Object.keys(sanitized).forEach(key => {
+  Object.keys(sanitized).forEach((key: string) => {
     const value = sanitized[key]
 
     if (typeof value === 'string') {
-      sanitized[key] = sanitizeString(value) as any
+      sanitized[key] = sanitizeString(value)
     } else if (typeof value === 'number') {
-      sanitized[key] = sanitizeNumber(value) as any
+      sanitized[key] = sanitizeNumber(value)
     } else if (Array.isArray(value)) {
-      sanitized[key] = value.map(item =>
+      sanitized[key] = value.map((item: any) =>
         typeof item === 'string' ? sanitizeString(item) : item
-      ) as any
+      )
     } else if (value && typeof value === 'object') {
-      sanitized[key] = sanitizeObject(value) as any
+      sanitized[key] = sanitizeObject(value)
     }
   })
 
-  return sanitized
+  return sanitized as T
 }
 
 /**
@@ -136,9 +137,9 @@ export function sanitizeObjectPreserve<T extends Record<string, any>>(
   obj: T,
   preserveFields: (keyof T)[]
 ): T {
-  const sanitized = { ...obj }
+  const sanitized: any = { ...obj }
 
-  Object.keys(sanitized).forEach(key => {
+  Object.keys(sanitized).forEach((key: string) => {
     if (preserveFields.includes(key as keyof T)) {
       // Preservar campo sem sanitização
       return
@@ -147,18 +148,18 @@ export function sanitizeObjectPreserve<T extends Record<string, any>>(
     const value = sanitized[key]
 
     if (typeof value === 'string') {
-      sanitized[key] = sanitizeString(value) as any
+      sanitized[key] = sanitizeString(value)
     } else if (typeof value === 'number') {
-      sanitized[key] = sanitizeNumber(value) as any
+      sanitized[key] = sanitizeNumber(value)
     } else if (Array.isArray(value)) {
-      sanitized[key] = value.map(item =>
+      sanitized[key] = value.map((item: any) =>
         typeof item === 'string' ? sanitizeString(item) : item
-      ) as any
+      )
     } else if (value && typeof value === 'object') {
-      sanitized[key] = sanitizeObjectPreserve(value, []) as any
+      sanitized[key] = sanitizeObjectPreserve(value, [])
     }
   })
 
-  return sanitized
+  return sanitized as T
 }
 

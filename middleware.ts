@@ -4,6 +4,14 @@ import type { NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
+  // INTERCEPTAR requisições de hot-update e retornar 200 vazio (evita loop infinito)
+  if (pathname.includes('webpack.hot-update.json') || pathname.includes('hot-update')) {
+    return new NextResponse(JSON.stringify({}), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    })
+  }
+  
   // Permitir acesso direto a arquivos estáticos e recursos do Next.js
   // Verificar se é um arquivo estático (com extensão) ou recurso do Next.js
   const isStaticFile = pathname.match(/\.(ico|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf|eot|json)$/)
@@ -46,8 +54,9 @@ export const config = {
      * - _next (all Next.js internal routes - static, image, webpack, etc)
      * - favicon.ico (favicon file)
      * - img (public images folder)
+     * - static files
      */
-    '/((?!api|_next|favicon.ico|img/).*)',
+    '/((?!api|_next|favicon.ico|img|.*\\..*$).*)',
   ],
 }
 

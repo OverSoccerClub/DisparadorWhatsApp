@@ -2,8 +2,8 @@
 
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { toast } from 'react-hot-toast'
 import { useInactivityTimeout } from './useInactivityTimeout'
+import { useAlertContext } from '@/lib/contexts/AlertContext'
 
 export interface User {
   id: string
@@ -28,10 +28,12 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+// Componente interno que usa o contexto de alertas
+function AuthProviderInner({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const alertContext = useAlertContext()
 
   // Verificar se usuário está autenticado (memoizado)
   const checkAuth = useCallback(async () => {
@@ -68,17 +70,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.success) {
         setUser(data.user)
-        toast.success('Login realizado com sucesso!')
+        alertContext.showSuccess('Login realizado com sucesso!')
         return true
       } else {
-        toast.error(data.message)
+        alertContext.showError(data.message || 'Erro ao fazer login')
         return false
       }
     } catch (error) {
-      toast.error('Erro interno do servidor')
+      alertContext.showError('Erro interno do servidor')
       return false
     }
-  }, [])
+  }, [alertContext, setUser])
 
   // Registro (memoizado)
   const register = useCallback(async (email: string, password: string, name: string): Promise<boolean> => {
@@ -95,17 +97,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.success) {
         setUser(data.user)
-        toast.success('Conta criada com sucesso!')
+        alertContext.showSuccess('Conta criada com sucesso!')
         return true
       } else {
-        toast.error(data.message)
+        alertContext.showError(data.message || 'Erro ao criar conta')
         return false
       }
     } catch (error) {
-      toast.error('Erro interno do servidor')
+      alertContext.showError('Erro interno do servidor')
       return false
     }
-  }, [])
+  }, [alertContext, setUser])
 
   // Logout (memoizado)
   const logout = useCallback(async (): Promise<void> => {
@@ -117,10 +119,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Erro silencioso no logout
     } finally {
       setUser(null)
-      toast.success('Logout realizado com sucesso!')
+      alertContext.showSuccess('Logout realizado com sucesso!')
       router.push('/auth')
     }
-  }, [router])
+  }, [router, alertContext, setUser])
 
   // Atualizar dados do usuário (memoizado)
   const refreshUser = useCallback(async (): Promise<void> => {
@@ -141,15 +143,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleInactivityTimeout = useCallback(async () => {
     if (user) {
       // Mostrar notificação antes de fazer logout
-      toast.error('Sessão expirada por inatividade. Faça login novamente.', {
-        duration: 5000,
-        icon: '⏱️'
-      })
+      alertContext.showError('Sessão expirada por inatividade. Faça login novamente.', 'Sessão Expirada', 5000)
       
       // Fazer logout
       await logout()
     }
-  }, [user, logout])
+  }, [user, logout, alertContext])
 
   // Configurar timeout de inatividade (30 minutos = 30 * 60 * 1000 ms)
   useInactivityTimeout({
@@ -173,6 +172,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   )
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  return <AuthProviderInner>{children}</AuthProviderInner>
 }
 
 export function useAuth() {

@@ -16,7 +16,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { Disparo, Cliente } from '@/lib/supabase'
 import { formatDate } from '@/lib/utils'
-import toast from 'react-hot-toast'
+import { useAlertContext } from '@/lib/contexts/AlertContext'
 // Modal original (ativo)
 import DisparoModal from './DisparoModal'
 import ConfirmModal from './ConfirmModal'
@@ -26,6 +26,7 @@ import ChipMaturationModal from './ChipMaturationModal'
 import { useScheduledMaturationMonitor } from '@/hooks/useScheduledMaturationMonitor'
 
 export default function DisparosPage() {
+  const { showSuccess, showError } = useAlertContext()
   const [disparos, setDisparos] = useState<Disparo[]>([])
   const [filteredDisparos, setFilteredDisparos] = useState<Disparo[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -97,11 +98,11 @@ export default function DisparosPage() {
         setPagination(data.pagination || { page: 1, limit: 10, total: 0, pages: 0 })
         setFilteredDisparos(data.data || [])
       } else {
-        toast.error('Erro ao carregar disparos')
+        showError('Erro ao carregar disparos')
       }
     } catch (error) {
       console.error('Erro ao carregar disparos:', error)
-      toast.error('Erro ao carregar disparos')
+      showError('Erro ao carregar disparos')
     } finally {
       setLoading(false)
     }
@@ -135,7 +136,7 @@ export default function DisparosPage() {
 
   const handleRefresh = async () => {
     await loadDisparos(pagination.page, searchTerm, statusFilter, dateFilters.dataInicio, dateFilters.dataFim, dateFilters.tipoData)
-    toast.success('Dados atualizados!')
+    showSuccess('Dados atualizados!')
   }
 
   const handlePageChange = (page: number) => {
@@ -163,16 +164,16 @@ export default function DisparosPage() {
       })
 
       if (response.ok) {
-        toast.success('Disparo excluído com sucesso!')
+        showSuccess('Disparo excluído com sucesso!')
         // Recarregar a lista
         await loadDisparos(pagination.page, searchTerm, statusFilter, dateFilters.dataInicio, dateFilters.dataFim, dateFilters.tipoData)
       } else {
         const data = await response.json()
-        toast.error(data.error || 'Erro ao excluir disparo')
+        showError(data.error || 'Erro ao excluir disparo')
       }
     } catch (error) {
       console.error('Erro ao excluir disparo:', error)
-      toast.error('Erro ao excluir disparo')
+      showError('Erro ao excluir disparo')
     }
   }
 
@@ -240,20 +241,14 @@ export default function DisparosPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex items-center justify-center">
-            <PaperAirplaneIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100 flex items-center">
-              <PaperAirplaneIcon className="h-6 w-6 mr-2 text-primary-600 dark:text-primary-400" />
-              Disparos
-            </h1>
-            <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400 flex items-center">
-              <ClockIcon className="h-4 w-4 mr-1" />
-              Histórico e status de todos os disparos realizados
-            </p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100 flex items-center">
+            <PaperAirplaneIcon className="h-6 w-6 mr-2 text-primary-600 dark:text-primary-400" />
+            Disparos
+          </h1>
+          <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">
+            Histórico e status de todos os disparos realizados
+          </p>
         </div>
         <div className="flex space-x-3">
           {/* Seletor de método de envio (Evolution x WAHA x Telegram) */}
@@ -293,7 +288,7 @@ export default function DisparosPage() {
           </button>
           <button
             onClick={() => setShowMaturation(true)}
-            className="btn btn-ghost btn-md"
+            className="btn btn-md bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-900/50 border border-orange-300 dark:border-orange-700/50 shadow-sm"
             title="Maturação de Chips"
           >
             <ClockIcon className="h-4 w-4 mr-2" />

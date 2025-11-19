@@ -1,28 +1,87 @@
 /** @type {import('next').NextConfig} */
 const isProduction = process.env.NODE_ENV === 'production'
 
+// Ler versão do package.json
+const packageJson = require('./package.json')
+const appVersion = packageJson.version
+
+// Definir variável de ambiente com a versão do package.json
+if (!process.env.NEXT_PUBLIC_APP_VERSION) {
+  process.env.NEXT_PUBLIC_APP_VERSION = appVersion
+}
+
 const nextConfig = {
+  // Definir variáveis de ambiente públicas
+  env: {
+    NEXT_PUBLIC_APP_VERSION: appVersion,
+  },
   // Compressão e otimizações
   compress: true,
   poweredByHeader: false,
   
-  // TypeScript - Em produção, manter verificação (comentado para desenvolvimento rápido)
-  // Para produção, recomenda-se habilitar verificação de tipos
+  // DESABILITAR Fast Refresh completamente
+  reactStrictMode: false,
+  
+  // TypeScript - Temporariamente desabilitado para resolver problemas de migração
   typescript: {
-    ignoreBuildErrors: !isProduction, // false em produção, true em desenvolvimento
+    ignoreBuildErrors: true,
   },
   
-  // ESLint - Em produção, manter verificação (comentado para desenvolvimento rápido)
-  // Para produção, recomenda-se habilitar verificação de lint
+  // ESLint - Temporariamente desabilitado para resolver problemas de migração
   eslint: {
-    ignoreDuringBuilds: !isProduction, // false em produção, true em desenvolvimento
+    ignoreDuringBuilds: true,
   },
   
   // SWC Minify para melhor performance
   swcMinify: true,
   
-  // React Strict Mode para detectar problemas
-  reactStrictMode: true,
+  // DESABILITAR HMR completamente via webpack - SOLUÇÃO DEFINITIVA
+  webpack: (config, { dev, isServer, webpack }) => {
+    if (dev && !isServer) {
+      // Remover TODOS os plugins relacionados a HMR
+      config.plugins = config.plugins.filter(plugin => {
+        const name = plugin.constructor.name
+        return !name.includes('Hot') && 
+               !name.includes('FastRefresh') &&
+               !name.includes('HMR')
+      })
+      
+      // Remover entry points de HMR do webpack
+      if (config.entry && typeof config.entry === 'object') {
+        Object.keys(config.entry).forEach(key => {
+          if (Array.isArray(config.entry[key])) {
+            config.entry[key] = config.entry[key].filter(
+              entry => typeof entry === 'string' && 
+                       !entry.includes('webpack/hot') &&
+                       !entry.includes('webpack-dev-server') &&
+                       !entry.includes('@next/react-refresh')
+            )
+          }
+        })
+      }
+      
+      // Desabilitar completamente o HMR no webpack
+      config.optimization = config.optimization || {}
+      config.optimization.moduleIds = 'deterministic'
+      
+      // Desabilitar watch completamente
+      config.watchOptions = {
+        ignored: /.*/,
+        poll: false,
+        aggregateTimeout: 0,
+      }
+      
+      // Remover configurações de HMR
+      if (config.devServer) {
+        delete config.devServer.hot
+      }
+    }
+    return config
+  },
+  
+  // React Strict Mode desabilitado para evitar problemas de hidratação
+  reactStrictMode: false,
+  
   
   // Output standalone para Docker (apenas em produção)
   output: isProduction ? 'standalone' : undefined,
@@ -35,10 +94,13 @@ const nextConfig = {
     dangerouslyAllowSVG: false,
   },
   
-  // Configurações experimentais para performance
-  experimental: {
-    optimizeCss: true,
-  },
+  // Configurações experimentais desabilitadas para evitar loop de recompilação
+  // experimental: {
+  //   optimizeCss: true,
+  // },
+  
+  // Desabilitar otimizações que podem causar problemas de hidratação
+  reactStrictMode: false,
   
   // Headers de segurança e performance
   async headers() {

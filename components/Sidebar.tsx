@@ -27,7 +27,7 @@ type NavigationItem = {
 }
 
 const navigation: NavigationItem[] = [
-  { name: 'Dashboard', href: '/', icon: HomeIcon },
+  { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
   { name: 'Clientes', href: '/clientes', icon: UsersIcon },
   { name: 'Campanhas', href: '/campanhas', icon: MegaphoneIcon },
   { name: 'Disparos', href: '/disparos', icon: PaperAirplaneIcon },
@@ -195,7 +195,7 @@ function Sidebar() {
           <div className="flex items-center flex-shrink-0 px-0 py-0">
             <img 
               src="/img/logo_marca_02_trasp.png" 
-                alt="Fluxus Menssager"
+                alt="Fluxus Message"
               className="w-full h-auto object-contain"
               loading="lazy"
             />

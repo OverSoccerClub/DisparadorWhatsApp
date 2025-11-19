@@ -161,20 +161,36 @@ export default function DashboardReal() {
       let servidoresWahaOnline = 0
       try {
         const servidoresRes = await fetch('/api/config/waha/list')
-        const servidoresData = await servidoresRes.json()
-        if (servidoresData.success && servidoresData.servers) {
-          totalServidoresWaha = servidoresData.servers.length
-          // Verificar status dos servidores
-          const serverIds = servidoresData.servers.map((s: any) => s.id).filter(Boolean)
-          if (serverIds.length > 0) {
-            const statusRes = await fetch('/api/config/waha/status', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ serverIds })
-            })
-            const statusData = await statusRes.json()
-            if (statusData.results) {
-              servidoresWahaOnline = statusData.results.filter((r: any) => r.status === 'online').length
+        if (!servidoresRes.ok) {
+          // Se a resposta não for OK, tentar parsear como JSON ou usar dados padrão
+          try {
+            const errorData = await servidoresRes.json()
+            console.error('Erro ao carregar servidores WAHA:', errorData)
+          } catch {
+            console.error('Erro ao carregar servidores WAHA: Resposta não é JSON')
+          }
+        } else {
+          const servidoresData = await servidoresRes.json()
+          if (servidoresData.success && servidoresData.servers) {
+            totalServidoresWaha = servidoresData.servers.length
+            // Verificar status dos servidores
+            const serverIds = servidoresData.servers.map((s: any) => s.id).filter(Boolean)
+            if (serverIds.length > 0) {
+              try {
+                const statusRes = await fetch('/api/config/waha/status', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ serverIds })
+                })
+                if (statusRes.ok) {
+                  const statusData = await statusRes.json()
+                  if (statusData.results) {
+                    servidoresWahaOnline = statusData.results.filter((r: any) => r.status === 'online').length
+                  }
+                }
+              } catch (statusError) {
+                console.error('Erro ao verificar status dos servidores WAHA:', statusError)
+              }
             }
           }
         }
@@ -330,7 +346,7 @@ export default function DashboardReal() {
       <PageHeader
         title="Dashboard"
         subtitle="Visão geral do seu sistema de disparos WhatsApp"
-        icon={<ChartBarIcon className="h-6 w-6" />}
+        icon={<ChartBarIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />}
       />
 
       {/* Cards de Estatísticas Principais */}

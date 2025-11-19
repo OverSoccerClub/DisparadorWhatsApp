@@ -31,14 +31,19 @@ export class CampaignService {
   }
 
   // Buscar campanha por ID (filtrada por user_id)
-  static async getCampanhaById(id: string, userId: string): Promise<{ data: Campanha | null, error: any }> {
+  // userId pode ser opcional em alguns contextos (workers/background)
+  static async getCampanhaById(id: string, userId?: string): Promise<{ data: Campanha | null, error: any }> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('campanhas')
         .select('*')
         .eq('id', id)
-        .eq('user_id', userId)
-        .single()
+
+      if (userId) {
+        query = query.eq('user_id', userId)
+      }
+
+      const { data, error } = await query.single()
 
       if (error) {
         console.error('Erro ao buscar campanha:', error)
@@ -78,7 +83,9 @@ export class CampaignService {
             engajamento: {
               lidos: 0,
               respondidos: 0,
-              cliques: 0
+              cliques: 0,
+              taxaLeitura: 0,
+              taxaResposta: 0
             },
             detalhesFalhas: []
           }
@@ -141,7 +148,8 @@ export class CampaignService {
   }
 
   // Controle de campanha (iniciar, pausar, retomar, cancelar) - verificando user_id
-  static async controlarCampanha(id: string, controle: ControleCampanhaRequest, userId: string): Promise<boolean> {
+  // userId opcional para permitir controle via workers/background
+  static async controlarCampanha(id: string, controle: ControleCampanhaRequest, userId?: string): Promise<boolean> {
     try {
       const { acao } = controle
       
@@ -176,14 +184,19 @@ export class CampaignService {
           break
       }
 
-      const { error } = await supabase
+      let query = supabase
         .from('campanhas')
         .update({
           status: statusUpdate,
           progresso: progressoUpdate
         })
         .eq('id', id)
-        .eq('user_id', userId)
+
+      if (userId) {
+        query = query.eq('user_id', userId)
+      }
+
+      const { error } = await query
 
       if (error) {
         console.error('Erro ao controlar campanha:', error)
@@ -331,7 +344,13 @@ export class CampaignService {
           falhas: 0, // TODO: Calcular baseado nos disparos
           tempoProcessamento: 0 // TODO: Calcular baseado nos timestamps
         })),
-        engajamento: campanhaData.relatorio.engajamento
+        engajamento: {
+          lidos: campanhaData.relatorio?.engajamento?.lidos ?? 0,
+          respondidos: campanhaData.relatorio?.engajamento?.respondidos ?? 0,
+          cliques: campanhaData.relatorio?.engajamento?.cliques ?? 0,
+          taxaLeitura: (campanhaData.relatorio as any)?.engajamento?.taxaLeitura ?? 0,
+          taxaResposta: (campanhaData.relatorio as any)?.engajamento?.taxaResposta ?? 0
+        }
       }
 
       return relatorio

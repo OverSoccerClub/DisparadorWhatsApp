@@ -18,9 +18,10 @@ import {
 import PageHeader from './PageHeader'
 import { Cliente } from '@/lib/supabaseClient'
 import { formatDate } from '@/lib/utils'
-import toast from 'react-hot-toast'
+import { useAlertContext } from '@/lib/contexts/AlertContext'
 
 export default function ClientesPageReal() {
+  const { showSuccess, showError } = useAlertContext()
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -68,7 +69,7 @@ export default function ClientesPageReal() {
       if (!response.ok) {
         const errorText = await response.text()
         console.error('Erro na resposta:', response.status, errorText)
-        toast.error(`Erro ${response.status}: ${errorText}`)
+        showError(`Erro ${response.status}: ${errorText}`)
         return
       }
       
@@ -76,7 +77,7 @@ export default function ClientesPageReal() {
       
       if (result.error) {
         console.error('Erro na API:', result.error)
-        toast.error(`Erro da API: ${result.error}`)
+        showError(`Erro da API: ${result.error}`)
         return
       }
       
@@ -85,7 +86,7 @@ export default function ClientesPageReal() {
       setTotalPages(result.pagination?.pages || 0)
     } catch (error) {
       console.error('Erro ao carregar clientes:', error)
-      toast.error(`Erro de rede: ${error instanceof Error ? error.message : String(error)}`)
+      showError(`Erro de rede: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setLoading(false)
     }
@@ -107,18 +108,18 @@ export default function ClientesPageReal() {
       })
 
       if (response.ok) {
-        toast.success(editingCliente ? 'Cliente atualizado com sucesso!' : 'Cliente adicionado com sucesso!')
+        showSuccess(editingCliente ? 'Cliente atualizado com sucesso!' : 'Cliente adicionado com sucesso!')
         setShowModal(false)
         setEditingCliente(null)
         setFormData({ nome: '', telefone: '', email: '', status: 'ativo' })
         loadClientes()
       } else {
         const error = await response.json()
-        toast.error(error.error || 'Erro ao salvar cliente')
+        showError(error.error || 'Erro ao salvar cliente')
       }
     } catch (error) {
       console.error('Erro ao salvar cliente:', error)
-      toast.error('Erro ao salvar cliente')
+      showError('Erro ao salvar cliente')
     }
   }
 
@@ -142,15 +143,15 @@ export default function ClientesPageReal() {
       })
 
       if (response.ok) {
-        toast.success('Cliente excluído com sucesso!')
+        showSuccess('Cliente excluído com sucesso!')
         loadClientes()
       } else {
         const error = await response.json()
-        toast.error(error.error || 'Erro ao excluir cliente')
+        showError(error.error || 'Erro ao excluir cliente')
       }
     } catch (error) {
       console.error('Erro ao excluir cliente:', error)
-      toast.error('Erro ao excluir cliente')
+      showError('Erro ao excluir cliente')
     }
   }
 
@@ -215,7 +216,7 @@ export default function ClientesPageReal() {
       <PageHeader
         title="Clientes"
         subtitle="Gerencie sua base de clientes cadastrados"
-        icon={<UsersIcon className="h-6 w-6" />}
+        icon={<UsersIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />}
         actions={(
           <button
             onClick={handleNewCliente}
@@ -231,22 +232,28 @@ export default function ClientesPageReal() {
       <div className="card p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
-            <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400 dark:text-secondary-500" />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+              <MagnifyingGlassIcon className="h-5 w-5 text-secondary-400 dark:text-secondary-500" />
+            </div>
             <input
               type="text"
               placeholder="Buscar clientes..."
               value={searchTerm}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="input pl-10"
+              className="input pl-12 pr-4"
+              style={{ paddingLeft: '2.75rem' }}
             />
           </div>
           
           <div className="relative">
-            <FunnelIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400 dark:text-secondary-500" />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+              <FunnelIcon className="h-5 w-5 text-secondary-400 dark:text-secondary-500" />
+            </div>
             <select
               value={statusFilter}
               onChange={(e) => handleStatusFilterChange(e.target.value)}
-              className="input pl-10"
+              className="input pl-12 pr-4 appearance-none"
+              style={{ paddingLeft: '2.75rem' }}
             >
               <option value="todos">Todos os status</option>
               <option value="ativo">Ativo</option>

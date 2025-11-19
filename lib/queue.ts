@@ -84,7 +84,8 @@ campaignQueue.process('process-campaign', async (job) => {
     console.log(`Processando campanha ${campanhaId}`)
     
     // Buscar campanha
-    const campanha = await CampaignService.getCampanhaById(campanhaId)
+    const campanhaResult = await CampaignService.getCampanhaById(campanhaId)
+    const campanha = campanhaResult?.data
     if (!campanha) {
       throw new Error('Campanha não encontrada')
     }
@@ -94,13 +95,13 @@ campaignQueue.process('process-campaign', async (job) => {
     const lotesPendentes = lotes.filter(lote => lote.status === 'pendente')
 
     if (lotesPendentes.length === 0) {
-      // Marcar campanha como concluída
+      // Marcar campanha como concluída (sem userId em contexto de worker)
       await CampaignService.controlarCampanha(campanhaId, { acao: 'concluir' })
       return { message: 'Campanha concluída' }
     }
 
     // Processar primeiro lote pendente
-    const lote = lotesPendentes[0]
+  const lote = lotesPendentes[0]
     await processarLote(campanhaId, lote)
 
     // Se ainda há lotes pendentes, agendar próximo processamento
@@ -109,7 +110,7 @@ campaignQueue.process('process-campaign', async (job) => {
     
     if (aindaPendentes.length > 0) {
       // Agendar próximo processamento baseado no intervalo
-      const proximoProcessamento = campanha.configuracao.intervaloMensagens * 1000
+      const proximoProcessamento = (campanha as any).configuracao?.intervaloMensagens * 1000
       await campaignQueue.add('process-campaign', { campanhaId }, {
         delay: proximoProcessamento
       })
@@ -124,7 +125,7 @@ campaignQueue.process('process-campaign', async (job) => {
 
 // Processador de mensagens WhatsApp
 console.log('🔧 Registrando processador da fila WhatsApp...')
-whatsappQueue.process('send-message', async (job) => {
+whatsappQueue.process('send-message', async (job: any) => {
   const { telefone, mensagem, disparoId, instanceName, scheduledTime } = job.data
   
   try {
@@ -184,7 +185,7 @@ async function processarLote(campanhaId: string, lote: any) {
 
     // Adicionar jobs à fila de WhatsApp
     await whatsappQueue.addBulk(
-      jobs.map(job => ({
+      jobs.map((job: any) => ({
         name: 'send-message',
         data: job
       }))
@@ -296,20 +297,23 @@ campaignQueue.on('failed', (job, err) => {
   console.error(`Campanha ${job.data.campanhaId} falhou:`, err)
 })
 
-whatsappQueue.on('completed', (job) => {
-  console.log(`✅ Mensagem enviada com sucesso para ${job.data.telefone}`)
+whatsappQueue.on('completed', (job: any) => {
+  console.log(`✅ Mensagem enviada com sucesso para ${job?.data?.telefone}`)
 })
 
-whatsappQueue.on('failed', (job, err) => {
-  console.error(`❌ Falha ao enviar mensagem para ${job.data.telefone}:`, err)
+whatsappQueue.on('failed', (job: any, err: any) => {
+  console.error(`❌ Falha ao enviar mensagem para ${job?.data?.telefone}:`, err)
 })
 
-whatsappQueue.on('waiting', (job) => {
-  console.log(`⏳ Job ${job.id} aguardando processamento`)
+// Alguns eventos retornam somente jobId; tolerar ambos
+whatsappQueue.on('waiting', (jobOrId: any) => {
+  const id = typeof jobOrId === 'object' ? jobOrId.id : jobOrId
+  console.log(`⏳ Job ${id} aguardando processamento`)
 })
 
-whatsappQueue.on('active', (job) => {
-  console.log(`🔄 Job ${job.id} sendo processado`)
+whatsappQueue.on('active', (jobOrId: any) => {
+  const id = typeof jobOrId === 'object' ? jobOrId.id : jobOrId
+  console.log(`🔄 Job ${id} sendo processado`)
 })
 
 // Log de inicialização

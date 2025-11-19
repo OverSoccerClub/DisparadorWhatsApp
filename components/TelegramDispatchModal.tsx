@@ -20,7 +20,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { Cliente } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks/useAuth'
-import toast from 'react-hot-toast'
+import { useAlertContext } from '@/lib/contexts/AlertContext'
 import TimeControl from './TimeControl'
 import { detectMessageType, generateTypedVariations } from '@/lib/messageVariations'
 import VariationsGenerationOverlay from './VariationsGenerationOverlay'
@@ -43,6 +43,7 @@ interface TelegramBot {
 
 export default function TelegramDispatchModal({ isOpen, onClose, clientes }: TelegramDispatchModalProps) {
   const { user } = useAuth()
+  const { showSuccess, showError } = useAlertContext()
   const [activeTab, setActiveTab] = useState<'clientes' | 'novos'>('clientes')
   const [selectedClientes, setSelectedClientes] = useState<string[]>([])
   const [novosChatIds, setNovosChatIds] = useState<string>('')
@@ -171,11 +172,11 @@ export default function TelegramDispatchModal({ isOpen, onClose, clientes }: Tel
     const file = event.target.files?.[0]
     if (file) {
       if (file.type !== 'text/csv') {
-        toast.error('Por favor, selecione um arquivo CSV válido')
+        showError('Por favor, selecione um arquivo CSV válido')
         return
       }
       setUploadedFile(file)
-      toast.success('Arquivo CSV carregado com sucesso!')
+      showSuccess('Arquivo CSV carregado com sucesso!')
     }
   }
 
@@ -190,7 +191,7 @@ export default function TelegramDispatchModal({ isOpen, onClose, clientes }: Tel
 
   const handlePreview = () => {
     if (!isMensagemValida) {
-      toast.error('Digite uma mensagem válida')
+      showError('Digite uma mensagem válida')
       return
     }
     setPreviewMode(true)
@@ -198,7 +199,7 @@ export default function TelegramDispatchModal({ isOpen, onClose, clientes }: Tel
 
   const handleGenerateVariations = async () => {
     if (!mensagem.trim()) {
-      toast.error('Digite uma mensagem primeiro')
+      showError('Digite uma mensagem primeiro')
       return
     }
 
@@ -207,7 +208,7 @@ export default function TelegramDispatchModal({ isOpen, onClose, clientes }: Tel
       : chatIdsProcessados.length
 
     if (totalDestinatarios === 0) {
-      toast.error('Selecione destinatários primeiro')
+      showError('Selecione destinatários primeiro')
       return
     }
 
@@ -231,13 +232,13 @@ export default function TelegramDispatchModal({ isOpen, onClose, clientes }: Tel
       if (response.ok && data.success) {
         setVariationsPreview(data.result.variations)
         setGenStatus('success')
-        toast.success(`${data.result.variations.length} variações geradas!`)
+        showSuccess(`${data.result.variations.length} variações geradas!`)
       } else {
         // Fallback local (sinônimos) para não bloquear o fluxo
         const fallback = generateTypedVariations(mensagem, totalDestinatarios)
         setVariationsPreview(fallback)
         setGenStatus('success')
-        toast.success(`${fallback.length} variações geradas localmente`)
+        showSuccess(`${fallback.length} variações geradas localmente`)
       }
     } catch (error) {
       console.error('Erro ao gerar variações:', error)
@@ -245,7 +246,7 @@ export default function TelegramDispatchModal({ isOpen, onClose, clientes }: Tel
       const fallback = generateTypedVariations(mensagem, totalDestinatarios)
       setVariationsPreview(fallback)
       setGenStatus('success')
-      toast.success(`${fallback.length} variações geradas localmente`)
+      showSuccess(`${fallback.length} variações geradas localmente`)
     } finally {
       setAiLoading(false)
     }
@@ -253,22 +254,22 @@ export default function TelegramDispatchModal({ isOpen, onClose, clientes }: Tel
 
   const handleEnviar = async () => {
     if (!isMensagemValida) {
-      toast.error('Digite uma mensagem válida')
+      showError('Digite uma mensagem válida')
       return
     }
 
     if (activeTab === 'clientes' && selectedClientes.length === 0) {
-      toast.error('Selecione pelo menos um cliente')
+      showError('Selecione pelo menos um cliente')
       return
     }
 
     if (activeTab === 'novos' && chatIdsProcessados.length === 0) {
-      toast.error('Digite pelo menos um Chat ID válido')
+      showError('Digite pelo menos um Chat ID válido')
       return
     }
 
     if (!selectedBot && !useLoadBalancing) {
-      toast.error('Selecione um bot do Telegram ou habilite o balanceamento automático')
+      showError('Selecione um bot do Telegram ou habilite o balanceamento automático')
       return
     }
 
@@ -330,7 +331,7 @@ export default function TelegramDispatchModal({ isOpen, onClose, clientes }: Tel
           ? ` distribuído(s) entre ${telegramBots.filter(b => b.status === 'active').length} bot(s) do Telegram` 
           : ` via bot específico`
 
-        toast.success(`${totalDestinatarios} mensagem(ns) enviada(s) com sucesso${variationText}${botText}!`)
+        showSuccess(`${totalDestinatarios} mensagem(ns) enviada(s) com sucesso${variationText}${botText}!`)
         
         // Reset form
         setSelectedClientes([])
@@ -345,12 +346,12 @@ export default function TelegramDispatchModal({ isOpen, onClose, clientes }: Tel
         }, 2000)
       } else {
         realtime.setError()
-        toast.error(data.error || 'Erro ao enviar mensagens')
+        showError(data.error || 'Erro ao enviar mensagens')
       }
     } catch (error) {
       console.error('Erro ao enviar mensagens:', error)
       realtime.setError()
-      toast.error('Erro de conexão. Tente novamente.')
+      showError('Erro de conexão. Tente novamente.')
     } finally {
       setLoading(false)
     }

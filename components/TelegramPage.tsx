@@ -13,7 +13,7 @@ export default function TelegramPage() {
       <PageHeader
         title="Telegram"
         subtitle="Configure e gerencie seus bots do Telegram"
-        icon={<PaperAirplaneIcon className="h-6 w-6" />}
+        icon={<PaperAirplaneIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />}
       />
 
       {/* Gerenciamento de Bots do Telegram */}

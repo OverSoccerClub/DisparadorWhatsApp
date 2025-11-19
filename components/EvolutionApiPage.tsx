@@ -16,15 +16,16 @@ import {
   XMarkIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline'
-import toast from 'react-hot-toast'
 import LoadingOverlay from './LoadingOverlay'
 import SuccessModal from './SuccessModal'
 import InstanceMonitor from './InstanceMonitorBackground'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { useAlertContext } from '@/lib/contexts/AlertContext'
 import PageHeader from './PageHeader'
 
 export default function EvolutionApiPage() {
   const { user: currentUser } = useAuth()
+  const { showError, showSuccess } = useAlertContext()
   
   const [evolutionConfig, setEvolutionConfig] = useState({
     apiUrl: '',
@@ -91,7 +92,6 @@ export default function EvolutionApiPage() {
   const confirmResolveRef = useRef<null | ((v: boolean) => void)>(null)
 
   const openConfirm = (opts: { title: string; message: string; confirmText?: string; cancelText?: string; variant?: 'warning' | 'danger' }) => {
-    try { toast.dismiss() } catch {}
     
     const newDialogState = {
       open: true,
@@ -122,10 +122,12 @@ export default function EvolutionApiPage() {
       
       try {
         await loadUserConfig()
-        
-        if (evolutionConfig.apiUrl && evolutionConfig.globalApiKey) {
-          await loadInstances()
-        }
+        // Carregar instâncias independente da configuração
+        // A rota busca as configurações do Supabase automaticamente
+        // Usar setTimeout para evitar chamadas simultâneas
+        setTimeout(() => {
+          loadInstances()
+        }, 200)
       } catch (error) {
         console.error('Erro ao carregar dados iniciais:', error)
       } finally {
@@ -136,12 +138,22 @@ export default function EvolutionApiPage() {
     loadInitialData()
   }, [currentUser?.id])
 
-  // Carregar instâncias quando a API for configurada
+  // Ref para controlar se já carregou as instâncias
+  const hasLoadedInstancesRef = useRef(false)
+  const lastConfigRef = useRef<string>('')
+
+  // Carregar instâncias quando o usuário estiver disponível (apenas uma vez)
   useEffect(() => {
-    if (evolutionConfig.apiUrl && evolutionConfig.globalApiKey) {
-      loadInstances()
+    if (currentUser?.id && !hasLoadedInstancesRef.current) {
+      hasLoadedInstancesRef.current = true
+      // Usar setTimeout para evitar chamadas simultâneas
+      const timer = setTimeout(() => {
+        loadInstances()
+      }, 100)
+      return () => clearTimeout(timer)
     }
-  }, [evolutionConfig.apiUrl, evolutionConfig.globalApiKey])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.id]) // Carregar quando o usuário estiver disponível
 
   // Limpar intervalos ao desmontar
   useEffect(() => {
@@ -177,12 +189,12 @@ export default function EvolutionApiPage() {
 
   const saveUserConfig = async () => {
     if (!currentUser?.id) {
-      toast.error('Usuário não autenticado')
+      showError('Usuário não autenticado')
       return
     }
     
     if (!evolutionConfig.apiUrl || !evolutionConfig.globalApiKey) {
-      toast.error('Preencha todos os campos obrigatórios')
+        showError('Preencha todos os campos obrigatórios')
       return
     }
 
@@ -211,11 +223,11 @@ export default function EvolutionApiPage() {
           'Suas configurações da Evolution API foram salvas com sucesso.'
         )
       } else {
-        toast.error(data.error || 'Erro ao salvar configurações')
+        showError(data.error || 'Erro ao salvar configurações')
       }
     } catch (error) {
       console.error('Erro ao salvar configurações:', error)
-      toast.error('Erro ao salvar configurações')
+      showError('Erro ao salvar configurações')
     } finally {
       setLoadingOverlay(prev => ({ ...prev, open: false }))
     }
@@ -223,12 +235,12 @@ export default function EvolutionApiPage() {
 
   const handleCreateInstance = async () => {
     if (!currentUser?.id) {
-      toast.error('Usuário não autenticado')
+      showError('Usuário não autenticado')
       return
     }
     
     if (!evolutionConfig.apiUrl || !evolutionConfig.globalApiKey) {
-      toast.error('Preencha todos os campos obrigatórios')
+        showError('Preencha todos os campos obrigatórios')
       return
     }
 
@@ -260,7 +272,7 @@ export default function EvolutionApiPage() {
         )
         
         try {
-          await fetch('/api/evolution/save-instance', {
+          const saveResponse = await fetch('/api/evolution/save-instance', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -270,15 +282,30 @@ export default function EvolutionApiPage() {
             })
           })
           
+          if (!saveResponse.ok) {
+            const saveError = await saveResponse.json().catch(() => ({ error: 'Erro ao salvar instância' }))
+            console.error('Erro ao salvar instância no Supabase:', saveError)
+            showError('Instância criada, mas houve erro ao salvar no banco de dados')
+          } else {
+            const saveData = await saveResponse.json()
+            if (saveData.success) {
+              console.log('✅ Instância salva no Supabase:', saveData.data)
+            }
+          }
+          
+          // Recarregar instâncias após salvar
           await loadInstances()
         } catch (error) {
           console.error('Erro ao salvar instância no Supabase:', error)
+          showError('Instância criada, mas houve erro ao salvar no banco de dados')
+          // Mesmo com erro, recarregar para tentar mostrar a instância
+          await loadInstances()
         }
       } else {
-        toast.error(data.error || 'Erro ao criar instância')
+        showError(data.error || 'Erro ao criar instância')
       }
     } catch (error) {
-      toast.error('Erro ao criar instância')
+      showError('Erro ao criar instância')
     } finally {
       setLoading(false)
       setLoadingOverlay(prev => ({ ...prev, open: false }))
@@ -287,12 +314,12 @@ export default function EvolutionApiPage() {
 
   const handleConnectInstance = async (instanceName: string) => {
     if (!currentUser?.id) {
-      toast.error('Usuário não autenticado')
+      showError('Usuário não autenticado')
       return
     }
     
     if (!instanceName || !evolutionConfig.apiUrl || !evolutionConfig.globalApiKey) {
-      toast.error('Selecione uma instância e configure a API')
+      showError('Selecione uma instância e configure a API')
       return
     }
 
@@ -338,10 +365,10 @@ export default function EvolutionApiPage() {
           )
         }
       } else {
-        toast.error(data.error || 'Erro ao conectar instância')
+        showError(data.error || 'Erro ao conectar instância')
       }
     } catch (error) {
-      toast.error('Erro ao conectar instância')
+      showError('Erro ao conectar instância')
     } finally {
       setLoading(false)
       setLoadingOverlay(prev => ({ ...prev, open: false }))
@@ -350,12 +377,12 @@ export default function EvolutionApiPage() {
 
   const handleDisconnectInstance = async (instanceName: string) => {
     if (!currentUser?.id) {
-      toast.error('Usuário não autenticado')
+      showError('Usuário não autenticado')
       return
     }
     
     if (!instanceName) {
-      toast.error('Selecione uma instância')
+      showError('Selecione uma instância')
       return
     }
 
@@ -405,10 +432,10 @@ export default function EvolutionApiPage() {
         }))
         loadInstances()
       } else {
-        toast.error(data.error || 'Erro ao desconectar instância')
+        showError(data.error || 'Erro ao desconectar instância')
       }
     } catch (error) {
-      toast.error('Erro ao desconectar instância')
+      showError('Erro ao desconectar instância')
     } finally {
       setLoading(false)
       setLoadingOverlay(prev => ({ ...prev, open: false }))
@@ -418,33 +445,55 @@ export default function EvolutionApiPage() {
   const loadInstances = useCallback(async () => {
     if (!currentUser?.id) return
     
-    if (!evolutionConfig.apiUrl || !evolutionConfig.globalApiKey) return
+    // Não precisa verificar se apiUrl e globalApiKey estão configurados
+    // A rota busca as configurações do Supabase automaticamente
 
     try {
-      const response = await fetch(`/api/evolution/instances?apiUrl=${encodeURIComponent(evolutionConfig.apiUrl)}&globalApiKey=${encodeURIComponent(evolutionConfig.globalApiKey)}&userId=${encodeURIComponent(currentUser.id)}`)
+      const response = await fetch(`/api/evolution/instances?userId=${encodeURIComponent(currentUser.id)}`)
+      
+      if (!response.ok) {
+        // Se a resposta não for OK, tentar parsear como JSON ou usar dados padrão
+        try {
+          const errorData = await response.json()
+          console.error('Erro ao carregar instâncias:', errorData)
+          if (response.status === 401) {
+            showError('Usuário não autenticado')
+          } else {
+            showError(errorData.message || 'Erro ao carregar instâncias')
+          }
+        } catch {
+          console.error('Erro ao carregar instâncias: Resposta não é JSON')
+          showError('Erro ao carregar instâncias')
+        }
+        return
+      }
+      
       const data = await response.json()
       
       if (data.success) {
-        setInstances(data.data || [])
+        // A rota retorna tanto data.data quanto data.instances
+        const instancesData = data.data || data.instances || []
+        setInstances(instancesData)
+        console.log(`✅ Instâncias carregadas: ${instancesData.length}`)
       } else {
-        toast.error(data.error || 'Erro ao carregar instâncias')
+        showError(data.error || data.message || 'Erro ao carregar instâncias')
       }
     } catch (error) {
       console.error('Erro ao carregar instâncias:', error)
-      toast.error('Erro ao carregar instâncias')
+      showError('Erro ao carregar instâncias')
     }
-  }, [currentUser?.id, evolutionConfig.apiUrl, evolutionConfig.globalApiKey])
+  }, [currentUser?.id])
 
   const handleDeleteInstance = async (instanceName: string) => {
     if (!currentUser?.id) {
-      toast.error('Usuário não autenticado')
+      showError('Usuário não autenticado')
       return
     }
     
     if (isDeleting) return
     
     if (!evolutionConfig.apiUrl || !evolutionConfig.globalApiKey) {
-      toast.error('Configure a API primeiro')
+      showError('Configure a API primeiro')
       return
     }
     
@@ -511,11 +560,11 @@ export default function EvolutionApiPage() {
           }))
         }
       } else {
-        toast.error(data.error || 'Erro ao excluir instância')
+        showError(data.error || 'Erro ao excluir instância')
       }
     } catch (error) {
       console.error('Erro na requisição:', error)
-      toast.error('Erro ao excluir instância')
+      showError('Erro ao excluir instância')
     } finally {
       setLoading(false)
       setIsDeleting(false)
@@ -658,7 +707,7 @@ export default function EvolutionApiPage() {
       <PageHeader
         title="Evolution API"
         subtitle="Configure e gerencie suas instâncias da Evolution API"
-        icon={<ServerIcon className="h-6 w-6" />}
+        icon={<ServerIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />}
       />
 
       <LoadingOverlay {...loadingOverlay} />

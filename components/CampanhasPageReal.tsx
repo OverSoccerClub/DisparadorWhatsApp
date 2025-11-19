@@ -278,7 +278,7 @@ export default function CampanhasPageReal() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100 flex items-center">
-                <MegaphoneIcon className="h-6 w-6 mr-2" />
+                <MegaphoneIcon className="h-6 w-6 mr-2 text-primary-600 dark:text-primary-400" />
                 Campanhas
               </h1>
               <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">

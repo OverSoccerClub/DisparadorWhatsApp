@@ -62,7 +62,7 @@ export default function GlobalLoading() {
               <div className="relative h-16 w-16 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-lg">
                 <img 
                   src="/img/logo_marca_02_trasp.png" 
-                  alt="Fluxus Menssager" 
+                  alt="Fluxus Message" 
                   className="h-12 w-auto object-contain"
                 />
               </div>
@@ -71,7 +71,7 @@ export default function GlobalLoading() {
           
           {/* Título */}
           <h2 className="text-xl font-semibold text-secondary-900 mb-2">
-            Fluxus Menssager
+            Fluxus Message
           </h2>
           
           {/* Mensagem */}

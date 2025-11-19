@@ -20,7 +20,7 @@ import { useAuth } from '@/lib/hooks/useAuth'
 import { useSendingProgress } from '@/hooks/useSendingProgress'
 import { useRealtimeProgress } from '@/hooks/useRealtimeProgress'
 import { useVariationsProgress } from '@/hooks/useVariationsProgress'
-import toast from 'react-hot-toast'
+import { useAlertContext } from '@/lib/contexts/AlertContext'
 import ErrorOverlay from './ErrorOverlay'
 import SendingStatusOverlay from './SendingStatusOverlay'
 import VariationsGenerationOverlay from './VariationsGenerationOverlay'
@@ -35,6 +35,7 @@ interface DisparoModalProps {
 
 export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModalProps) {
   const { user } = useAuth()
+  const { showSuccess, showError, showWarning } = useAlertContext()
   const sendingProgress = useSendingProgress()
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
   const realtimeProgress = useRealtimeProgress(sessionId)
@@ -248,11 +249,11 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
     const file = event.target.files?.[0]
     if (file) {
       if (file.type !== 'text/csv') {
-        toast.error('Por favor, selecione um arquivo CSV válido')
+        showError('Por favor, selecione um arquivo CSV válido')
         return
       }
       setUploadedFile(file)
-      toast.success('Arquivo CSV carregado com sucesso!')
+      showSuccess('Arquivo CSV carregado com sucesso!')
     }
   }
 
@@ -269,7 +270,7 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
 
   const handlePreview = () => {
     if (!isMensagemValida) {
-      toast.error('Digite uma mensagem válida')
+      showError('Digite uma mensagem válida')
       return
     }
     setPreviewMode(true)
@@ -282,7 +283,7 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
     console.log('🤖 Usar IA:', useAI)
     
     if (!mensagem.trim()) {
-      toast.error('Digite uma mensagem primeiro')
+      showError('Digite uma mensagem primeiro')
       return
     }
 
@@ -291,7 +292,7 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
       : numerosProcessados.length
 
     if (totalDestinatarios === 0) {
-      toast.error('Selecione destinatários primeiro')
+      showError('Selecione destinatários primeiro')
       return
     }
 
@@ -345,7 +346,7 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
           }
         })
         
-        toast.success(`${totalDestinatarios} variações geradas com sucesso!`)
+        showSuccess(`${totalDestinatarios} variações geradas com sucesso!`)
       } catch (error) {
         console.error('❌ Erro ao gerar variações:', error)
         variationsProgress.finishGeneration()
@@ -360,7 +361,7 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
           }
         })
         
-        toast.error('Erro ao gerar variações')
+        showError('Erro ao gerar variações')
       }
     }
     
@@ -388,7 +389,7 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
     setVariationsPreview(safeVariations)
     console.log('✅ Estado atualizado com variações')
     console.log('✅ Novo estado variationsPreview:', safeVariations.length)
-    toast.success(`${safeVariations.length} variações geradas (local)!`)
+    showSuccess(`${safeVariations.length} variações geradas (local)!`)
     
     // Verificar se o estado foi atualizado após um pequeno delay
     setTimeout(() => {
@@ -438,10 +439,10 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
           }
         })
         
-        toast.success(`${safeVariations.length} variações geradas (IA)!`)
+        showSuccess(`${safeVariations.length} variações geradas (IA)!`)
       } else if (data?.fallback) {
         // Fallback automático para método local
-        toast.warning('IA não disponível. Usando variações locais.')
+        showWarning('IA não disponível. Usando variações locais.')
         const variations = generateTypedVariations(mensagem, totalDestinatarios)
         const safeVariations = variations.map(v => typeof v === 'string' ? v : String(v || ''))
         setVariationsPreview(safeVariations)
@@ -457,7 +458,7 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
           }
         })
       } else {
-        toast.error('Falha ao gerar variações com IA. Usando método local.')
+        showError('Falha ao gerar variações com IA. Usando método local.')
         const variations = generateTypedVariations(mensagem, totalDestinatarios)
         const safeVariations = variations.map(v => typeof v === 'string' ? v : String(v || ''))
         setVariationsPreview(safeVariations)
@@ -474,7 +475,7 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
         })
       }
     } catch (e) {
-      toast.error('Erro de rede/IA. Usando método local.')
+      showError('Erro de rede/IA. Usando método local.')
       const variations = generateTypedVariations(mensagem, totalDestinatarios)
       const safeVariations = variations.map(v => typeof v === 'string' ? v : String(v || ''))
       setVariationsPreview(safeVariations)
@@ -501,22 +502,22 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
 
   const handleEnviar = async () => {
     if (!isMensagemValida) {
-      toast.error('Digite uma mensagem válida')
+      showError('Digite uma mensagem válida')
       return
     }
 
     if (activeTab === 'clientes' && selectedClientes.length === 0) {
-      toast.error('Selecione pelo menos um cliente')
+      showError('Selecione pelo menos um cliente')
       return
     }
 
     if (activeTab === 'novos' && numerosProcessados.length === 0) {
-      toast.error('Digite pelo menos um número válido')
+      showError('Digite pelo menos um número válido')
       return
     }
 
     if (!selectedInstance && !useRandomDistribution) {
-      toast.error('Selecione uma instância WhatsApp ou habilite o balanceamento automático')
+      showError('Selecione uma instância WhatsApp ou habilite o balanceamento automático')
       return
     }
 
@@ -625,7 +626,7 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
           ? ` distribuído(s) entre ${data.stats.connectedInstances} instância(s) conectada(s)` 
           : ''
 
-        toast.success(`${totalDestinatarios} mensagem(ns) enviada(s) com sucesso${variationText}${instanceText}!`)
+        showSuccess(`${totalDestinatarios} mensagem(ns) enviada(s) com sucesso${variationText}${instanceText}!`)
         
         // Verificar se há resumo disponível
         if (data.summary) {
@@ -802,17 +803,18 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
             </div>
           )}
 
-          <div className="px-6 py-4 bg-white dark:bg-secondary-800">
+          <div className="px-6 py-6 bg-white dark:bg-secondary-800 space-y-6">
             {/* Tab Content */}
             {activeTab === 'clientes' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-medium text-secondary-900 dark:text-secondary-100">
+                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 flex items-center">
+                    <UserGroupIcon className="h-4 w-4 mr-2 text-secondary-500 dark:text-secondary-400" />
                     Selecionar Clientes ({selectedClientes.length} selecionados)
-                  </h4>
+                  </label>
                   <button
                     onClick={handleSelectAll}
-                    className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 transition-colors"
+                    className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 transition-colors font-medium"
                   >
                     {selectedClientes.length === (clientes?.length || 0) ? 'Desmarcar Todos' : 'Selecionar Todos'}
                   </button>
@@ -844,7 +846,8 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
             {activeTab === 'novos' && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2 flex items-center">
+                    <PhoneIcon className="h-4 w-4 mr-2 text-secondary-500 dark:text-secondary-400" />
                     Números de Telefone
                   </label>
                   <div className="space-y-3">
@@ -854,8 +857,8 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
                       placeholder="Digite os números separados por vírgula ou quebra de linha:&#10;5511999999999&#10;5511888888888&#10;5511777777777"
                       className="input h-32 resize-none"
                     />
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
                         <input
                           type="file"
                           accept=".csv"
@@ -865,7 +868,7 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
                         />
                         <label
                           htmlFor="csv-upload"
-                          className="btn btn-secondary btn-sm cursor-pointer"
+                          className="btn btn-secondary btn-sm cursor-pointer inline-flex items-center"
                         >
                           <DocumentArrowUpIcon className="h-4 w-4 mr-2" />
                           Upload CSV
@@ -881,8 +884,8 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
             )}
 
             {/* Mensagem */}
-            <div className="mt-6">
-              <div className="flex items-center justify-between mb-2">
+            <div className="mt-6 space-y-3">
+              <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 flex items-center">
                   <DocumentTextIcon className="h-4 w-4 mr-2 text-secondary-500 dark:text-secondary-400" />
                   Mensagem
@@ -890,17 +893,17 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={handlePreview}
-                    className="btn btn-ghost btn-sm"
+                    className="btn btn-ghost btn-sm inline-flex items-center"
                   >
                     <EyeIcon className="h-4 w-4 mr-1" />
                     Pré-visualizar
                   </button>
                   <button
                     onClick={handleGenerateVariations}
-                    className="btn btn-secondary btn-sm"
-                    disabled={aiLoading}
+                    className="btn btn-primary btn-sm inline-flex items-center"
+                    disabled={aiLoading || !mensagem.trim()}
                   >
-                    <ArrowPathIcon className="h-4 w-4 mr-1" />
+                    <ArrowPathIcon className={`h-4 w-4 mr-1 ${aiLoading ? 'animate-spin' : ''}`} />
                     {aiLoading ? 'Gerando...' : 'Gerar Variações'}
                   </button>
                   <span className={`text-sm flex items-center ${caracteresRestantes < 0 ? 'text-error-600 dark:text-error-400' : 'text-secondary-500 dark:text-secondary-400'}`}>
@@ -936,22 +939,25 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
             </div>
 
             {/* Seleção de Instância */}
-            <div className="space-y-4">
+            <div className="mt-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-3 flex items-center">
+                  <PaperAirplaneIcon className="h-4 w-4 mr-2 text-secondary-500 dark:text-secondary-400" />
                   Instância WhatsApp
                 </label>
-                <div className="flex items-center space-x-2 mb-2">
+                <div className="flex items-center space-x-2 mb-3">
                   <span className="text-xs text-secondary-500 dark:text-secondary-400">
                     {instanceStats?.connected || 0} de {instanceStats?.total || 0} instâncias conectadas
                   </span>
-                  <span className="text-xs text-blue-500 dark:text-blue-400">
-                    (Debug: {instances.length} instâncias carregadas)
-                  </span>
+                  {process.env.NODE_ENV === 'development' && (
+                    <span className="text-xs text-blue-500 dark:text-blue-400">
+                      (Debug: {instances.length} instâncias carregadas)
+                    </span>
+                  )}
                 </div>
 
                 {/* Modo de Distribuição */}
-                <div className="space-y-3">
+                <div className="space-y-3 p-3 bg-secondary-50 dark:bg-secondary-900 rounded-md border border-secondary-200 dark:border-secondary-700">
                   {/* Opção 1: Instância Específica */}
                   <div className="flex items-center space-x-3">
                     <input
@@ -967,7 +973,7 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
                       }}
                       className="text-primary-600 focus:ring-primary-500"
                     />
-                    <label htmlFor="specific-instance" className="text-sm text-secondary-700 dark:text-secondary-300">
+                    <label htmlFor="specific-instance" className="text-sm text-secondary-700 dark:text-secondary-300 cursor-pointer">
                       Usar instância específica
                     </label>
                   </div>
@@ -985,7 +991,7 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
                       }}
                       className="text-primary-600 dark:text-primary-400 focus:ring-primary-500 dark:focus:ring-primary-400"
                     />
-                    <label htmlFor="random-distribution" className="text-sm text-secondary-700 dark:text-secondary-300">
+                    <label htmlFor="random-distribution" className="text-sm text-secondary-700 dark:text-secondary-300 cursor-pointer">
                       Balanceamento automático entre instâncias
                     </label>
                   </div>
@@ -993,11 +999,11 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
 
                 {/* Seletor de Instância (só aparece se não for modo aleatório) */}
                 {!useRandomDistribution && (
-                  <div className="mt-3">
+                  <div className="mt-4">
                     <select
                       value={selectedInstance}
                       onChange={(e) => setSelectedInstance(e.target.value)}
-                      className="input"
+                      className="input w-full"
                     >
                       <option value="">Selecione uma instância</option>
                       {instances.map(instance => {
@@ -1021,12 +1027,14 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
                         )
                       })}
                     </select>
-                    {/* Debug info */}
-                    <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      Debug: {instances.length} instâncias totais, {instances.filter(i => i.connectionStatus === 'connected').length} conectadas
-                    </div>
+                    {/* Debug info - apenas em desenvolvimento */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        Debug: {instances.length} instâncias totais, {instances.filter(i => i.connectionStatus === 'connected').length} conectadas
+                      </div>
+                    )}
                     {instances.filter(i => i.connectionStatus === 'connected').length === 0 && (
-                      <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-xs text-yellow-700 dark:text-yellow-400">
+                      <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md text-xs text-yellow-700 dark:text-yellow-400">
                         ⚠️ Nenhuma instância conectada. Conecte uma instância em Configurações ou use o balanceamento automático.
                       </div>
                     )}
@@ -1035,7 +1043,7 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
 
                 {/* Mensagens de Status */}
                 {useRandomDistribution && (
-                  <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                  <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
                     <div className="flex items-center">
                       <div className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full mr-2"></div>
                       <p className="text-xs text-blue-700 dark:text-blue-400">
@@ -1046,9 +1054,11 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
                 )}
 
                 {!instanceStats?.connected && !useRandomDistribution && (
-                  <p className="text-xs text-error-600 dark:text-error-400 mt-1">
-                    Nenhuma instância conectada. Habilite o balanceamento automático ou configure uma instância em Configurações.
-                  </p>
+                  <div className="mt-4 p-3 bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 rounded-md">
+                    <p className="text-xs text-error-600 dark:text-error-400">
+                      ⚠️ Nenhuma instância conectada. Habilite o balanceamento automático ou configure uma instância em Configurações.
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
@@ -1116,10 +1126,10 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
             )}
 
             {/* Configurações de Variações */}
-            <div className="mt-6">
-              <div className="flex items-center justify-between mb-3">
+            <div className="mt-6 space-y-4">
+              <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 flex items-center">
-                  <ArrowPathIcon className="h-4 w-4 mr-2" />
+                  <ArrowPathIcon className="h-4 w-4 mr-2 text-secondary-500 dark:text-secondary-400" />
                   Configurações de Variações
                 </label>
                 <div className="flex items-center space-x-4">
@@ -1131,20 +1141,22 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
                       onChange={(e) => setUseAI(e.target.checked)}
                       className="rounded border-secondary-300 dark:border-secondary-600 text-primary-600 dark:text-primary-400 focus:ring-primary-500 dark:focus:ring-primary-400 bg-white dark:bg-secondary-800"
                     />
-                    <label htmlFor="useAI" className="text-sm text-secondary-700 dark:text-secondary-300">
+                    <label htmlFor="useAI" className="text-sm text-secondary-700 dark:text-secondary-300 cursor-pointer">
                       Variações por IA (Gemini)
                     </label>
                   </div>
-                  <input
-                    type="checkbox"
-                    id="enableVariations"
-                    checked={enableVariations}
-                    onChange={(e) => setEnableVariations(e.target.checked)}
-                    className="rounded border-secondary-300 dark:border-secondary-600 text-primary-600 dark:text-primary-400 focus:ring-primary-500 dark:focus:ring-primary-400 bg-white dark:bg-secondary-800"
-                  />
-                  <label htmlFor="enableVariations" className="text-sm text-secondary-700 dark:text-secondary-300">
-                    Ativar variações automáticas
-                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="enableVariations"
+                      checked={enableVariations}
+                      onChange={(e) => setEnableVariations(e.target.checked)}
+                      className="rounded border-secondary-300 dark:border-secondary-600 text-primary-600 dark:text-primary-400 focus:ring-primary-500 dark:focus:ring-primary-400 bg-white dark:bg-secondary-800"
+                    />
+                    <label htmlFor="enableVariations" className="text-sm text-secondary-700 dark:text-secondary-300 cursor-pointer">
+                      Ativar variações automáticas
+                    </label>
+                  </div>
                 </div>
               </div>
               
@@ -1198,31 +1210,37 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
             </div>
 
             {/* Agendamento */}
-            <div className="mt-6">
-              <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2 flex items-center">
+            <div className="mt-6 space-y-3">
+              <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 flex items-center">
                 <ClockIcon className="h-4 w-4 mr-2 text-secondary-500 dark:text-secondary-400" />
-                Agendamento
+                Agendamento (Opcional)
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
+                  <label className="block text-xs text-secondary-600 dark:text-secondary-400 mb-1.5">
+                    Data
+                  </label>
                   <input
                     type="date"
                     value={agendamento}
                     onChange={(e) => setAgendamento(e.target.value)}
-                    className="input"
+                    className="input w-full"
                     min={new Date().toISOString().split('T')[0]}
                   />
                 </div>
                 <div>
+                  <label className="block text-xs text-secondary-600 dark:text-secondary-400 mb-1.5">
+                    Hora
+                  </label>
                   <input
                     type="time"
                     value={agendamentoHora}
                     onChange={(e) => setAgendamentoHora(e.target.value)}
-                    className="input"
+                    className="input w-full"
                   />
                 </div>
               </div>
-              <p className="mt-1 text-sm text-secondary-500 dark:text-secondary-400 flex items-center">
+              <p className="text-xs text-secondary-500 dark:text-secondary-400 flex items-center">
                 <ClockIcon className="h-3 w-3 mr-1" />
                 Deixe em branco para envio imediato
               </p>

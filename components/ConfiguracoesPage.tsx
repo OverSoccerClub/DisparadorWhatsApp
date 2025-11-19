@@ -27,14 +27,17 @@ import {
   ClockIcon,
   CalendarIcon
 } from '@heroicons/react/24/outline'
-import toast from 'react-hot-toast'
 import LoadingOverlay from './LoadingOverlay'
 import SuccessModal from './SuccessModal'
+import AlertModal from './AlertModal'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { useAlert } from '@/lib/hooks/useAlert'
 import PageHeader from './PageHeader'
+import { formatVersion } from '@/lib/config/version'
 
 export default function ConfiguracoesPage() {
   const { user: currentUser } = useAuth()
+  const { alert, showSuccess, showError, closeAlert } = useAlert()
   
   console.log('🔄 [ConfiguracoesPage] Componente renderizado - currentUser:', currentUser)
   
@@ -99,7 +102,6 @@ export default function ConfiguracoesPage() {
   const openConfirm = (opts: { title: string; message: string; confirmText?: string; cancelText?: string; variant?: 'warning' | 'danger' }) => {
     console.log('[openConfirm] opening', opts.title)
     console.log('[openConfirm] current confirmDialog state:', confirmDialog)
-    try { toast.dismiss() } catch {}
     
     const newDialogState = {
       open: true,
@@ -185,6 +187,16 @@ export default function ConfiguracoesPage() {
   const fetchWhatsAppStatus = async () => {
     try {
       const response = await fetch('/api/whatsapp/status')
+      if (!response.ok) {
+        // Se a resposta não for OK, tentar parsear como JSON ou usar dados padrão
+        try {
+          const errorData = await response.json()
+          console.error('Erro ao buscar status do WhatsApp:', errorData)
+        } catch {
+          console.error('Erro ao buscar status do WhatsApp: Resposta não é JSON')
+        }
+        return
+      }
       const data = await response.json()
       if (data.success) {
         setWhatsappStatus(data.data)
@@ -202,13 +214,13 @@ export default function ConfiguracoesPage() {
       const data = await response.json()
       
       if (data.success) {
-        toast.success('Tentativa de reconexão iniciada')
+        showSuccess('Tentativa de reconexão iniciada')
         setTimeout(fetchWhatsAppStatus, 2000)
       } else {
-        toast.error('Erro ao reconectar')
+        showError('Erro ao reconectar')
       }
     } catch (error) {
-      toast.error('Erro ao reconectar WhatsApp')
+      showError('Erro ao reconectar WhatsApp')
     } finally {
       setLoading(false)
     }
@@ -218,7 +230,7 @@ export default function ConfiguracoesPage() {
 
   const handleTestWebhook = async () => {
     if (!apiConfig.webhookUrl) {
-      toast.error('URL do webhook é obrigatória')
+      showError('URL do webhook é obrigatória')
       return
     }
 
@@ -247,11 +259,11 @@ export default function ConfiguracoesPage() {
         )
       } else {
         setWebhookStatus(prev => ({ ...prev, errors: prev.errors + 1 }))
-        toast.error('Falha no teste do webhook')
+        showError('Falha no teste do webhook')
       }
     } catch (error) {
       setWebhookStatus(prev => ({ ...prev, errors: prev.errors + 1 }))
-      toast.error('Erro ao testar webhook')
+      showError('Erro ao testar webhook')
     } finally {
       setLoading(false)
     }
@@ -272,10 +284,10 @@ export default function ConfiguracoesPage() {
           'As configurações de API foram salvas com sucesso.'
         )
       } else {
-        toast.error('Erro ao salvar configurações')
+        showError('Erro ao salvar configurações')
       }
     } catch (error) {
-      toast.error('Erro ao salvar configurações de API')
+      showError('Erro ao salvar configurações de API')
     } finally {
       setLoading(false)
     }
@@ -310,11 +322,19 @@ export default function ConfiguracoesPage() {
         onAutoClose={successModal.onAutoClose}
         autoCloseDelay={successModal.autoCloseDelay}
       />
+      <AlertModal
+        open={alert.open}
+        title={alert.title}
+        message={alert.message}
+        variant={alert.variant}
+        onClose={closeAlert}
+        autoCloseDelay={alert.autoCloseDelay}
+      />
       {/* Header padronizado */}
       <PageHeader
         title="Configurações"
         subtitle="Gerencie as configurações da sua plataforma"
-        icon={<CogIcon className="h-6 w-6" />}
+        icon={<CogIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />}
       />
 
       {/* Informações do Usuário */}
@@ -762,7 +782,7 @@ export default function ConfiguracoesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <h4 className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Versão da Aplicação</h4>
-            <p className="text-sm text-secondary-600 dark:text-secondary-400">v1.0.0</p>
+            <p className="text-sm text-secondary-600 dark:text-secondary-400">{formatVersion()}</p>
           </div>
           <div>
             <h4 className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Última Atualização</h4>

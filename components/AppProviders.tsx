@@ -7,12 +7,27 @@ import GlobalLoading from '@/components/GlobalLoading'
 import { AuthProvider } from '@/lib/hooks/useAuth'
 import { SidebarProvider } from '@/lib/contexts/SidebarContext'
 import { ThemeProvider } from '@/lib/contexts/ThemeContext'
+import { AlertProvider, useAlertContext } from '@/lib/contexts/AlertContext'
 import PendingMaturationChecker from '@/components/PendingMaturationChecker'
 import BackgroundMaturationWidget from '@/components/BackgroundMaturationWidget'
-import { Toaster } from 'react-hot-toast'
+import AlertModal from '@/components/AlertModal'
 
 interface AppProvidersProps {
   children: React.ReactNode
+}
+
+function AlertModalWrapper() {
+  const { alert, closeAlert } = useAlertContext()
+  return (
+    <AlertModal
+      open={alert.open}
+      title={alert.title}
+      message={alert.message}
+      variant={alert.variant}
+      onClose={closeAlert}
+      autoCloseDelay={alert.autoCloseDelay}
+    />
+  )
 }
 
 export default function AppProviders({ children }: AppProvidersProps) {
@@ -20,42 +35,21 @@ export default function AppProviders({ children }: AppProvidersProps) {
     <>
       <GlobalLoading />
       <ChunkErrorHandler />
-      <AuthProvider>
-        <ThemeProvider>
-          <SidebarProvider>
-            <NotificationProvider>
-              <PendingMaturationChecker />
-              {children}
-              <BackgroundMaturationWidget />
-              <Footer />
-            </NotificationProvider>
-          </SidebarProvider>
-        </ThemeProvider>
-      </AuthProvider>
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: '#363636',
-            color: '#fff',
-          },
-          success: {
-            duration: 3000,
-            iconTheme: {
-              primary: '#10b981',
-              secondary: '#fff',
-            },
-          },
-          error: {
-            duration: 5000,
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
-            },
-          },
-        }}
-      />
+      <ThemeProvider>
+        <AlertProvider>
+          <AuthProvider>
+            <SidebarProvider>
+              <NotificationProvider>
+                <PendingMaturationChecker />
+                {children}
+                <BackgroundMaturationWidget />
+                <Footer />
+                <AlertModalWrapper />
+              </NotificationProvider>
+            </SidebarProvider>
+          </AuthProvider>
+        </AlertProvider>
+      </ThemeProvider>
     </>
   )
 }

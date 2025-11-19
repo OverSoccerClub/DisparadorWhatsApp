@@ -6,6 +6,14 @@ import { useEffect } from 'react'
 export default function ChunkErrorHandler() {
   useEffect(() => {
     const handleChunkError = (event: ErrorEvent) => {
+      // IGNORAR erros de hot-update (causam loop infinito)
+      if (event.message?.includes('webpack.hot-update') || 
+          event.message?.includes('hot-update.json') ||
+          event.filename?.includes('webpack.hot-update')) {
+        console.log('⚠️ Erro de hot-update ignorado (não é um erro real)')
+        return
+      }
+      
       if (event.message?.includes('ChunkLoadError') || event.message?.includes('Loading chunk')) {
         console.log('🔄 ChunkLoadError detectado, recarregando página...')
         
@@ -23,6 +31,13 @@ export default function ChunkErrorHandler() {
     }
 
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      // IGNORAR erros de hot-update (causam loop infinito)
+      if (event.reason?.message?.includes('webpack.hot-update') ||
+          event.reason?.message?.includes('hot-update.json')) {
+        console.log('⚠️ Erro de hot-update ignorado (não é um erro real)')
+        return
+      }
+      
       if (event.reason?.message?.includes('ChunkLoadError') || 
           event.reason?.message?.includes('Loading chunk')) {
         console.log('🔄 ChunkLoadError em Promise detectado, recarregando página...')

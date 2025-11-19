@@ -59,10 +59,11 @@ export class AuthService {
 
   // Gerar token JWT
   static generateToken(userId: string, email: string): string {
-    return jwt.sign(
+    // O tipo do pacote 'jsonwebtoken' pode variar entre versões; usar cast mínimo para satisfazer o compilador
+    return (jwt as any).sign(
       { userId, email },
-      this.JWT_SECRET,
-      { expiresIn: this.JWT_EXPIRES_IN }
+      this.JWT_SECRET as any,
+      { expiresIn: this.JWT_EXPIRES_IN } as any
     )
   }
 

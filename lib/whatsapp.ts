@@ -40,15 +40,16 @@ class WhatsAppService {
     try {
       // TODO: Implementar autenticação do WhatsApp corretamente
       // const { state, saveCreds } = await useMultiFileAuthState('./sessions')
-      const state = null
+      const state: any = null
       const saveCreds = () => {}
-      
+
+      // Cast as any para evitar incompatibilidades de tipos entre versões do baileys
       this.socket = makeWASocket({
         auth: state,
         printQRInTerminal: true,
         logger: console,
         browser: ['WhatsApp Dispatcher', 'Chrome', '1.0.0']
-      })
+      } as any)
 
       this.socket.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect, qr } = update

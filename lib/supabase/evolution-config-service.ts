@@ -54,7 +54,7 @@ export class EvolutionConfigService {
       return { success: true, data }
     } catch (error) {
       console.error('Erro no EvolutionConfigService.saveConfig:', error)
-      return { success: false, error: error.message }
+      return { success: false, error: (error as any)?.message || String(error) }
     }
   }
 
@@ -85,7 +85,7 @@ export class EvolutionConfigService {
       return { success: true, data: data || null }
     } catch (error) {
       console.error('❌ [EvolutionConfigService] Erro no EvolutionConfigService.getConfig:', error)
-      return { success: false, error: error.message }
+      return { success: false, error: (error as any)?.message || String(error) }
     }
   }
 
@@ -127,7 +127,7 @@ export class EvolutionConfigService {
       return { success: true, data }
     } catch (error: any) {
       console.error('❌ [EvolutionConfigService] Erro no saveInstance:', error)
-      return { success: false, error: error?.message || 'Erro desconhecido ao salvar instância' }
+      return { success: false, error: (error as any)?.message || 'Erro desconhecido ao salvar instância' }
     }
   }
 
@@ -155,7 +155,7 @@ export class EvolutionConfigService {
       return { success: true, data: data || [] }
     } catch (error: any) {
       console.error('❌ [EvolutionConfigService] Erro no getUserInstances:', error)
-      return { success: false, error: error?.message || 'Erro desconhecido ao buscar instâncias' }
+      return { success: false, error: (error as any)?.message || 'Erro desconhecido ao buscar instâncias' }
     }
   }
 
@@ -185,7 +185,7 @@ export class EvolutionConfigService {
       return { success: true, data }
     } catch (error: any) {
       console.error('❌ [EvolutionConfigService] Erro no updateInstanceStatus:', error)
-      return { success: false, error: error?.message || 'Erro desconhecido ao atualizar instância' }
+      return { success: false, error: (error as any)?.message || 'Erro desconhecido ao atualizar instância' }
     }
   }
 
@@ -208,7 +208,7 @@ export class EvolutionConfigService {
       return { success: true, data }
     } catch (error) {
       console.error('Erro no EvolutionConfigService.deleteInstance:', error)
-      return { success: false, error: error.message }
+      return { success: false, error: (error as any)?.message || String(error) }
     }
   }
 
@@ -230,7 +230,7 @@ export class EvolutionConfigService {
       return { success: true, data: data || null }
     } catch (error) {
       console.error('Erro no EvolutionConfigService.getInstance:', error)
-      return { success: false, error: error.message }
+      return { success: false, error: (error as any)?.message || String(error) }
     }
   }
 }

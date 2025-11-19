@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // Smoke check: valida que o servidor Next está respondendo e que as APIs principais estão vivas
+// Permite sobrescrever a URL base via NEXT_PUBLIC_API_URL (útil quando Next escolhe outra porta)
+const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
 const endpoints = [
-  'http://localhost:3000/api/queue/stats',
-  'http://localhost:3000/api/disparos-simple'
+  `${base}/api/queue/stats`,
+  `${base}/api/disparos-simple`
 ]
 
 async function check(url, timeout = 30000) {

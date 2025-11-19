@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
+import { APP_VERSION, formatVersion } from '@/lib/config/version'
 
 interface FooterProps {
   className?: string
@@ -12,8 +13,6 @@ export default function Footer({ className = '' }: FooterProps) {
   const [mounted, setMounted] = useState(false)
   const [currentTime, setCurrentTime] = useState<string>('')
   
-  // Usar versão hardcoded para evitar problemas com importação de package.json em client component
-  const currentVersion = '0.1.6'
   const buildDate = new Date().toLocaleDateString('pt-BR')
   
   // Atualizar data/hora apenas no cliente para evitar erro de hidratação
@@ -38,7 +37,7 @@ export default function Footer({ className = '' }: FooterProps) {
         <div className="px-3 md:px-4 lg:px-6">
           <div className="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-2 text-sm text-secondary-600 dark:text-secondary-400">
-                  <span>© 2024 Fluxus Menssager</span>
+                  <span>© 2025 Fluxus Message</span>
               <span className="hidden sm:inline">•</span>
               <span className="flex items-center">
                 <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -51,7 +50,7 @@ export default function Footer({ className = '' }: FooterProps) {
             <div className="flex flex-wrap items-center justify-center sm:justify-end gap-x-4 gap-y-2 text-sm text-secondary-500 dark:text-secondary-400">
               <div className="flex items-center space-x-2">
                 <span className="bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-400 px-2 py-1 rounded-md font-medium">
-                  v{currentVersion}
+                  {formatVersion()}
                 </span>
                 <span className="text-secondary-400 dark:text-secondary-500">•</span>
                 <span>Build {buildDate}</span>
@@ -67,11 +66,7 @@ export default function Footer({ className = '' }: FooterProps) {
           <div className="mt-3 pt-3 border-t border-secondary-200 dark:border-secondary-700">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-y-2 text-xs text-secondary-500 dark:text-secondary-400">
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1">
-                <span>Desenvolvido com Next.js 14</span>
-                <span>•</span>
-                <span>Integração Supabase</span>
-                <span>•</span>
-                <span>IA Gemini 2.5</span>
+                <span>Desenvolvido por InnovareCode - Todos os Direitos Reservados</span>
               </div>
               
               <div className="flex items-center space-x-2">

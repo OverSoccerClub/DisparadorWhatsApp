@@ -14,7 +14,7 @@ import {
   XMarkIcon,
   CogIcon
 } from '@heroicons/react/24/outline'
-import toast from 'react-hot-toast'
+import { useAlertContext } from '@/lib/contexts/AlertContext'
 
 interface WahaServer {
   id?: string
@@ -50,10 +50,11 @@ interface TestStatus {
 }
 
 interface Props {
-  userId: string
+  userId?: string
 }
 
-export default function WahaServersManager({ userId }: Props) {
+export default function WahaServersManager({ userId }: Props = {}) {
+  const { showSuccess, showError } = useAlertContext()
   const [servers, setServers] = useState<WahaServer[]>([])
   const [loading, setLoading] = useState(false)
   const [showModal, setShowModal] = useState(false)
@@ -128,7 +129,7 @@ export default function WahaServersManager({ userId }: Props) {
 
   useEffect(() => {
     loadServers()
-  }, [userId])
+  }, [])
 
   // Abrir modal para adicionar novo servidor
   const handleAdd = () => {
@@ -175,7 +176,7 @@ export default function WahaServersManager({ userId }: Props) {
   // Testar conexão no modal (antes de salvar)
   const handleTestInModal = async () => {
     if (!editingServer?.apiUrl) {
-      toast.error('URL da API é obrigatória para testar')
+      showError('URL da API é obrigatória para testar')
       return
     }
 
@@ -205,7 +206,7 @@ export default function WahaServersManager({ userId }: Props) {
           instances: data.data?.instances || 0,
           activeConnections: data.data?.activeConnections || 0
         })
-        toast.success('Conexão testada com sucesso!')
+        showSuccess('Conexão testada com sucesso!')
       } else {
         setTestStatus({
           testing: false,
@@ -216,7 +217,7 @@ export default function WahaServersManager({ userId }: Props) {
           instances: 0,
           activeConnections: 0
         })
-        toast.error(data.error || 'Erro ao testar conexão')
+        showError(data.error || 'Erro ao testar conexão')
       }
     } catch (error) {
       setTestStatus({
@@ -228,7 +229,7 @@ export default function WahaServersManager({ userId }: Props) {
         instances: 0,
         activeConnections: 0
       })
-      toast.error('Erro ao testar conexão')
+      showError('Erro ao testar conexão')
     }
   }
 
@@ -237,7 +238,7 @@ export default function WahaServersManager({ userId }: Props) {
     if (!editingServer) return
 
     if (!editingServer.name || !editingServer.apiUrl) {
-      toast.error('Nome e URL são obrigatórios')
+      showError('Nome e URL são obrigatórios')
       return
     }
 
@@ -253,16 +254,16 @@ export default function WahaServersManager({ userId }: Props) {
       })
 
       if (response.ok) {
-        toast.success(`Servidor "${editingServer.name}" salvo com sucesso!`)
+        showSuccess(`Servidor "${editingServer.name}" salvo com sucesso!`)
         setShowModal(false)
         setEditingServer(null)
         await loadServers()
       } else {
         const error = await response.json()
-        toast.error(error.error || 'Erro ao salvar servidor WAHA')
+        showError(error.error || 'Erro ao salvar servidor WAHA')
       }
     } catch (error) {
-      toast.error('Erro ao salvar servidor WAHA')
+      showError('Erro ao salvar servidor WAHA')
     } finally {
       setLoading(false)
     }
@@ -279,13 +280,13 @@ export default function WahaServersManager({ userId }: Props) {
       })
 
       if (response.ok) {
-        toast.success('Servidor WAHA excluído com sucesso')
+        showSuccess('Servidor WAHA excluído com sucesso')
         await loadServers()
       } else {
-        toast.error('Erro ao excluir servidor WAHA')
+        showError('Erro ao excluir servidor WAHA')
       }
     } catch (error) {
-      toast.error('Erro ao excluir servidor WAHA')
+      showError('Erro ao excluir servidor WAHA')
     } finally {
       setLoading(false)
     }
@@ -325,7 +326,7 @@ export default function WahaServersManager({ userId }: Props) {
               }
             : s
         ))
-        toast.success(`Conexão com "${server.name}" testada com sucesso!`)
+        showSuccess(`Conexão com "${server.name}" testada com sucesso!`)
       } else {
         setServers(prev => prev.map(s =>
           s.id === serverId
@@ -340,7 +341,7 @@ export default function WahaServersManager({ userId }: Props) {
               }
             : s
         ))
-        toast.error(data.error || `Erro ao testar conexão com "${server.name}"`)
+        showError(data.error || `Erro ao testar conexão com "${server.name}"`)
       }
     } catch (error) {
       console.error('Erro ao testar conexão com WAHA:', error)
@@ -357,30 +358,36 @@ export default function WahaServersManager({ userId }: Props) {
             }
           : s
       ))
-      toast.error(`Erro ao testar conexão com "${server.name}"`)
+      showError(`Erro ao testar conexão com "${server.name}"`)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="card p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100 flex items-center">
-          <DevicePhoneMobileIcon className="h-5 w-5 mr-2" />
-          Servidores WAHA
-        </h3>
-        <div className="flex space-x-2">
+    <div className="space-y-6">
+      {/* Header padronizado */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100 flex items-center">
+            <DevicePhoneMobileIcon className="h-6 w-6 mr-2 text-primary-600 dark:text-primary-400" />
+            Sessões WAHA
+          </h1>
+          <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">
+            Gerencie seus servidores e sessões WAHA
+          </p>
+        </div>
+        <div className="flex space-x-3">
           <button
             onClick={() => {
               const serverIds = servers.map(s => s.id).filter(Boolean) as string[]
               if (serverIds.length > 0) {
                 checkAllServersStatus(serverIds)
-                toast.success('Verificando status dos servidores...')
+                showSuccess('Verificando status dos servidores...')
               }
             }}
             disabled={loading || servers.length === 0}
-            className="btn btn-secondary btn-sm"
+            className="btn btn-secondary btn-md"
           >
             <WifiIcon className="h-4 w-4 mr-2" />
             Verificar Status
@@ -388,13 +395,16 @@ export default function WahaServersManager({ userId }: Props) {
           <button
             onClick={handleAdd}
             disabled={loading}
-            className="btn btn-primary btn-sm"
+            className="btn btn-primary btn-md"
           >
             <PlusIcon className="h-4 w-4 mr-2" />
             Adicionar Servidor
           </button>
         </div>
       </div>
+
+      {/* Conteúdo */}
+      <div className="card p-6">
 
       {/* Resumo de Status */}
       {servers.length > 0 && (
@@ -802,6 +812,7 @@ export default function WahaServersManager({ userId }: Props) {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

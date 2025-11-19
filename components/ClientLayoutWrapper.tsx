@@ -1,44 +1,38 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import dynamic from 'next/dynamic'
+import Footer from '@/components/Footer'
+import NotificationProvider from '@/components/NotificationProvider'
+import ChunkErrorHandler from '@/components/ChunkErrorHandler'
+import GlobalLoading from '@/components/GlobalLoading'
+import { AuthProvider } from '@/lib/hooks/useAuth'
+import { SidebarProvider } from '@/lib/contexts/SidebarContext'
+import { ThemeProvider } from '@/lib/contexts/ThemeContext'
+import PendingMaturationChecker from '@/components/PendingMaturationChecker'
+import BackgroundMaturationWidget from '@/components/BackgroundMaturationWidget'
 
 interface ClientLayoutWrapperProps {
   children: React.ReactNode
 }
 
-// Carregar componentes dinamicamente apenas quando necessário
-const AppProviders = dynamic(
-  () => import('@/components/AppProviders'),
-  { ssr: false }
-)
-
 export default function ClientLayoutWrapper({ children }: ClientLayoutWrapperProps) {
-  const pathname = usePathname()
-  const [mounted, setMounted] = useState(false)
-  const [isLandingPage, setIsLandingPage] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-    setIsLandingPage(pathname === '/')
-  }, [pathname])
-
-  // Durante SSR e antes da montagem, sempre renderizar apenas children
-  if (!mounted) {
-    return <>{children}</>
-  }
-
-  // Se for a página raiz (landing page), renderizar apenas children sem providers
-  if (isLandingPage) {
-    return <>{children}</>
-  }
-
-  // Para outras rotas, usar providers completos (carregados dinamicamente)
+  // Para rotas dentro de (app), usar providers completos
   return (
-    <AppProviders>
-      {children}
-    </AppProviders>
+    <>
+      <GlobalLoading />
+      <ChunkErrorHandler />
+      <AuthProvider>
+        <ThemeProvider>
+          <SidebarProvider>
+            <NotificationProvider>
+              <PendingMaturationChecker />
+              {children}
+              <BackgroundMaturationWidget />
+              <Footer />
+            </NotificationProvider>
+          </SidebarProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </>
   )
 }
 

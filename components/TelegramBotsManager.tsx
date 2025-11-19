@@ -14,7 +14,7 @@ import {
   CogIcon,
   KeyIcon
 } from '@heroicons/react/24/outline'
-import toast from 'react-hot-toast'
+import { useAlertContext } from '@/lib/contexts/AlertContext'
 
 interface TelegramBot {
   id?: string
@@ -38,6 +38,7 @@ interface Props {
 }
 
 export default function TelegramBotsManager({ userId }: Props) {
+  const { showSuccess, showError } = useAlertContext()
   const [bots, setBots] = useState<TelegramBot[]>([])
   const [loading, setLoading] = useState(false)
   const [showModal, setShowModal] = useState(false)
@@ -54,7 +55,7 @@ export default function TelegramBotsManager({ userId }: Props) {
       }
     } catch (error) {
       console.error('Erro ao carregar bots do Telegram:', error)
-      toast.error('Erro ao carregar bots do Telegram')
+      showError('Erro ao carregar bots do Telegram')
     }
   }
 
@@ -95,15 +96,15 @@ export default function TelegramBotsManager({ userId }: Props) {
       })
 
       if (response.ok) {
-        toast.success('Bot excluído com sucesso!')
+        showSuccess('Bot excluído com sucesso!')
         loadBots()
       } else {
         const data = await response.json()
-        toast.error(data.error || 'Erro ao excluir bot')
+        showError(data.error || 'Erro ao excluir bot')
       }
     } catch (error) {
       console.error('Erro ao excluir bot:', error)
-      toast.error('Erro ao excluir bot')
+      showError('Erro ao excluir bot')
     } finally {
       setLoading(false)
     }
@@ -114,7 +115,7 @@ export default function TelegramBotsManager({ userId }: Props) {
     if (!editingBot) return
 
     if (!editingBot.nome || !editingBot.bot_token) {
-      toast.error('Nome e Token do Bot são obrigatórios')
+      showError('Nome e Token do Bot são obrigatórios')
       return
     }
 
@@ -137,17 +138,17 @@ export default function TelegramBotsManager({ userId }: Props) {
       })
 
       if (response.ok) {
-        toast.success(editingBot.id ? 'Bot atualizado com sucesso!' : 'Bot criado com sucesso!')
+        showSuccess(editingBot.id ? 'Bot atualizado com sucesso!' : 'Bot criado com sucesso!')
         setShowModal(false)
         setEditingBot(null)
         loadBots()
       } else {
         const data = await response.json()
-        toast.error(data.error || 'Erro ao salvar bot')
+        showError(data.error || 'Erro ao salvar bot')
       }
     } catch (error) {
       console.error('Erro ao salvar bot:', error)
-      toast.error('Erro ao salvar bot')
+      showError('Erro ao salvar bot')
     } finally {
       setLoading(false)
     }
@@ -180,7 +181,7 @@ export default function TelegramBotsManager({ userId }: Props) {
               }
             : b
         ))
-        toast.success('Bot testado com sucesso!')
+        showSuccess('Bot testado com sucesso!')
       } else {
         setBots(prev => prev.map(b => 
           b.id === bot.id 
@@ -194,11 +195,11 @@ export default function TelegramBotsManager({ userId }: Props) {
               }
             : b
         ))
-        toast.error(data.error || 'Erro ao testar bot')
+        showError(data.error || 'Erro ao testar bot')
       }
     } catch (error) {
       console.error('Erro ao testar bot:', error)
-      toast.error('Erro ao testar bot')
+      showError('Erro ao testar bot')
       setBots(prev => prev.map(b => 
         b.id === bot.id 
           ? {
