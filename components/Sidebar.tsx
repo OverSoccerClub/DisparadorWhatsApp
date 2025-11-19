@@ -14,7 +14,8 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   ServerIcon,
-  BookOpenIcon
+  BookOpenIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/hooks/useAuth'
@@ -33,7 +34,6 @@ const navigation: NavigationItem[] = [
   { name: 'Campanhas', href: '/campanhas', icon: MegaphoneIcon },
   { name: 'Disparos', href: '/disparos', icon: PaperAirplaneIcon },
   { name: 'Relatórios', href: '/relatorios', icon: ChartBarIcon },
-  { name: 'Manual', href: '/manual', icon: BookOpenIcon },
   { 
     name: 'Configurações', 
     href: '/configuracoes', 
@@ -208,20 +208,57 @@ function Sidebar() {
           </nav>
         </div>
         
-        <div className="flex-shrink-0 flex border-t border-secondary-200 dark:border-secondary-700 p-4">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-secondary-100 rounded-full flex items-center justify-center">
-              <span className="text-secondary-600 text-sm font-medium">
-                {userInitial}
-              </span>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-secondary-900 dark:text-secondary-100">
-                {userName}
-              </p>
-              <p className="text-xs text-secondary-500 dark:text-secondary-400">
-                {userEmail}
-              </p>
+        <div className="flex-shrink-0 flex flex-col border-t border-secondary-200 dark:border-secondary-700">
+          {/* Links de Manual e Changelog */}
+          <div className="px-4 py-3 space-y-2 border-b border-secondary-200 dark:border-secondary-700">
+            <Link
+              href="/manual"
+              className={cn(
+                'flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200',
+                pathname === '/manual'
+                  ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
+                  : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-800 hover:text-secondary-900 dark:hover:text-secondary-100'
+              )}
+            >
+              <BookOpenIcon className={cn(
+                'mr-3 h-5 w-5 flex-shrink-0 transition-colors',
+                pathname === '/manual' ? 'text-primary-600 dark:text-primary-400' : ''
+              )} />
+              Manual
+            </Link>
+            <Link
+              href="/changelog"
+              className={cn(
+                'flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200',
+                pathname === '/changelog'
+                  ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
+                  : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-800 hover:text-secondary-900 dark:hover:text-secondary-100'
+              )}
+            >
+              <DocumentTextIcon className={cn(
+                'mr-3 h-5 w-5 flex-shrink-0 transition-colors',
+                pathname === '/changelog' ? 'text-primary-600 dark:text-primary-400' : ''
+              )} />
+              Changelog
+            </Link>
+          </div>
+          
+          {/* Informações do usuário */}
+          <div className="p-4">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-secondary-100 rounded-full flex items-center justify-center">
+                <span className="text-secondary-600 text-sm font-medium">
+                  {userInitial}
+                </span>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-secondary-900 dark:text-secondary-100">
+                  {userName}
+                </p>
+                <p className="text-xs text-secondary-500 dark:text-secondary-400">
+                  {userEmail}
+                </p>
+              </div>
             </div>
           </div>
         </div>
