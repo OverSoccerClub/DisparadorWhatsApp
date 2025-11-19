@@ -24,6 +24,8 @@ import { useNotificationContext } from './NotificationProvider'
 import CampanhaModal from './CampanhaModal'
 import CampanhaDetalhesModal from './CampanhaDetalhesModal'
 import NotificationDemo from './NotificationDemo'
+import ConfirmModal from './ConfirmModal'
+import toast from 'react-hot-toast'
 
 export default function CampanhasPageReal() {
   const [campanhas, setCampanhas] = useState<Campanha[]>([])
@@ -31,6 +33,12 @@ export default function CampanhasPageReal() {
   const { showSuccess, showError, showWarning, showInfo, showLoading, updateNotification } = useNotificationContext()
   const [showModal, setShowModal] = useState(false)
   const [selectedCampanha, setSelectedCampanha] = useState<Campanha | null>(null)
+  const [confirmModal, setConfirmModal] = useState({
+    open: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  })
   
   // Estados para filtros
   const [filtros, setFiltros] = useState({
@@ -166,22 +174,16 @@ export default function CampanhasPageReal() {
     
     mensagemDetalhada += `Esta ação não pode ser desfeita e todos os dados da campanha serão perdidos permanentemente.`
 
-    showWarning(
-      'Confirmar exclusão de campanha',
-      mensagemDetalhada,
-      [
-        {
-          label: isProcessing ? 'Excluir Mesmo Assim' : 'Sim, Excluir',
-          action: () => confirmarExclusao(campanhaId),
-          variant: 'danger'
-        },
-        {
-          label: 'Cancelar',
-          action: () => {},
-          variant: 'secondary'
-        }
-      ]
-    )
+    // Usar modal de confirmação customizado
+    setConfirmModal({
+      open: true,
+      title: 'Confirmar exclusão de campanha',
+      message: mensagemDetalhada.replace(/\n/g, '<br/>'),
+      onConfirm: () => {
+        setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })
+        confirmarExclusao(campanhaId)
+      }
+    })
   }
 
   const confirmarExclusao = async (campanhaId: string) => {
@@ -191,25 +193,21 @@ export default function CampanhasPageReal() {
       })
 
       if (response.ok) {
-        showSuccess(
-          'Campanha excluída com sucesso!', 
-          'A campanha e todos os seus dados foram removidos permanentemente do sistema.',
-          [
-            {
-              label: 'Ver Campanhas',
-              action: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
-              variant: 'primary'
-            }
-          ]
-        )
+        toast.success('Campanha excluída com sucesso!', {
+          duration: 3000,
+        })
         loadCampanhas()
       } else {
         const error = await response.json()
-        showError('Erro ao excluir campanha', error.error || 'Não foi possível excluir a campanha')
+        toast.error(error.error || 'Erro ao excluir campanha', {
+          duration: 4000,
+        })
       }
     } catch (error) {
       console.error('Erro ao excluir campanha:', error)
-      showError('Erro ao excluir campanha', 'Verifique sua conexão e tente novamente')
+      toast.error('Erro ao excluir campanha. Verifique sua conexão e tente novamente', {
+        duration: 4000,
+      })
     }
   }
 
@@ -580,7 +578,7 @@ export default function CampanhasPageReal() {
 
                 <button
                   onClick={() => handleDeletarCampanha(campanha.id)}
-                  className="btn btn-error btn-sm"
+                  className="btn btn-danger btn-sm"
                   title="Excluir campanha"
                   disabled={campanha.progresso?.status === 'processando'}
                 >
@@ -645,6 +643,18 @@ export default function CampanhasPageReal() {
         isOpen={selectedCampanha !== null}
         onClose={() => setSelectedCampanha(null)}
         campanha={selectedCampanha}
+      />
+      
+      {/* Modal de Confirmação */}
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant="danger"
+        confirmText="Sim, Excluir"
+        cancelText="Cancelar"
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })}
       />
       
       {/* Demo de notificações - desabilitado */}
