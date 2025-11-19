@@ -114,12 +114,12 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
       const responseData = await response.json()
 
       if (response.ok && responseData.data) {
-        showSuccess('Campanha criada com sucesso!', 'A campanha foi criada e está pronta para ser iniciada.')
-        // Pequeno delay para garantir que a notificação seja exibida antes de fechar o modal
+        showSuccess('Sucesso!', 'Campanha criada com sucesso!\n\nFechando automaticamente em 2 segundos...')
+        // Fechar o modal após 2 segundos
         setTimeout(() => {
           onSuccess()
           onClose()
-        }, 100)
+        }, 2000)
       } else {
         showError('Erro ao criar campanha', responseData.error || 'Não foi possível criar a campanha')
       }

@@ -150,34 +150,12 @@ export default function CampanhasPageReal() {
     // Buscar dados da campanha para exibir na confirmação
     const campanha = campanhas.find(c => c.id === campanhaId)
     const nomeCampanha = campanha?.nome || 'esta campanha'
-    const statusCampanha = campanha?.progresso?.status || 'rascunho'
-    const totalClientes = campanha?.progresso?.totalClientes || 0
-    const clientesEnviados = campanha?.progresso?.clientesEnviados || 0
 
-    // Verificar se a campanha está em processamento
-    const isProcessing = statusCampanha === 'processando'
-    const hasProgress = totalClientes > 0 || clientesEnviados > 0
-
-    let mensagemDetalhada = `Tem certeza que deseja excluir "${nomeCampanha}"?\n\n`
-    
-    if (isProcessing) {
-      mensagemDetalhada += `⚠️ ATENÇÃO: Esta campanha está em processamento e tem ${clientesEnviados} mensagens já enviadas.\n\n`
-    }
-    
-    if (hasProgress) {
-      mensagemDetalhada += `📊 Dados que serão perdidos:\n`
-      mensagemDetalhada += `• ${totalClientes} clientes cadastrados\n`
-      mensagemDetalhada += `• ${clientesEnviados} mensagens enviadas\n`
-      mensagemDetalhada += `• Relatórios e estatísticas\n\n`
-    }
-    
-    mensagemDetalhada += `Esta ação não pode ser desfeita e todos os dados da campanha serão perdidos permanentemente.`
-
-    // Usar modal de confirmação customizado
+    // Usar modal de confirmação padronizado
     setConfirmModal({
       open: true,
-      title: 'Confirmar exclusão de campanha',
-      message: mensagemDetalhada,
+      title: 'Excluir campanha',
+      message: `Tem certeza que deseja excluir a campanha "${nomeCampanha}"? Esta ação não pode ser desfeita.`,
       onConfirm: () => {
         setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })
         confirmarExclusao(campanhaId)
@@ -192,7 +170,7 @@ export default function CampanhasPageReal() {
       })
 
       if (response.ok) {
-        showSuccess('Campanha excluída com sucesso!', 'A campanha e todos os seus dados foram removidos permanentemente do sistema.')
+        showSuccess('Sucesso!', 'Campanha excluída com sucesso!')
         loadCampanhas()
       } else {
         const error = await response.json()
@@ -644,7 +622,7 @@ export default function CampanhasPageReal() {
         title={confirmModal.title}
         message={confirmModal.message}
         variant="danger"
-        confirmText="Sim, Excluir"
+        confirmText="Excluir"
         cancelText="Cancelar"
         onConfirm={confirmModal.onConfirm}
         onCancel={() => setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })}
