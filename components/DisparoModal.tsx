@@ -26,6 +26,7 @@ import SendingStatusOverlay from './SendingStatusOverlay'
 import VariationsGenerationOverlay from './VariationsGenerationOverlay'
 import TimeControl from './TimeControl'
 import DisparoSummaryModal from './DisparoSummaryModal'
+import SuccessModal from './SuccessModal'
 
 interface DisparoModalProps {
   isOpen: boolean
@@ -129,6 +130,8 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
 
   const [showSummary, setShowSummary] = useState(false)
   const [disparoSummary, setDisparoSummary] = useState<any>(null)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
 
   // Carregar estatísticas das instâncias
   useEffect(() => {
@@ -626,7 +629,8 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
           ? ` distribuído(s) entre ${data.stats.connectedInstances} instância(s) conectada(s)` 
           : ''
 
-        showSuccess(`${totalDestinatarios} mensagem(ns) enviada(s) com sucesso${variationText}${instanceText}!`)
+        const mensagemSucesso = `${totalDestinatarios} mensagem(ns) enviada(s) com sucesso${variationText}${instanceText}!`
+        setSuccessMessage(mensagemSucesso)
         
         // Verificar se há resumo disponível
         if (data.summary) {
@@ -634,9 +638,9 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
           setDisparoSummary(data.summary)
           setShowSummary(true)
         } else {
-          // Fechar o modal após um delay para mostrar o sucesso
-          setTimeout(() => {
-            onClose()
+          // Fechar o modal e mostrar sucesso
+          onClose()
+          setShowSuccessModal(true)
             setSendingStatus({ open: false, status: 'sending' })
           }, 2000)
         }
@@ -1332,6 +1336,16 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
           setSendingStatus({ open: false, status: 'sending' })
         }}
         summary={disparoSummary}
+      />
+
+      {/* Modal de Sucesso */}
+      <SuccessModal
+        open={showSuccessModal}
+        title="Sucesso!"
+        message={successMessage}
+        autoCloseDelay={4000}
+        onClose={() => setShowSuccessModal(false)}
+        onAutoClose={() => setShowSuccessModal(false)}
       />
     </div>
   )

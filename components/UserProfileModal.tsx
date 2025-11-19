@@ -3,6 +3,7 @@ import { Fragment, useState } from 'react'
 import { KeyIcon, EnvelopeIcon, UserCircleIcon } from '@heroicons/react/24/outline'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useAlertContext } from '@/lib/contexts/AlertContext'
+import SuccessModal from './SuccessModal'
 
 interface UserProfileModalProps {
   isOpen: boolean
@@ -17,6 +18,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -52,12 +54,12 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
       const data = await response.json()
 
       if (response.ok && data.success) {
-        showSuccess('Senha atualizada com sucesso!')
         setCurrentPassword('')
         setNewPassword('')
         setConfirmPassword('')
         await refreshUser()
         onClose()
+        setShowSuccessModal(true)
       } else {
         showError(data?.message || 'Não foi possível atualizar a senha.')
       }
@@ -212,6 +214,17 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
         </div>
       </Dialog>
     </Transition>
+
+    {/* Modal de Sucesso */}
+    <SuccessModal
+      open={showSuccessModal}
+      title="Sucesso!"
+      message="Senha atualizada com sucesso!"
+      autoCloseDelay={4000}
+      onClose={() => setShowSuccessModal(false)}
+      onAutoClose={() => setShowSuccessModal(false)}
+    />
+  </>
   )
 }
 

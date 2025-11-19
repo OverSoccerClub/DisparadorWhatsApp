@@ -15,6 +15,8 @@ import {
   KeyIcon
 } from '@heroicons/react/24/outline'
 import { useAlertContext } from '@/lib/contexts/AlertContext'
+import SuccessModal from './SuccessModal'
+import ConfirmModal from './ConfirmModal'
 
 interface TelegramBot {
   id?: string
@@ -44,6 +46,14 @@ export default function TelegramBotsManager({ userId }: Props) {
   const [showModal, setShowModal] = useState(false)
   const [editingBot, setEditingBot] = useState<TelegramBot | null>(null)
   const [testingBot, setTestingBot] = useState<string | null>(null)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+  const [confirmModal, setConfirmModal] = useState({
+    open: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  })
 
   // Carregar lista de bots
   const loadBots = async () => {
@@ -138,7 +148,8 @@ export default function TelegramBotsManager({ userId }: Props) {
       })
 
       if (response.ok) {
-        showSuccess(editingBot.id ? 'Bot atualizado com sucesso!' : 'Bot criado com sucesso!')
+        setSuccessMessage(editingBot.id ? 'Bot atualizado com sucesso!' : 'Bot criado com sucesso!')
+        setShowSuccessModal(true)
         setShowModal(false)
         setEditingBot(null)
         loadBots()
@@ -498,6 +509,28 @@ export default function TelegramBotsManager({ userId }: Props) {
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmação */}
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant="danger"
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })}
+      />
+
+      {/* Modal de Sucesso */}
+      <SuccessModal
+        open={showSuccessModal}
+        title="Sucesso!"
+        message={successMessage}
+        autoCloseDelay={4000}
+        onClose={() => setShowSuccessModal(false)}
+        onAutoClose={() => setShowSuccessModal(false)}
+      />
     </div>
   )
 }

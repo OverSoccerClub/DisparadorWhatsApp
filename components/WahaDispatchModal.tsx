@@ -25,6 +25,7 @@ import TimeControl from './TimeControl'
 import { detectMessageType, generateTypedVariations } from '@/lib/messageVariations'
 import VariationsGenerationOverlay from './VariationsGenerationOverlay'
 import { useRealtimeProgress } from '@/hooks/useRealtimeProgress'
+import SuccessModal from './SuccessModal'
 
 interface WahaDispatchModalProps {
   isOpen: boolean
@@ -64,6 +65,8 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
   const realtime = useRealtimeProgress(sessionId)
   const [sendLogs, setSendLogs] = useState<Array<{ ts: number; phone?: string; instance?: string; message?: string; status?: 'sending'|'sent'|'failed' }>>([])
   const [showDetails, setShowDetails] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
   // Remover duplicatas visuais (mesmo phone+message) para não parecer que enviou várias vezes
   const visibleLogs = useMemo(() => {
     const seen = new Set<string>()
@@ -384,7 +387,8 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
           ? ` distribuído(s) entre ${wahaSessions.filter(s => s.status === 'WORKING').length} sessão(ões) WAHA` 
           : ` via sessão específica`
 
-        showSuccess(`${totalDestinatarios} mensagem(ns) enviada(s) com sucesso${variationText}${sessionText}!`)
+        const mensagemSucesso = `${totalDestinatarios} mensagem(ns) enviada(s) com sucesso${variationText}${sessionText}!`
+        setSuccessMessage(mensagemSucesso)
         
         // Reset form
         setSelectedClientes([])
@@ -393,10 +397,9 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
         setPreviewMode(false)
         setVariationsPreview([])
         
-        // Fechar modal após delay
-        setTimeout(() => {
-          onClose()
-        }, 2000)
+        // Fechar modal e mostrar sucesso
+        onClose()
+        setShowSuccessModal(true)
       } else {
         realtime.setError()
         showError(data.error || 'Erro ao enviar mensagens')
@@ -1226,6 +1229,16 @@ export default function WahaDispatchModal({ isOpen, onClose, clientes }: WahaDis
           </div>
         </div>
       </div>
+
+      {/* Modal de Sucesso */}
+      <SuccessModal
+        open={showSuccessModal}
+        title="Sucesso!"
+        message={successMessage}
+        autoCloseDelay={4000}
+        onClose={() => setShowSuccessModal(false)}
+        onAutoClose={() => setShowSuccessModal(false)}
+      />
     </div>
   )
 }

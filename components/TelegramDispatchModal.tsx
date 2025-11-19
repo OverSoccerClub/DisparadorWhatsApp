@@ -25,6 +25,7 @@ import TimeControl from './TimeControl'
 import { detectMessageType, generateTypedVariations } from '@/lib/messageVariations'
 import VariationsGenerationOverlay from './VariationsGenerationOverlay'
 import { useRealtimeProgress } from '@/hooks/useRealtimeProgress'
+import SuccessModal from './SuccessModal'
 
 interface TelegramDispatchModalProps {
   isOpen: boolean
@@ -63,6 +64,8 @@ export default function TelegramDispatchModal({ isOpen, onClose, clientes }: Tel
   const realtime = useRealtimeProgress(sessionId)
   const [sendLogs, setSendLogs] = useState<Array<{ ts: number; chatId?: string; bot?: string; message?: string; status?: 'sending'|'sent'|'failed' }>>([])
   const [showDetails, setShowDetails] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
 
   // Atualizar logs quando o progresso mudar
   useEffect(() => {
@@ -331,12 +334,17 @@ export default function TelegramDispatchModal({ isOpen, onClose, clientes }: Tel
           ? ` distribuído(s) entre ${telegramBots.filter(b => b.status === 'active').length} bot(s) do Telegram` 
           : ` via bot específico`
 
-        showSuccess(`${totalDestinatarios} mensagem(ns) enviada(s) com sucesso${variationText}${botText}!`)
+        const mensagemSucesso = `${totalDestinatarios} mensagem(ns) enviada(s) com sucesso${variationText}${botText}!`
+        setSuccessMessage(mensagemSucesso)
         
         // Reset form
         setSelectedClientes([])
         setNovosChatIds('')
         setMensagem('')
+        
+        // Fechar modal e mostrar sucesso
+        onClose()
+        setShowSuccessModal(true)
         setPreviewMode(false)
         setVariationsPreview([])
         
@@ -1009,6 +1017,16 @@ export default function TelegramDispatchModal({ isOpen, onClose, clientes }: Tel
           </div>
         </div>
       </div>
+
+      {/* Modal de Sucesso */}
+      <SuccessModal
+        open={showSuccessModal}
+        title="Sucesso!"
+        message={successMessage}
+        autoCloseDelay={4000}
+        onClose={() => setShowSuccessModal(false)}
+        onAutoClose={() => setShowSuccessModal(false)}
+      />
     </div>
   )
 }

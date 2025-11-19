@@ -214,7 +214,7 @@ export default function ConfiguracoesPage() {
       const data = await response.json()
       
       if (data.success) {
-        showSuccess('Tentativa de reconexão iniciada')
+        showSuccessModal('Sucesso!', 'Tentativa de reconexão iniciada')
         setTimeout(fetchWhatsAppStatus, 2000)
       } else {
         showError('Erro ao reconectar')

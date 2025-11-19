@@ -20,6 +20,7 @@ import { useAlertContext } from '@/lib/contexts/AlertContext'
 // Modal original (ativo)
 import DisparoModal from './DisparoModal'
 import ConfirmModal from './ConfirmModal'
+import SuccessModal from './SuccessModal'
 import WahaDispatchModal from './WahaDispatchModal'
 import TelegramDispatchModal from './TelegramDispatchModal'
 import ChipMaturationModal from './ChipMaturationModal'
@@ -55,6 +56,8 @@ export default function DisparosPage() {
     message: '',
     onConfirm: () => {}
   })
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
   
   // Monitor de agendamentos de maturação (global)
   const { setCallbacks } = useScheduledMaturationMonitor()
@@ -164,7 +167,8 @@ export default function DisparosPage() {
       })
 
       if (response.ok) {
-        showSuccess('Disparo excluído com sucesso!')
+        setSuccessMessage('Disparo excluído com sucesso!')
+        setShowSuccessModal(true)
         // Recarregar a lista
         await loadDisparos(pagination.page, searchTerm, statusFilter, dateFilters.dataInicio, dateFilters.dataFim, dateFilters.tipoData)
       } else {
@@ -707,6 +711,16 @@ export default function DisparosPage() {
         cancelText="Cancelar"
         onConfirm={confirmModal.onConfirm}
         onCancel={() => setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })}
+      />
+
+      {/* Modal de Sucesso */}
+      <SuccessModal
+        open={showSuccessModal}
+        title="Sucesso!"
+        message={successMessage}
+        autoCloseDelay={4000}
+        onClose={() => setShowSuccessModal(false)}
+        onAutoClose={() => setShowSuccessModal(false)}
       />
     </div>
   )

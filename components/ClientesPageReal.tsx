@@ -19,6 +19,8 @@ import PageHeader from './PageHeader'
 import { Cliente } from '@/lib/supabaseClient'
 import { formatDate } from '@/lib/utils'
 import { useAlertContext } from '@/lib/contexts/AlertContext'
+import SuccessModal from './SuccessModal'
+import ConfirmModal from './ConfirmModal'
 
 export default function ClientesPageReal() {
   const { showSuccess, showError } = useAlertContext()
@@ -33,6 +35,14 @@ export default function ClientesPageReal() {
     telefone: '',
     email: '',
     status: 'ativo'
+  })
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+  const [confirmModal, setConfirmModal] = useState({
+    open: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
   })
   
   // Estados de paginação
@@ -108,7 +118,8 @@ export default function ClientesPageReal() {
       })
 
       if (response.ok) {
-        showSuccess(editingCliente ? 'Cliente atualizado com sucesso!' : 'Cliente adicionado com sucesso!')
+        setSuccessMessage(editingCliente ? 'Cliente atualizado com sucesso!' : 'Cliente adicionado com sucesso!')
+        setShowSuccessModal(true)
         setShowModal(false)
         setEditingCliente(null)
         setFormData({ nome: '', telefone: '', email: '', status: 'ativo' })
@@ -135,15 +146,29 @@ export default function ClientesPageReal() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este cliente?')) return
+    const cliente = clientes.find(c => c.id === id)
+    const nomeCliente = cliente?.nome || 'este cliente'
+    
+    setConfirmModal({
+      open: true,
+      title: 'Excluir cliente',
+      message: `Tem certeza que deseja excluir o cliente "${nomeCliente}"? Esta ação não pode ser desfeita.`,
+      onConfirm: () => {
+        setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })
+        confirmarExclusao(id)
+      }
+    })
+  }
 
+  const confirmarExclusao = async (id: string) => {
     try {
       const response = await fetch(`/api/clientes?id=${id}`, {
         method: 'DELETE',
       })
 
       if (response.ok) {
-        showSuccess('Cliente excluído com sucesso!')
+        setSuccessMessage('Cliente excluído com sucesso!')
+        setShowSuccessModal(true)
         loadClientes()
       } else {
         const error = await response.json()
@@ -577,6 +602,28 @@ export default function ClientesPageReal() {
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmação */}
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant="danger"
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })}
+      />
+
+      {/* Modal de Sucesso */}
+      <SuccessModal
+        open={showSuccessModal}
+        title="Sucesso!"
+        message={successMessage}
+        autoCloseDelay={4000}
+        onClose={() => setShowSuccessModal(false)}
+        onAutoClose={() => setShowSuccessModal(false)}
+      />
     </div>
   )
 }

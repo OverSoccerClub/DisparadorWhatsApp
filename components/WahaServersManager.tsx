@@ -16,6 +16,8 @@ import {
   QrCodeIcon
 } from '@heroicons/react/24/outline'
 import { useAlertContext } from '@/lib/contexts/AlertContext'
+import SuccessModal from './SuccessModal'
+import ConfirmModal from './ConfirmModal'
 
 interface WahaServer {
   id?: string
@@ -88,6 +90,14 @@ export default function WahaServersManager({ userId }: Props = {}) {
     error: null,
     instances: 0,
     activeConnections: 0
+  })
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+  const [confirmModal, setConfirmModal] = useState({
+    open: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
   })
 
   // Carregar lista de servidores
@@ -446,7 +456,8 @@ export default function WahaServersManager({ userId }: Props = {}) {
       })
 
       if (response.ok) {
-        showSuccess(`Servidor "${editingServer.name}" salvo com sucesso!`)
+        setSuccessMessage(`Servidor "${editingServer.name}" salvo com sucesso!`)
+        setShowSuccessModal(true)
         setShowModal(false)
         setEditingServer(null)
         await loadServers()
@@ -464,8 +475,18 @@ export default function WahaServersManager({ userId }: Props = {}) {
 
   // Excluir servidor
   const handleDelete = async (serverId: string, serverName: string) => {
-    if (!confirm(`Tem certeza que deseja excluir o servidor "${serverName}"?`)) return
+    setConfirmModal({
+      open: true,
+      title: 'Excluir servidor',
+      message: `Tem certeza que deseja excluir o servidor "${serverName}"? Esta ação não pode ser desfeita.`,
+      onConfirm: () => {
+        setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })
+        confirmarExclusao(serverId)
+      }
+    })
+  }
 
+  const confirmarExclusao = async (serverId: string) => {
     setLoading(true)
     try {
       const response = await fetch(`/api/config/waha?id=${serverId}`, {
@@ -473,7 +494,8 @@ export default function WahaServersManager({ userId }: Props = {}) {
       })
 
       if (response.ok) {
-        showSuccess('Servidor WAHA excluído com sucesso')
+        setSuccessMessage('Servidor WAHA excluído com sucesso!')
+        setShowSuccessModal(true)
         await loadServers()
         await loadSessions() // Recarregar sessões após excluir servidor
       } else {
@@ -1288,6 +1310,28 @@ export default function WahaServersManager({ userId }: Props = {}) {
         </div>
       )}
       </div>
+
+      {/* Modal de Confirmação */}
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant="danger"
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })}
+      />
+
+      {/* Modal de Sucesso */}
+      <SuccessModal
+        open={showSuccessModal}
+        title="Sucesso!"
+        message={successMessage}
+        autoCloseDelay={4000}
+        onClose={() => setShowSuccessModal(false)}
+        onAutoClose={() => setShowSuccessModal(false)}
+      />
     </div>
   )
 }

@@ -151,7 +151,8 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
       const data = await res.json()
       
       if (res.ok && data.success) {
-        showSuccess('Agendamento Pausado', 'O agendamento foi pausado com sucesso.')
+        setSuccessMessage('O agendamento foi pausado com sucesso.')
+        setShowSuccessModal(true)
         loadSchedules() // Recarregar lista
       } else {
         showError('Erro ao pausar', data.error || 'Não foi possível pausar o agendamento.')
@@ -180,7 +181,8 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
           const data = await res.json()
           
           if (res.ok && data.success) {
-            showSuccess('Agendamento Cancelado', 'O agendamento foi cancelado com sucesso.')
+            setSuccessMessage('O agendamento foi cancelado com sucesso.')
+            setShowSuccessModal(true)
             loadSchedules() // Recarregar lista
           } else {
             showError('Erro ao cancelar', data.error || 'Não foi possível cancelar o agendamento.')
@@ -233,7 +235,8 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
         const message = schedule && new Date(schedule.scheduled_start_at) <= new Date()
           ? 'O agendamento foi retomado e será executado imediatamente.'
           : 'O agendamento foi retomado e voltou para a fila de execução.'
-        showSuccess('Agendamento Retomado', message)
+        setSuccessMessage(message)
+        setShowSuccessModal(true)
         loadSchedules() // Recarregar lista
       } else {
         showError('Erro ao retomar', data.error || 'Não foi possível retomar o agendamento.')
@@ -260,7 +263,8 @@ export default function ChipMaturationModal({ isOpen, onClose }: ChipMaturationM
           const data = await res.json()
           
           if (res.ok && data.success) {
-            showSuccess('Agendamento Excluído', 'O agendamento foi excluído permanentemente.')
+            setSuccessMessage('O agendamento foi excluído permanentemente.')
+            setShowSuccessModal(true)
             loadSchedules() // Recarregar lista
           } else {
             showError('Erro ao excluir', data.error || 'Não foi possível excluir o agendamento.')
