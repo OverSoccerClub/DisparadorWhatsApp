@@ -641,8 +641,7 @@ export default function DisparoModal({ isOpen, onClose, clientes }: DisparoModal
           // Fechar o modal e mostrar sucesso
           onClose()
           setShowSuccessModal(true)
-            setSendingStatus({ open: false, status: 'sending' })
-          }, 2000)
+          setSendingStatus({ open: false, status: 'sending' })
         }
       } else {
         // Mostrar erro amigável
