@@ -110,22 +110,24 @@ export default async function handler(
     }
 
     // Excluir instância do Supabase
-    console.log('Excluindo instância do Supabase...')
+    console.log('🗑️ Excluindo instância do Supabase...', { userId: effectiveUserId, instanceName })
     let supabaseSuccess = false
     let supabaseError = null
 
     try {
       const result = await EvolutionConfigService.deleteInstance(effectiveUserId, instanceName, supabase)
+      console.log('📊 Resultado da exclusão no Supabase:', result)
+      
       if (result.success) {
         supabaseSuccess = true
-        console.log('Exclusão bem-sucedida no Supabase')
+        console.log('✅ Exclusão bem-sucedida no Supabase')
       } else {
-        supabaseError = result.error
-        console.log('Erro no Supabase:', supabaseError)
+        supabaseError = result.error || 'Erro desconhecido ao excluir do Supabase'
+        console.error('❌ Erro no Supabase:', supabaseError)
       }
     } catch (error) {
       supabaseError = error instanceof Error ? error.message : String(error)
-      console.error('Erro ao excluir do Supabase:', error)
+      console.error('❌ Erro ao excluir do Supabase (catch):', error)
     }
 
     // Determinar resultado final

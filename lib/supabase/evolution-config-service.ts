@@ -226,23 +226,47 @@ export class EvolutionConfigService {
   // Excluir instância
   static async deleteInstance(userId: string, instanceName: string, client?: GenericClient) {
     try {
+      console.log('🗑️ [EvolutionConfigService] Excluindo instância:', { userId, instanceName })
+      
       const db = client ?? getAdminClient()
-      const { data, error } = await db
+      
+      // Primeiro, verificar se a instância existe
+      const checkResult = await db
+        .from('evolution_instances')
+        .select('id, instance_name')
+        .eq('user_id', userId)
+        .eq('instance_name', instanceName)
+        .maybeSingle()
+
+      if (checkResult.error) {
+        console.error('❌ [EvolutionConfigService] Erro ao verificar instância:', checkResult.error)
+        return { success: false, error: checkResult.error.message || 'Erro ao verificar instância' }
+      }
+
+      if (!checkResult.data) {
+        console.log('⚠️ [EvolutionConfigService] Instância não encontrada para exclusão')
+        return { success: true, data: null, message: 'Instância não encontrada (já pode ter sido excluída)' }
+      }
+
+      console.log('✅ [EvolutionConfigService] Instância encontrada, procedendo com exclusão:', checkResult.data)
+
+      // Excluir a instância
+      const { error, data } = await db
         .from('evolution_instances')
         .delete()
         .eq('user_id', userId)
         .eq('instance_name', instanceName)
         .select()
-        .single()
 
       if (error) {
-        console.error('Erro ao excluir instância:', error)
-        throw error
+        console.error('❌ [EvolutionConfigService] Erro ao excluir instância:', error)
+        return { success: false, error: error.message || 'Erro ao excluir instância' }
       }
 
-      return { success: true, data }
+      console.log('✅ [EvolutionConfigService] Instância excluída com sucesso:', data)
+      return { success: true, data: data?.[0] || checkResult.data }
     } catch (error) {
-      console.error('Erro no EvolutionConfigService.deleteInstance:', error)
+      console.error('❌ [EvolutionConfigService] Erro no deleteInstance:', error)
       return { success: false, error: (error as any)?.message || String(error) }
     }
   }
