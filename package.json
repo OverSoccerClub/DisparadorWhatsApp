@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "cross-env FAST_REFRESH=false NODE_ENV=production next dev --turbo",
     "dev:safe": "npm run build && npm start",
-    "prebuild": "node scripts/generate-build-hash.js",
+    "prebuild": "node scripts/generate-build-hash.js && node scripts/generate-manual.js",
     "build": "next build",
     "start": "node .next/standalone/server.js",
     "lint": "next lint",
@@ -42,7 +42,10 @@
     "worker:prod": "node dist/scripts/worker.js",
     "version:push": "git push origin main && git push --tags",
     "version:init": "git init && git add . && git commit -m \"Initial commit\" && node scripts/version.js set 0.1.0",
-    "git:setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-git.ps1"
+    "git:setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-git.ps1",
+    "manual:generate": "node scripts/generate-manual.js",
+    "manual:watch": "node scripts/watch-manual.js",
+    "changelog:update": "node scripts/auto-update-changelog.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

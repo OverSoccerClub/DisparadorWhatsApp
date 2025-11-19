@@ -74,7 +74,7 @@ function createGitTag(version) {
 
 function commitVersionChange(version) {
   try {
-    execSync(`git add package.json VERSION.txt`, { stdio: 'inherit' });
+    execSync(`git add package.json VERSION.txt CHANGELOG.md docs/user-manual.md`, { stdio: 'inherit' });
     execSync(`git commit -m "chore: release v${version}"`, { stdio: 'inherit' });
     console.log(`✅ Alterações commitadas`);
   } catch (error) {
@@ -137,6 +137,24 @@ Exemplos:
     console.log(`✅ Versão atualizada no package.json`);
     
     if (command !== 'show') {
+      // Atualizar CHANGELOG automaticamente
+      console.log(`\n📝 Atualizando CHANGELOG.md...`);
+      try {
+        const { updateChangelogForVersion } = require('./auto-update-changelog');
+        updateChangelogForVersion(newVersion);
+      } catch (error) {
+        console.warn(`⚠️ Erro ao atualizar CHANGELOG: ${error.message}`);
+      }
+      
+      // Gerar Manual automaticamente
+      console.log(`\n📚 Gerando Manual do Usuário...`);
+      try {
+        const { updateManual } = require('./generate-manual');
+        updateManual();
+      } catch (error) {
+        console.warn(`⚠️ Erro ao gerar Manual: ${error.message}`);
+      }
+      
       console.log(`\n📝 Criando tag Git...`);
       createGitTag(newVersion);
       
