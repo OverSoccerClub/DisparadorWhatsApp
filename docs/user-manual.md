@@ -16,7 +16,7 @@
 - **Pré-requisitos mínimos**:
   - Navegador atualizado (Chrome/Edge ≥ 115).
   - Conexão estável à internet.
-  - Conta Supabase ativa com as tabelas providas em `supabase/MIGRATION_COMPLETE.sql`.
+  - Conta Supabase ativa com as tabelas providas em \`supabase/MIGRATION_COMPLETE.sql\`.
   - Instância WhatsApp autenticada (ou WAHA/Evolution configurados).
   - Redis operacional (para filas e monitoramentos).
 
@@ -25,9 +25,9 @@
 ## 2. Primeiros Passos
 
 ### 2.1 Acesso e Autenticação
-1. Abra a URL fornecida pelo administrador (ex.: `https://app.seudominio.com`).
+1. Abra a URL fornecida pelo administrador (ex.: \`https://app.seudominio.com\`).
 2. Informe **email** e **senha** cadastrados no Supabase Auth.
-3. Em caso de erro 500, valide se as variáveis `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` estão preenchidas no servidor.
+3. Em caso de erro 500, valide se as variáveis \`NEXT_PUBLIC_SUPABASE_URL\` e \`NEXT_PUBLIC_SUPABASE_ANON_KEY\` estão preenchidas no servidor.
 4. Recuperação de senha: utilize o fluxo nativo do Supabase ou solicite ao administrador (não há formulário público por padrão).
 
 ### 2.2 Checklist Inicial Pós-Login
@@ -35,7 +35,7 @@
 | --- | --- | --- |
 | Status WhatsApp/WAHA | Widget "Instance Monitor" | QR Code conectado, heartbeat recente |
 | Evolução das filas | "Pending Maturation Checker" + dashboards de fila | Pendências ou travamentos |
-| Credenciais | Página `Configurações` | Supabase, Evolution API, WAHA, n8n, SMTP preenchidos |
+| Credenciais | Página \`Configurações\` | Supabase, Evolution API, WAHA, n8n, SMTP preenchidos |
 
 ### 2.3 Conexão do WhatsApp
 1. Vá em **Configurações → Evolution API** ou **Configurações → Sessões WAHA**.
@@ -51,9 +51,9 @@
 - **Header**: atalhos para notificações (toast), status da sessão, usuário logado e indicadores globais.
 - **Rodapé do Sidebar**: Links para Manual e Changelog.
 - **Widgets Globais**:
-  - `GlobalLoading` / `LoadingOverlay`: indicam ações em progresso (importantes para uploads).
-  - `NotificationProvider`: mostra sucessos/erros (toasts) — leia sempre antes de continuar.
-  - `BackgroundMaturationWidget`: sinaliza tarefas em processamento no servidor (ex.: geração de variações).
+  - \`GlobalLoading\` / \`LoadingOverlay\`: indicam ações em progresso (importantes para uploads).
+  - \`NotificationProvider\`: mostra sucessos/erros (toasts) — leia sempre antes de continuar.
+  - \`BackgroundMaturationWidget\`: sinaliza tarefas em processamento no servidor (ex.: geração de variações).
 
 ---
 
@@ -61,7 +61,7 @@
 
 ### 4.1 Dashboard
 - **Objetivo**: Visão geral do sistema com métricas, gráficos e estatísticas em tempo real
-- **Acesso**: Menu lateral → "Dashboard" ou rota `/dashboard`
+- **Acesso**: Menu lateral → "Dashboard" ou rota \`/dashboard\`
 - **Funcionalidades disponíveis**:
   - Mensagens enviadas/entregues/pendentes
   - Campanhas em andamento
@@ -71,7 +71,7 @@
 
 ### 4.2 Gerenciamento de Clientes
 - **Objetivo**: CRUD completo para gerenciar clientes com busca avançada e importação CSV
-- **Acesso**: Menu lateral → "Gerenciamento de Clientes" ou rota `/clientes`
+- **Acesso**: Menu lateral → "Gerenciamento de Clientes" ou rota \`/clientes\`
 - **Funcionalidades disponíveis**:
   - Criar, editar e excluir clientes
   - Importar CSV com validação automática
@@ -81,7 +81,7 @@
 
 ### 4.3 Sistema de Campanhas
 - **Objetivo**: Criação, agendamento e gerenciamento de campanhas de mensagens
-- **Acesso**: Menu lateral → "Sistema de Campanhas" ou rota `/campanhas`
+- **Acesso**: Menu lateral → "Sistema de Campanhas" ou rota \`/campanhas\`
 - **Funcionalidades disponíveis**:
   - Criar campanhas com critérios personalizados
   - Agendar campanhas para execução futura
@@ -92,7 +92,7 @@
 
 ### 4.4 Disparos Diretos
 - **Objetivo**: Envio de mensagens individuais ou em lote para clientes cadastrados ou novos números
-- **Acesso**: Menu lateral → "Disparos Diretos" ou rota `/disparos`
+- **Acesso**: Menu lateral → "Disparos Diretos" ou rota \`/disparos\`
 - **Funcionalidades disponíveis**:
   - Disparo para clientes existentes
   - Disparo para novos números
@@ -102,7 +102,7 @@
 
 ### 4.5 Relatórios e Análises
 - **Objetivo**: Relatórios detalhados de desempenho e métricas das campanhas
-- **Acesso**: Menu lateral → "Relatórios e Análises" ou rota `/relatorios`
+- **Acesso**: Menu lateral → "Relatórios e Análises" ou rota \`/relatorios\`
 - **Funcionalidades disponíveis**:
   - Relatórios por campanha
   - Métricas de entrega e leitura
@@ -112,7 +112,7 @@
 
 ### 4.6 Configurações Gerais
 - **Objetivo**: Configurações gerais do sistema
-- **Acesso**: Menu lateral → "Configurações Gerais" ou rota `/configuracoes`
+- **Acesso**: Menu lateral → "Configurações Gerais" ou rota \`/configuracoes\`
 - **Funcionalidades disponíveis**:
   - Configurações de integração
   - Preferências do usuário
@@ -120,7 +120,7 @@
 
 ### 4.7 Evolution API
 - **Objetivo**: Configuração e gerenciamento de instâncias Evolution API
-- **Acesso**: Menu lateral → "Evolution API" ou rota `/configuracoes/evolution-api`
+- **Acesso**: Menu lateral → "Evolution API" ou rota \`/configuracoes/evolution-api\`
 - **Funcionalidades disponíveis**:
   - Cadastrar servidor Evolution API
   - Criar e gerenciar instâncias
@@ -130,7 +130,7 @@
 
 ### 4.8 Integração Telegram
 - **Objetivo**: Configuração de bots do Telegram para notificações e automações
-- **Acesso**: Menu lateral → "Integração Telegram" ou rota `/configuracoes/telegram`
+- **Acesso**: Menu lateral → "Integração Telegram" ou rota \`/configuracoes/telegram\`
 - **Funcionalidades disponíveis**:
   - Cadastrar bots do Telegram
   - Configurar webhooks
@@ -139,7 +139,7 @@
 
 ### 4.9 Sessões WAHA
 - **Objetivo**: Gerenciamento de servidores e sessões WAHA
-- **Acesso**: Menu lateral → "Sessões WAHA" ou rota `/waha-sessions`
+- **Acesso**: Menu lateral → "Sessões WAHA" ou rota \`/waha-sessions\`
 - **Funcionalidades disponíveis**:
   - Cadastrar servidores WAHA
   - Visualizar sessões ativas
