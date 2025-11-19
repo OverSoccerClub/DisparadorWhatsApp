@@ -70,19 +70,105 @@ export default async function handler(
       headers['Authorization'] = `Bearer ${effectiveApiKey.trim()}`
     }
 
-    // Buscar QR code da sessão WAHA
+    // Normalizar URL (remover barra final se houver)
+    const normalizedApiUrl = effectiveApiUrl.trim().replace(/\/+$/, '')
+    const normalizedSessionName = sessionName.trim()
+    
     // WAHA API endpoint: POST /api/{session}/auth/qr
-    const response = await fetch(`${effectiveApiUrl}/api/${sessionName}/auth/qr`, {
+    // Mas primeiro, verificar se a sessão existe e obter seu status
+    console.log(`🔍 Verificando sessão ${normalizedSessionName} no servidor ${normalizedApiUrl}`)
+    
+    // Tentar obter informações da sessão primeiro
+    const sessionInfoResponse = await fetch(`${normalizedApiUrl}/api/sessions`, {
+      method: 'GET',
+      headers,
+    })
+    
+    let sessionExists = false
+    if (sessionInfoResponse.ok) {
+      const sessionsList = await sessionInfoResponse.json()
+      if (Array.isArray(sessionsList)) {
+        sessionExists = sessionsList.some((s: any) => s.name === normalizedSessionName)
+        console.log(`📋 Sessão ${normalizedSessionName} ${sessionExists ? 'encontrada' : 'não encontrada'} na lista`)
+      }
+    }
+    
+    // Buscar QR code da sessão WAHA
+    const qrUrl = `${normalizedApiUrl}/api/${encodeURIComponent(normalizedSessionName)}/auth/qr`
+    console.log(`📱 Buscando QR code em: ${qrUrl}`)
+    
+    const response = await fetch(qrUrl, {
       method: 'POST',
       headers,
     })
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '')
-      console.error(`❌ Erro ao buscar QR code da sessão ${sessionName}:`, response.status, errorText)
+      let errorMessage = `Erro ao buscar QR code: ${response.status}`
+      
+      try {
+        const errorData = errorText ? JSON.parse(errorText) : null
+        if (errorData?.message) {
+          errorMessage = errorData.message
+        } else if (errorText) {
+          errorMessage = errorText.substring(0, 200)
+        }
+      } catch {
+        if (errorText) {
+          errorMessage = errorText.substring(0, 200)
+        }
+      }
+      
+      console.error(`❌ Erro ao buscar QR code da sessão ${normalizedSessionName}:`, response.status, errorMessage)
+      
+      // Se a sessão não existe, tentar iniciar ela primeiro
+      if (response.status === 404 && !sessionExists) {
+        console.log(`🔄 Tentando iniciar sessão ${normalizedSessionName}...`)
+        try {
+          const startResponse = await fetch(`${normalizedApiUrl}/api/${encodeURIComponent(normalizedSessionName)}/start`, {
+            method: 'POST',
+            headers,
+          })
+          
+          if (startResponse.ok) {
+            console.log(`✅ Sessão ${normalizedSessionName} iniciada, tentando buscar QR code novamente...`)
+            // Tentar buscar QR code novamente após iniciar
+            const retryResponse = await fetch(qrUrl, {
+              method: 'POST',
+              headers,
+            })
+            
+            if (retryResponse.ok) {
+              const retryQrData = await retryResponse.json()
+              let qrCodeValue = null
+              if (typeof retryQrData === 'string') {
+                qrCodeValue = retryQrData
+              } else if (retryQrData.qr) {
+                qrCodeValue = retryQrData.qr
+              } else if (retryQrData.qrCode) {
+                qrCodeValue = retryQrData.qrCode
+              } else if (retryQrData.data) {
+                qrCodeValue = retryQrData.data
+              }
+              
+              if (qrCodeValue) {
+                return res.status(200).json({
+                  success: true,
+                  qrCode: qrCodeValue,
+                  sessionName: normalizedSessionName,
+                  serverId
+                })
+              }
+            }
+          }
+        } catch (startError) {
+          console.error('❌ Erro ao tentar iniciar sessão:', startError)
+        }
+      }
+      
       return res.status(response.status).json({
         success: false,
-        error: `Erro ao buscar QR code: ${response.status}${errorText ? ` - ${errorText.substring(0, 100)}` : ''}`
+        error: errorMessage
       })
     }
 

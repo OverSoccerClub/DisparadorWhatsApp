@@ -148,6 +148,41 @@ export default function WahaServersManager({ userId }: Props = {}) {
     }
   }
 
+  // Função para traduzir status para português
+  const translateStatus = (status: string): string => {
+    const statusUpper = status.toUpperCase()
+    const statusMap: Record<string, string> = {
+      'WORKING': 'Conectado',
+      'CONNECTED': 'Conectado',
+      'OPEN': 'Conectado',
+      'READY': 'Pronto',
+      'AUTHENTICATED': 'Autenticado',
+      'SCAN_QR_CODE': 'Aguardando QR Code',
+      'STARTING': 'Iniciando',
+      'STOPPED': 'Parado',
+      'FAILED': 'Falhou',
+      'DISCONNECTED': 'Desconectado',
+      'CLOSED': 'Fechado',
+      'PAIRING': 'Pareando'
+    }
+    return statusMap[statusUpper] || status
+  }
+  
+  // Função para obter cor do status
+  const getStatusColor = (status: string): string => {
+    const statusUpper = status.toUpperCase()
+    if (statusUpper === 'WORKING' || statusUpper === 'CONNECTED' || statusUpper === 'OPEN' || statusUpper === 'AUTHENTICATED') {
+      return 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-300'
+    }
+    if (statusUpper === 'SCAN_QR_CODE' || statusUpper === 'STARTING' || statusUpper === 'PAIRING') {
+      return 'bg-warning-100 dark:bg-warning-900/30 text-warning-800 dark:text-warning-300'
+    }
+    if (statusUpper === 'FAILED' || statusUpper === 'STOPPED' || statusUpper === 'DISCONNECTED' || statusUpper === 'CLOSED') {
+      return 'bg-error-100 dark:bg-error-900/30 text-error-800 dark:text-error-300'
+    }
+    return 'bg-secondary-100 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-400'
+  }
+
   // Carregar sessões WAHA
   const loadSessions = async () => {
     try {
@@ -773,13 +808,9 @@ export default function WahaServersManager({ userId }: Props = {}) {
                                 </div>
                               </div>
                               <span
-                                className={`px-2 py-1 text-xs rounded-full font-medium ${
-                                  isWorking
-                                    ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-300'
-                                    : 'bg-secondary-100 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-400'
-                                }`}
+                                className={`px-2 py-1 text-xs rounded-full font-medium ${getStatusColor(session.status)}`}
                               >
-                                {session.status}
+                                {translateStatus(session.status)}
                               </span>
                             </div>
                             {session.connectedAt && (
@@ -788,31 +819,20 @@ export default function WahaServersManager({ userId }: Props = {}) {
                               </p>
                             )}
                             
-                            {/* Botões de ação */}
-                            <div className="mt-3 flex gap-2">
-                              {!isWorking && (
+                            {/* Botão de ação */}
+                            {!isWorking && (
+                              <div className="mt-3">
                                 <button
                                   onClick={() => loadQrCode(session)}
                                   disabled={loadingQr}
-                                  className="btn btn-primary btn-sm flex-1"
+                                  className="btn btn-primary btn-sm w-full"
                                   title="Escanear QR Code"
                                 >
                                   <QrCodeIcon className="h-4 w-4" />
-                                  {loadingQr ? 'Carregando...' : 'QR Code'}
+                                  {loadingQr ? 'Carregando...' : 'Escanear QR Code'}
                                 </button>
-                              )}
-                              <button
-                                onClick={() => {
-                                  setSelectedSession(session)
-                                  setShowQrModal(true)
-                                }}
-                                className="btn btn-secondary btn-sm flex-1"
-                                title="Ver detalhes"
-                              >
-                                <DevicePhoneMobileIcon className="h-4 w-4" />
-                                Detalhes
-                              </button>
-                            </div>
+                              </div>
+                            )}
                           </div>
                         )
                       })}
@@ -1133,13 +1153,9 @@ export default function WahaServersManager({ userId }: Props = {}) {
                       Status
                     </label>
                     <span
-                      className={`px-3 py-1 text-sm rounded-full font-medium inline-block ${
-                        selectedSession.status === 'WORKING' || selectedSession.status === 'CONNECTED'
-                          ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-300'
-                          : 'bg-secondary-100 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-400'
-                      }`}
+                      className={`px-3 py-1 text-sm rounded-full font-medium inline-block ${getStatusColor(selectedSession.status)}`}
                     >
-                      {selectedSession.status}
+                      {translateStatus(selectedSession.status)}
                     </span>
                   </div>
                   <div>
