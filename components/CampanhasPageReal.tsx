@@ -632,6 +632,16 @@ export default function CampanhasPageReal() {
         onConfirm={confirmModal.onConfirm}
         onCancel={() => setConfirmModal({ open: false, title: '', message: '', onConfirm: () => {} })}
       />
+
+      {/* Modal de Sucesso */}
+      <SuccessModal
+        open={showSuccessModal}
+        title="Sucesso!"
+        message={successMessage}
+        autoCloseDelay={4000}
+        onClose={() => setShowSuccessModal(false)}
+        onAutoClose={() => setShowSuccessModal(false)}
+      />
       
       {/* Demo de notificações - desabilitado */}
       {/* <NotificationDemo /> */}
