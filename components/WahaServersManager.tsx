@@ -49,6 +49,18 @@ interface TestStatus {
   activeConnections: number
 }
 
+interface WahaSession {
+  name: string
+  status: string
+  config?: any
+  me?: any
+  serverId: string
+  serverName: string
+  avatar?: string | null
+  connectedAt?: string | null
+  phoneNumber?: string | null
+}
+
 interface Props {
   userId?: string
 }
@@ -56,6 +68,8 @@ interface Props {
 export default function WahaServersManager({ userId }: Props = {}) {
   const { showSuccess, showError } = useAlertContext()
   const [servers, setServers] = useState<WahaServer[]>([])
+  const [sessions, setSessions] = useState<WahaSession[]>([])
+  const [loadingSessions, setLoadingSessions] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [editingServer, setEditingServer] = useState<WahaServer | null>(null)
@@ -127,8 +141,32 @@ export default function WahaServersManager({ userId }: Props = {}) {
     }
   }
 
+  // Carregar sessões WAHA
+  const loadSessions = async () => {
+    try {
+      setLoadingSessions(true)
+      const response = await fetch('/api/waha/sessions/all', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setSessions(data.sessions || [])
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar sessões WAHA:', error)
+    } finally {
+      setLoadingSessions(false)
+    }
+  }
+
   useEffect(() => {
     loadServers()
+    loadSessions()
   }, [])
 
   // Abrir modal para adicionar novo servidor
@@ -258,6 +296,7 @@ export default function WahaServersManager({ userId }: Props = {}) {
         setShowModal(false)
         setEditingServer(null)
         await loadServers()
+        await loadSessions() // Recarregar sessões após salvar servidor
       } else {
         const error = await response.json()
         showError(error.error || 'Erro ao salvar servidor WAHA')
@@ -282,6 +321,7 @@ export default function WahaServersManager({ userId }: Props = {}) {
       if (response.ok) {
         showSuccess('Servidor WAHA excluído com sucesso')
         await loadServers()
+        await loadSessions() // Recarregar sessões após excluir servidor
       } else {
         showError('Erro ao excluir servidor WAHA')
       }
@@ -533,6 +573,117 @@ export default function WahaServersManager({ userId }: Props = {}) {
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Seção de Sessões WAHA */}
+      {servers.length > 0 && (
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex items-center">
+              <DevicePhoneMobileIcon className="h-5 w-5 mr-2" />
+              Sessões WAHA
+            </h2>
+            <button
+              onClick={loadSessions}
+              disabled={loadingSessions}
+              className="btn btn-secondary btn-sm"
+              title="Recarregar sessões"
+            >
+              {loadingSessions ? 'Carregando...' : 'Atualizar'}
+            </button>
+          </div>
+
+          {loadingSessions ? (
+            <div className="card p-6 text-center">
+              <p className="text-secondary-600 dark:text-secondary-400">Carregando sessões...</p>
+            </div>
+          ) : sessions.length === 0 ? (
+            <div className="card p-6 text-center bg-secondary-50 dark:bg-secondary-800">
+              <DevicePhoneMobileIcon className="h-12 w-12 mx-auto text-secondary-400 dark:text-secondary-600 mb-4" />
+              <p className="text-secondary-600 dark:text-secondary-400 mb-2">Nenhuma sessão encontrada</p>
+              <p className="text-xs text-secondary-500 dark:text-secondary-500">
+                As sessões aparecerão aqui quando estiverem conectadas nos servidores WAHA
+              </p>
+            </div>
+          ) : (
+            <div className="card p-6">
+              {/* Agrupar sessões por servidor */}
+              {servers.map((server) => {
+                const serverSessions = sessions.filter(s => s.serverId === server.id)
+                if (serverSessions.length === 0) return null
+
+                return (
+                  <div key={server.id} className="mb-6 last:mb-0">
+                    <h3 className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-3 flex items-center">
+                      <ServerIcon className="h-4 w-4 mr-2" />
+                      {server.name}
+                      <span className="ml-2 text-xs text-secondary-500 dark:text-secondary-500">
+                        ({serverSessions.length} sessão{serverSessions.length !== 1 ? 'ões' : ''})
+                      </span>
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {serverSessions.map((session) => {
+                        const isWorking = session.status === 'WORKING' || session.status === 'CONNECTED' || session.status === 'OPEN'
+                        return (
+                          <div
+                            key={`${session.serverId}:${session.name}`}
+                            className={`border rounded-lg p-3 ${
+                              isWorking
+                                ? 'border-success-200 dark:border-success-800 bg-success-50 dark:bg-success-900/20'
+                                : 'border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1">
+                                <div className="flex items-center mb-1">
+                                  {session.avatar ? (
+                                    <img
+                                      src={session.avatar}
+                                      alt={session.name}
+                                      className="w-8 h-8 rounded-full mr-2"
+                                    />
+                                  ) : (
+                                    <div className="w-8 h-8 rounded-full bg-secondary-200 dark:bg-secondary-700 flex items-center justify-center mr-2">
+                                      <DevicePhoneMobileIcon className="h-4 w-4 text-secondary-500 dark:text-secondary-400" />
+                                    </div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-secondary-900 dark:text-secondary-100 truncate">
+                                      {session.name}
+                                    </p>
+                                    {session.phoneNumber && (
+                                      <p className="text-xs text-secondary-600 dark:text-secondary-400">
+                                        {session.phoneNumber}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <span
+                                className={`px-2 py-1 text-xs rounded-full font-medium ${
+                                  isWorking
+                                    ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-300'
+                                    : 'bg-secondary-100 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-400'
+                                }`}
+                              >
+                                {session.status}
+                              </span>
+                            </div>
+                            {session.connectedAt && (
+                              <p className="text-xs text-secondary-500 dark:text-secondary-500 mt-1">
+                                Conectado: {new Date(session.connectedAt).toLocaleString('pt-BR')}
+                              </p>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 
