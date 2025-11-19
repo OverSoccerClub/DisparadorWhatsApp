@@ -40,9 +40,9 @@ export default async function handler(
 
   if (req.method === 'GET') {
     try {
-      const campanha = await CampaignService.getCampanhaById(id, user.id, supabase)
+      const { data: campanha, error } = await CampaignService.getCampanhaById(id, user.id, supabase)
 
-      if (!campanha) {
+      if (error || !campanha) {
         return res.status(404).json({ error: 'Campanha não encontrada' })
       }
 
@@ -79,9 +79,9 @@ export default async function handler(
       }
 
       // Verificar se a campanha existe e pertence ao usuário
-      const campanhaExistente = await CampaignService.getCampanhaById(id, user.id, supabase)
+      const { data: campanhaExistente, error: errorExistente } = await CampaignService.getCampanhaById(id, user.id, supabase)
 
-      if (!campanhaExistente) {
+      if (errorExistente || !campanhaExistente) {
         return res.status(404).json({ error: 'Campanha não encontrada' })
       }
 
@@ -107,9 +107,9 @@ export default async function handler(
   if (req.method === 'DELETE') {
     try {
       // Verificar se a campanha existe e pertence ao usuário
-      const campanha = await CampaignService.getCampanhaById(id, user.id, supabase)
+      const { data: campanha, error: errorCampanha } = await CampaignService.getCampanhaById(id, user.id, supabase)
 
-      if (!campanha) {
+      if (errorCampanha || !campanha) {
         return res.status(404).json({ error: 'Campanha não encontrada' })
       }
 
