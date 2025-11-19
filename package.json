@@ -82,6 +82,7 @@
   },
   "devDependencies": {
     "@swc/core": "^1.15.2",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^20",
     "@types/papaparse": "^5.3.14",
     "@types/qrcode": "^1.5.5",

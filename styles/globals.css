@@ -176,6 +176,119 @@ button,
   @apply opacity-100 translate-y-0;
 }
 
+/* Estilos para conteúdo markdown (fallback caso o plugin typography não carregue) */
+.prose {
+  color: rgb(var(--color-secondary-700));
+}
+
+.dark .prose {
+  color: rgb(var(--color-secondary-300));
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  font-weight: 600;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  line-height: 1.25;
+}
+
+.prose h1 {
+  font-size: 2em;
+}
+
+.prose h2 {
+  font-size: 1.5em;
+}
+
+.prose h3 {
+  font-size: 1.25em;
+}
+
+.prose p {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.prose ul,
+.prose ol {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  padding-left: 1.5em;
+}
+
+.prose li {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.prose code {
+  background-color: rgba(0, 123, 255, 0.1);
+  padding: 0.125em 0.25em;
+  border-radius: 0.25em;
+  font-size: 0.875em;
+}
+
+.prose pre {
+  background-color: rgb(var(--color-secondary-100));
+  padding: 1em;
+  border-radius: 0.5em;
+  overflow-x: auto;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.dark .prose pre {
+  background-color: rgb(var(--color-secondary-800));
+}
+
+.prose blockquote {
+  border-left: 4px solid rgb(var(--color-primary-500));
+  padding-left: 1em;
+  margin-left: 0;
+  font-style: italic;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.prose th,
+.prose td {
+  border: 1px solid rgb(var(--color-secondary-200));
+  padding: 0.5em;
+}
+
+.dark .prose th,
+.dark .prose td {
+  border-color: rgb(var(--color-secondary-700));
+}
+
+.prose th {
+  background-color: rgb(var(--color-secondary-100));
+  font-weight: 600;
+}
+
+.dark .prose th {
+  background-color: rgb(var(--color-secondary-800));
+}
+
+.prose a {
+  color: rgb(var(--color-primary-600));
+  text-decoration: underline;
+}
+
+.prose a:hover {
+  color: rgb(var(--color-primary-700));
+}
+
 /* Badge */
 .badge {
   @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;

@@ -24,12 +24,15 @@ export default function ManualPage({ content }: ManualPageProps) {
       
       try {
         const html = marked.parse(content)
-        setHtmlContent(html as string)
+        const htmlString = typeof html === 'string' ? html : String(html)
+        console.log('ManualPage: HTML gerado com sucesso, tamanho:', htmlString.length)
+        setHtmlContent(htmlString)
       } catch (error) {
         console.error('Erro ao converter markdown:', error)
         setHtmlContent('<p>Erro ao processar o conteúdo do manual.</p>')
       }
     } else {
+      console.warn('ManualPage: Conteúdo vazio ou não disponível')
       setHtmlContent('<p>Conteúdo não disponível.</p>')
     }
   }, [content])
@@ -95,7 +98,8 @@ export default function ManualPage({ content }: ManualPageProps) {
               prose-blockquote:border-primary-500 dark:prose-blockquote:border-primary-400
               prose-table:border-secondary-200 dark:prose-table:border-secondary-700
               prose-th:bg-secondary-100 dark:prose-th:bg-secondary-800
-              prose-td:border-secondary-200 dark:prose-td:border-secondary-700"
+              prose-td:border-secondary-200 dark:prose-td:border-secondary-700
+              text-secondary-700 dark:text-secondary-300"
             dangerouslySetInnerHTML={{ __html: htmlContent }}
           />
         ) : (
