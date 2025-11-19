@@ -51,7 +51,7 @@ function updateChangelogForVersion(version) {
         : '\n### Adicionado\n- Atualização de versão\n'
       
       // Criar nova seção de versão
-      const newVersionSection = `\n## [${version}] - ${date}${versionContent}\n`
+      const newVersionSection = `\n## [${version}] - ${date}\n${versionContent}\n`
       
       // Substituir [Não Publicado] por nova versão e recriar [Não Publicado]
       const beforeUnpublished = content.substring(0, unpublishedIndex)
