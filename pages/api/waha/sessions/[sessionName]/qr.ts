@@ -35,17 +35,26 @@ export default async function handler(
     }
 
     const { sessionName } = req.query
-    const { serverId, apiUrl, apiKey } = req.body || {}
+    const body = req.method === 'POST' ? req.body : {}
+    const { serverId, apiUrl, apiKey } = body
+
+    console.log('📋 [QR Code API] Recebida requisição:', {
+      method: req.method,
+      sessionName,
+      query: req.query,
+      body: body ? Object.keys(body) : 'empty',
+      serverId: !!serverId,
+      apiUrl: !!apiUrl
+    })
 
     // Validar sessionName
     if (!sessionName || typeof sessionName !== 'string') {
-      console.error('❌ sessionName inválido:', sessionName)
+      console.error('❌ [QR Code API] sessionName inválido:', sessionName, typeof sessionName)
       return res.status(400).json({ success: false, error: 'Nome da sessão é obrigatório' })
     }
 
-    console.log('📋 Recebida requisição para QR code da sessão:', sessionName)
-
     if (!serverId || !apiUrl) {
+      console.error('❌ [QR Code API] Parâmetros faltando:', { serverId: !!serverId, apiUrl: !!apiUrl })
       return res.status(400).json({ success: false, error: 'ID do servidor e URL da API são obrigatórios' })
     }
 
