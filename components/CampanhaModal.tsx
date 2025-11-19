@@ -110,13 +110,21 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
         body: JSON.stringify(dadosEnvio),
       })
 
-      if (response.ok) {
-        toast.success('Campanha criada com sucesso!')
-        onSuccess()
-        onClose()
+      const responseData = await response.json()
+
+      if (response.ok && responseData.data) {
+        toast.success('Campanha criada com sucesso!', {
+          duration: 3000,
+        })
+        // Pequeno delay para garantir que o toast seja exibido antes de fechar o modal
+        setTimeout(() => {
+          onSuccess()
+          onClose()
+        }, 100)
       } else {
-        const error = await response.json()
-        toast.error(error.error || 'Erro ao criar campanha')
+        toast.error(responseData.error || 'Erro ao criar campanha', {
+          duration: 4000,
+        })
       }
     } catch (error) {
       console.error('Erro ao criar campanha:', error)

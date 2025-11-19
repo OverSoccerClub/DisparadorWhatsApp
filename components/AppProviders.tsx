@@ -12,6 +12,7 @@ import PendingMaturationChecker from '@/components/PendingMaturationChecker'
 import BackgroundMaturationWidget from '@/components/BackgroundMaturationWidget'
 import AlertModal from '@/components/AlertModal'
 import ButtonTooltipManager from '@/components/ButtonTooltipManager'
+import { Toaster } from 'react-hot-toast'
 
 interface AppProvidersProps {
   children: React.ReactNode
@@ -47,6 +48,30 @@ export default function AppProviders({ children }: AppProvidersProps) {
                 <BackgroundMaturationWidget />
                 <Footer />
                 <AlertModalWrapper />
+                <Toaster 
+                  position="top-right"
+                  toastOptions={{
+                    duration: 4000,
+                    style: {
+                      background: 'var(--color-secondary-900)',
+                      color: 'var(--color-secondary-100)',
+                    },
+                    success: {
+                      duration: 3000,
+                      iconTheme: {
+                        primary: '#10b981',
+                        secondary: '#fff',
+                      },
+                    },
+                    error: {
+                      duration: 4000,
+                      iconTheme: {
+                        primary: '#ef4444',
+                        secondary: '#fff',
+                      },
+                    },
+                  }}
+                />
               </NotificationProvider>
             </SidebarProvider>
           </AuthProvider>
