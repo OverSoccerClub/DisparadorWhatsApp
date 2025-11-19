@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "cross-env FAST_REFRESH=false NODE_ENV=production next dev --turbo",
     "dev:safe": "npm run build && npm start",
+    "prebuild": "node scripts/generate-build-hash.js",
     "build": "next build",
     "start": "node .next/standalone/server.js",
     "lint": "next lint",

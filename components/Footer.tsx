@@ -12,6 +12,7 @@ export default function Footer({ className = '' }: FooterProps) {
   const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
   const [currentTime, setCurrentTime] = useState<string>('')
+  const [buildHash, setBuildHash] = useState<string>('')
   
   const buildDate = new Date().toLocaleDateString('pt-BR')
   
@@ -25,6 +26,25 @@ export default function Footer({ className = '' }: FooterProps) {
     const interval = setInterval(updateTime, 1000) // Atualizar a cada segundo
     return () => clearInterval(interval)
   }, [])
+  
+  // Carregar hash de build
+  useEffect(() => {
+    const loadBuildHash = async () => {
+      try {
+        const response = await fetch('/api/build-hash')
+        if (response.ok) {
+          const data = await response.json()
+          setBuildHash(data.hash || '')
+        }
+      } catch (error) {
+        console.error('Erro ao carregar hash de build:', error)
+      }
+    }
+    
+    if (mounted) {
+      loadBuildHash()
+    }
+  }, [mounted])
   
   // Não exibir footer nas páginas de autenticação
   if (pathname?.startsWith('/auth')) {
@@ -74,6 +94,14 @@ export default function Footer({ className = '' }: FooterProps) {
                 <span className="font-medium" suppressHydrationWarning>
                   {mounted ? currentTime : '--/--/----, --:--:--'}
                 </span>
+                {buildHash && (
+                  <>
+                    <span className="text-secondary-400 dark:text-secondary-500">•</span>
+                    <span className="font-mono text-xs bg-secondary-200 dark:bg-secondary-700 px-2 py-0.5 rounded">
+                      {buildHash}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>
