@@ -82,31 +82,28 @@ export default function EvolutionApiPage() {
   const [qrCodeCountdown, setQrCodeCountdown] = useState<number>(0)
   const [qrCodeModal, setQrCodeModal] = useState(false)
   
-  const [confirmDialog, setConfirmDialog] = useState({
+  const [confirmModal, setConfirmModal] = useState({
     open: false,
     title: '',
     message: '',
-    confirmText: 'Confirmar',
-    cancelText: 'Cancelar',
-    variant: 'warning' as 'warning' | 'danger'
+    variant: 'danger' as 'danger' | 'warning',
+    onConfirm: () => {},
+    resolveRef: null as ((value: boolean) => void) | null
   })
-  const confirmResolveRef = useRef<null | ((v: boolean) => void)>(null)
 
-  const openConfirm = (opts: { title: string; message: string; confirmText?: string; cancelText?: string; variant?: 'warning' | 'danger' }) => {
-    
-    const newDialogState = {
-      open: true,
-      title: opts.title,
-      message: opts.message,
-      confirmText: opts.confirmText || 'Confirmar',
-      cancelText: opts.cancelText || 'Cancelar',
-      variant: opts.variant || 'warning'
-    }
-    
-    setConfirmDialog(newDialogState)
-    
+  const openConfirm = (opts: { title: string; message: string; confirmText?: string; cancelText?: string; variant?: 'warning' | 'danger' }): Promise<boolean> => {
     return new Promise<boolean>((resolve) => {
-      confirmResolveRef.current = resolve
+      setConfirmModal({
+        open: true,
+        title: opts.title,
+        message: opts.message,
+        variant: opts.variant || 'danger',
+        onConfirm: () => {
+          setConfirmModal({ open: false, title: '', message: '', variant: 'danger', onConfirm: () => {}, resolveRef: null })
+          resolve(true)
+        },
+        resolveRef: resolve
+      })
     })
   }
 
