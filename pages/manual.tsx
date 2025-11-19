@@ -6,20 +6,31 @@ import ManualPage from '@/components/ManualPage'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
-export async function getStaticProps() {
+export async function getServerSideProps() {
   try {
     const manualPath = join(process.cwd(), 'docs', 'user-manual.md')
     const manualContent = readFileSync(manualPath, 'utf-8')
     return {
       props: {
-        manualContent
+        manualContent: manualContent || '# Manual do Usuário\n\nConteúdo não disponível.'
       }
     }
   } catch (error) {
     console.error('Erro ao carregar manual:', error)
-    return {
-      props: {
-        manualContent: '# Manual do Usuário\n\nErro ao carregar o conteúdo do manual.'
+    // Tentar caminho alternativo
+    try {
+      const altPath = join(process.cwd(), '..', 'docs', 'user-manual.md')
+      const manualContent = readFileSync(altPath, 'utf-8')
+      return {
+        props: {
+          manualContent: manualContent || '# Manual do Usuário\n\nConteúdo não disponível.'
+        }
+      }
+    } catch (altError) {
+      return {
+        props: {
+          manualContent: '# Manual do Usuário\n\nErro ao carregar o conteúdo do manual. Por favor, entre em contato com o suporte.'
+        }
       }
     }
   }
