@@ -11,20 +11,13 @@ interface FooterProps {
 export default function Footer({ className = '' }: FooterProps) {
   const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
-  const [currentTime, setCurrentTime] = useState<string>('')
   const [buildHash, setBuildHash] = useState<string>('')
   
   const buildDate = new Date().toLocaleDateString('pt-BR')
   
-  // Atualizar data/hora apenas no cliente para evitar erro de hidratação
+  // Montar componente apenas no cliente
   useEffect(() => {
     setMounted(true)
-    const updateTime = () => {
-      setCurrentTime(new Date().toLocaleString('pt-BR'))
-    }
-    updateTime()
-    const interval = setInterval(updateTime, 1000) // Atualizar a cada segundo
-    return () => clearInterval(interval)
   }, [])
   
   // Carregar hash de build
@@ -90,17 +83,13 @@ export default function Footer({ className = '' }: FooterProps) {
               </div>
               
               <div className="flex items-center space-x-2">
-                <span>Última atualização:</span>
-                <span className="font-medium" suppressHydrationWarning>
-                  {mounted ? currentTime : '--/--/----, --:--:--'}
-                </span>
-                {buildHash && (
-                  <>
-                    <span className="text-secondary-400 dark:text-secondary-500">•</span>
-                    <span className="font-mono text-xs bg-secondary-200 dark:bg-secondary-700 px-2 py-0.5 rounded">
-                      {buildHash}
-                    </span>
-                  </>
+                <span>Build hash:</span>
+                {buildHash ? (
+                  <span className="font-mono text-xs bg-secondary-200 dark:bg-secondary-700 px-2 py-0.5 rounded font-medium">
+                    {buildHash}
+                  </span>
+                ) : (
+                  <span className="text-secondary-400 dark:text-secondary-500">Carregando...</span>
                 )}
               </div>
             </div>
