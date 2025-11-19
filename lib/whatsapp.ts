@@ -48,7 +48,7 @@ class WhatsAppService {
         auth: state,
         printQRInTerminal: true,
         logger: console,
-        browser: ['WhatsApp Dispatcher', 'Chrome', '1.0.0']
+        browser: ['Fluxus Message', 'Chrome', '1.0.0']
       } as any)
 
       this.socket.ev.on('connection.update', (update) => {

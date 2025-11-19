@@ -1,4 +1,4 @@
-# Sistema de Autenticação - WhatsApp Dispatcher
+# Sistema de Autenticação - Fluxus Message
 
 ## Visão Geral
 

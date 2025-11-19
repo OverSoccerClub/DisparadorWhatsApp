@@ -55,7 +55,7 @@ export default async function handler(
     // Preparar mensagem para WhatsApp
     const message = `Olá ${name || 'usuário'}! 👋\n\n` +
       `Seu código de ativação é: *${code}*\n\n` +
-      `Use este código para ativar sua conta no WhatsApp Dispatcher.\n\n` +
+      `Use este código para ativar sua conta no Fluxus Message.\n\n` +
       `Este código expira em 24 horas.\n\n` +
       `_Se você não solicitou este código, ignore esta mensagem._`
 

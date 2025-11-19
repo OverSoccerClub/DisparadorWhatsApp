@@ -1,4 +1,4 @@
-# Script de Configuração do Git para o Projeto WhatsApp Dispatcher
+# Script de Configuração do Git para o Projeto Fluxus Message
 
 Write-Host "🚀 Configurando Git e GitHub para o projeto..." -ForegroundColor Cyan
 
@@ -38,7 +38,7 @@ if ($userEmail) {
 # Criar commit inicial
 Write-Host "`n📝 Criando commit inicial..." -ForegroundColor Cyan
 git add .
-$initialCommit = git commit -m "Initial commit: WhatsApp Dispatcher Platform"
+$initialCommit = git commit -m "Initial commit: Fluxus Message Platform"
 if ($LASTEXITCODE -eq 0) {
     Write-Host "✅ Commit inicial criado com sucesso!" -ForegroundColor Green
 } else {

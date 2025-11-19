@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-console.log('🚀 Configurando WhatsApp Dispatcher...\n');
+console.log('🚀 Configurando Fluxus Message...\n');
 // Verificar se o Node.js está instalado
 try {
     const nodeVersion = process.version;

@@ -1,4 +1,4 @@
-# Guia de Instalação - WhatsApp Dispatcher
+# Guia de Instalação - Fluxus Message
 
 ## 🚀 Instalação Rápida
 

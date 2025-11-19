@@ -1,4 +1,4 @@
-# WhatsApp Dispatcher - Plataforma de Disparo de Mensagens
+# Fluxus Message - Plataforma de Disparo de Mensagens
 
 Uma plataforma completa e profissional para disparo de mensagens WhatsApp integrada com Supabase, desenvolvida com Next.js, TypeScript e Tailwind CSS.
 

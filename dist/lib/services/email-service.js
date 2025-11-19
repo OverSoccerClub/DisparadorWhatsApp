@@ -154,12 +154,12 @@ class EmailService {
         </head>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: linear-gradient(135deg, #0F3F7A 0%, #007BFF 50%, #00C2FF 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <img src="${logoUrl}" alt="WhatsApp Dispatcher" style="max-width: 200px; height: auto; margin-bottom: 10px;" />
-            <h1 style="color: white; margin: 0; font-size: 24px;">WhatsApp Dispatcher</h1>
+            <img src="${logoUrl}" alt="Fluxus Message" style="max-width: 200px; height: auto; margin-bottom: 10px;" />
+            <h1 style="color: white; margin: 0; font-size: 24px;">Fluxus Message</h1>
           </div>
           <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
             <h2 style="color: #1C2E4A;">Olá, ${name}!</h2>
-            <p style="color: #555555;">Obrigado por se cadastrar no WhatsApp Dispatcher.</p>
+            <p style="color: #555555;">Obrigado por se cadastrar no Fluxus Message.</p>
             <p style="color: #555555;">Para ativar sua conta, use o código de confirmação abaixo:</p>
             <div style="background: white; border: 2px dashed #007BFF; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
               <h1 style="color: #007BFF; font-size: 36px; letter-spacing: 5px; margin: 0;">${activationCode}</h1>
@@ -168,7 +168,7 @@ class EmailService {
             <p style="margin-top: 30px;">Se você não solicitou este cadastro, ignore este email.</p>
             <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
             <p style="color: #999; font-size: 12px; text-align: center;">
-              WhatsApp Dispatcher - Automação Inteligente<br>
+              Fluxus Message - Automação Inteligente<br>
               Este é um email automático, por favor não responda.
             </p>
           </div>
@@ -176,11 +176,11 @@ class EmailService {
       </html>
     `;
         const text = `
-WhatsApp Dispatcher - Confirmação de Cadastro
+Fluxus Message - Confirmação de Cadastro
 
 Olá, ${name}!
 
-Obrigado por se cadastrar no WhatsApp Dispatcher.
+Obrigado por se cadastrar no Fluxus Message.
 
 Para ativar sua conta, use o código de confirmação abaixo:
 
@@ -191,7 +191,7 @@ Este código expira em 24 horas.
 Se você não solicitou este cadastro, ignore este email.
 
 ---
-WhatsApp Dispatcher - Automação Inteligente
+Fluxus Message - Automação Inteligente
 Este é um email automático, por favor não responda.
     `;
         return { html, text };

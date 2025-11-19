@@ -193,7 +193,7 @@ Olá [Nome]! 👋
 
 Seu código de ativação é: *[CÓDIGO]*
 
-Use este código para ativar sua conta no WhatsApp Dispatcher.
+Use este código para ativar sua conta no Fluxus Message.
 
 Este código expira em 24 horas.
 
@@ -207,7 +207,7 @@ Olá João Silva! 👋
 
 Seu código de ativação é: *123456*
 
-Use este código para ativar sua conta no WhatsApp Dispatcher.
+Use este código para ativar sua conta no Fluxus Message.
 
 Este código expira em 24 horas.
 
