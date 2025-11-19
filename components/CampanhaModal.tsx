@@ -19,7 +19,7 @@ import {
   CampanhaConfiguracao, 
   CriarCampanhaRequest 
 } from '@/lib/campaignTypes'
-import toast from 'react-hot-toast'
+import { useNotificationContext } from './NotificationProvider'
 
 interface CampanhaModalProps {
   isOpen: boolean
@@ -28,6 +28,7 @@ interface CampanhaModalProps {
 }
 
 export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaModalProps) {
+  const { showSuccess, showError } = useNotificationContext()
   const [loading, setLoading] = useState(false)
   const [previewData, setPreviewData] = useState<{
     totalClientes: number
@@ -79,12 +80,12 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
     e.preventDefault()
     
     if (!formData.nome || !formData.mensagem) {
-      toast.error('Nome e mensagem são obrigatórios')
+      showError('Campos obrigatórios', 'Nome e mensagem são obrigatórios')
       return
     }
 
     if (formData.mensagem.length > 1000) {
-      toast.error('Mensagem deve ter no máximo 1000 caracteres')
+      showError('Mensagem muito longa', 'Mensagem deve ter no máximo 1000 caracteres')
       return
     }
 
@@ -113,22 +114,18 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
       const responseData = await response.json()
 
       if (response.ok && responseData.data) {
-        toast.success('Campanha criada com sucesso!', {
-          duration: 3000,
-        })
-        // Pequeno delay para garantir que o toast seja exibido antes de fechar o modal
+        showSuccess('Campanha criada com sucesso!', 'A campanha foi criada e está pronta para ser iniciada.')
+        // Pequeno delay para garantir que a notificação seja exibida antes de fechar o modal
         setTimeout(() => {
           onSuccess()
           onClose()
         }, 100)
       } else {
-        toast.error(responseData.error || 'Erro ao criar campanha', {
-          duration: 4000,
-        })
+        showError('Erro ao criar campanha', responseData.error || 'Não foi possível criar a campanha')
       }
     } catch (error) {
       console.error('Erro ao criar campanha:', error)
-      toast.error('Erro ao criar campanha')
+      showError('Erro ao criar campanha', 'Verifique sua conexão e tente novamente')
     } finally {
       setLoading(false)
     }

@@ -18,6 +18,8 @@ RUN rm -rf * .[^.]* 2>/dev/null || true
 COPY package.json package-lock.json* ./
 RUN npm ci
 COPY . .
+# Limpar arquivos desnecessários após copiar (evita acúmulo no build)
+RUN rm -rf .next/cache .next/trace node_modules/.cache .turbo .cache *.log *.log.* sessions dist coverage .nyc_output 2>/dev/null || true
 
 # Build otimizado para produção
 RUN npm run build

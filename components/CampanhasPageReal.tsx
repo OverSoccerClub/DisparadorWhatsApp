@@ -25,7 +25,6 @@ import CampanhaModal from './CampanhaModal'
 import CampanhaDetalhesModal from './CampanhaDetalhesModal'
 import NotificationDemo from './NotificationDemo'
 import ConfirmModal from './ConfirmModal'
-import toast from 'react-hot-toast'
 
 export default function CampanhasPageReal() {
   const [campanhas, setCampanhas] = useState<Campanha[]>([])
@@ -193,21 +192,15 @@ export default function CampanhasPageReal() {
       })
 
       if (response.ok) {
-        toast.success('Campanha excluída com sucesso!', {
-          duration: 3000,
-        })
+        showSuccess('Campanha excluída com sucesso!', 'A campanha e todos os seus dados foram removidos permanentemente do sistema.')
         loadCampanhas()
       } else {
         const error = await response.json()
-        toast.error(error.error || 'Erro ao excluir campanha', {
-          duration: 4000,
-        })
+        showError('Erro ao excluir campanha', error.error || 'Não foi possível excluir a campanha')
       }
     } catch (error) {
       console.error('Erro ao excluir campanha:', error)
-      toast.error('Erro ao excluir campanha. Verifique sua conexão e tente novamente', {
-        duration: 4000,
-      })
+      showError('Erro ao excluir campanha', 'Verifique sua conexão e tente novamente')
     }
   }
 
