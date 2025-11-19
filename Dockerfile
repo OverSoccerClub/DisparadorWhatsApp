@@ -15,6 +15,8 @@ FROM base AS builder
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
+# Limpar diretório antes de copiar (evita acúmulo de arquivos)
+RUN rm -rf .next node_modules dist
 COPY . .
 
 # Build otimizado para produção

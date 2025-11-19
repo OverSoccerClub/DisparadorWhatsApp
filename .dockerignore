@@ -64,4 +64,88 @@ scripts/README_*.md
 # Arquivos temporários
 *.tmp
 *.temp
+.cache
+.turbo
+
+# Arquivos de backup
+Backup/
+backup/
+*.bak
+*.backup
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Arquivos de sessão
+sessions/
+*.session
+
+# Arquivos de build anteriores (serão gerados durante o build)
+.next/
+out/
+dist/
+build/
+
+# Arquivos de teste
+coverage/
+.nyc_output/
+test-results/
+
+# Arquivos de documentação (exceto os necessários)
+*.md
+!README.md
+!CHANGELOG.md
+!docs/user-manual.md
+!docs/
+
+# Arquivos de configuração local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Arquivos de docker (não precisam estar na imagem)
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# Arquivos de scripts de desenvolvimento (exceto os necessários para build)
+scripts/*.ps1
+scripts/*.sh
+scripts/watch-*.js
+scripts/setup*.js
+scripts/deploy*.js
+scripts/fix-*.js
+scripts/test-*.js
+scripts/smoke-*.js
+scripts/check-*.js
+scripts/update-*.js
+scripts/convert-*.js
+scripts/create-*.js
+scripts/clear-*.js
+scripts/setup-*.js
+scripts/README_*.md
+
+# Arquivos de git
+.git/
+.gitignore
+.gitattributes
+
+# Arquivos de nixpacks (não usado com Dockerfile)
+nixpacks.toml
+
+# Arquivos de configuração de servidor web
+apache.conf
+nginx.conf
+
+# Arquivos de instruções
+*.md
+!README.md
+!CHANGELOG.md
+!docs/user-manual.md
+INSTRUCOES_*.md
+SETUP_*.md
+ATUALIZAR_*.md
 
