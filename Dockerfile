@@ -13,10 +13,10 @@ RUN npm ci --only=production && npm cache clean --force
 # Build da aplicação
 FROM base AS builder
 WORKDIR /app
+# Limpar diretório completamente antes de começar (evita acúmulo de arquivos)
+RUN rm -rf * .[^.]* 2>/dev/null || true
 COPY package.json package-lock.json* ./
 RUN npm ci
-# Limpar diretório antes de copiar (evita acúmulo de arquivos)
-RUN rm -rf .next node_modules dist
 COPY . .
 
 # Build otimizado para produção
