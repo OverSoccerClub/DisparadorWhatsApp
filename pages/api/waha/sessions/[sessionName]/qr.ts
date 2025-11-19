@@ -35,11 +35,15 @@ export default async function handler(
     }
 
     const { sessionName } = req.query
-    const { serverId, apiUrl, apiKey } = req.body || req.query
+    const { serverId, apiUrl, apiKey } = req.body || {}
 
+    // Validar sessionName
     if (!sessionName || typeof sessionName !== 'string') {
+      console.error('❌ sessionName inválido:', sessionName)
       return res.status(400).json({ success: false, error: 'Nome da sessão é obrigatório' })
     }
+
+    console.log('📋 Recebida requisição para QR code da sessão:', sessionName)
 
     if (!serverId || !apiUrl) {
       return res.status(400).json({ success: false, error: 'ID do servidor e URL da API são obrigatórios' })
