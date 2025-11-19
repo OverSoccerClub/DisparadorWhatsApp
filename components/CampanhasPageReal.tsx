@@ -25,6 +25,7 @@ import CampanhaModal from './CampanhaModal'
 import CampanhaDetalhesModal from './CampanhaDetalhesModal'
 import NotificationDemo from './NotificationDemo'
 import ConfirmModal from './ConfirmModal'
+import SuccessModal from './SuccessModal'
 
 export default function CampanhasPageReal() {
   const [campanhas, setCampanhas] = useState<Campanha[]>([])
@@ -38,6 +39,8 @@ export default function CampanhasPageReal() {
     message: '',
     onConfirm: () => {}
   })
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
   
   // Estados para filtros
   const [filtros, setFiltros] = useState({
@@ -170,7 +173,9 @@ export default function CampanhasPageReal() {
       })
 
       if (response.ok) {
-        showSuccess('Sucesso!', 'Campanha excluída com sucesso!')
+        // Exibir modal de sucesso
+        setSuccessMessage('Campanha excluída com sucesso!')
+        setShowSuccessModal(true)
         loadCampanhas()
       } else {
         const error = await response.json()

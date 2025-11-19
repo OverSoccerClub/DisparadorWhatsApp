@@ -88,19 +88,21 @@ export default function SuccessModal({
     <div className="fixed inset-0 z-[10001]">
       <div className="absolute inset-0 bg-black bg-opacity-50" />
       <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="w-full max-w-sm bg-white rounded-lg shadow-xl p-6 text-center">
+        <div className="w-full max-w-sm bg-white dark:bg-secondary-800 rounded-lg shadow-xl p-6 text-center">
           <div className="flex items-center justify-center mb-3">
-            <CheckCircleIcon className="h-8 w-8 text-success-600" />
+            <div className="w-12 h-12 rounded-full bg-success-100 dark:bg-success-900/20 flex items-center justify-center">
+              <CheckCircleIcon className="h-8 w-8 text-success-600 dark:text-success-400" />
+            </div>
           </div>
-          <h3 className="text-base font-semibold text-secondary-900">{title}</h3>
-          <p className="mt-1 text-sm text-secondary-600">{message}</p>
+          <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 mb-2">{title}</h3>
+          <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">{message}</p>
           {children && (
-            <div className="mt-4 text-sm text-secondary-700">
+            <div className="mt-4 text-sm text-secondary-700 dark:text-secondary-300">
               {children}
             </div>
           )}
           {timeLeft > 0 && (
-            <div className="mt-4 text-xs text-secondary-500">
+            <div className="mt-4 text-xs text-secondary-500 dark:text-secondary-400">
               Fechando automaticamente em {timeLeft} segundos...
             </div>
           )}

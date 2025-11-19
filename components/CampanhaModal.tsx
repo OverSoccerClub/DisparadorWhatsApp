@@ -20,6 +20,7 @@ import {
   CriarCampanhaRequest 
 } from '@/lib/campaignTypes'
 import { useNotificationContext } from './NotificationProvider'
+import SuccessModal from './SuccessModal'
 
 interface CampanhaModalProps {
   isOpen: boolean
@@ -30,6 +31,7 @@ interface CampanhaModalProps {
 export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaModalProps) {
   const { showSuccess, showError } = useNotificationContext()
   const [loading, setLoading] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [previewData, setPreviewData] = useState<{
     totalClientes: number
     totalLotes: number
@@ -114,12 +116,10 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
       const responseData = await response.json()
 
       if (response.ok && responseData.data) {
-        showSuccess('Sucesso!', 'Campanha criada com sucesso!\n\nFechando automaticamente em 2 segundos...')
-        // Fechar o modal após 2 segundos
-        setTimeout(() => {
-          onSuccess()
-          onClose()
-        }, 2000)
+        // Fechar o modal de criação primeiro
+        onClose()
+        // Exibir modal de sucesso
+        setShowSuccessModal(true)
       } else {
         showError('Erro ao criar campanha', responseData.error || 'Não foi possível criar a campanha')
       }
@@ -420,6 +420,22 @@ export default function CampanhaModal({ isOpen, onClose, onSuccess }: CampanhaMo
           </div>
         </form>
       </div>
+
+      {/* Modal de Sucesso */}
+      <SuccessModal
+        open={showSuccessModal}
+        title="Sucesso!"
+        message="Campanha criada com sucesso!"
+        autoCloseDelay={4000}
+        onClose={() => {
+          setShowSuccessModal(false)
+          onSuccess()
+        }}
+        onAutoClose={() => {
+          setShowSuccessModal(false)
+          onSuccess()
+        }}
+      />
     </div>
   )
 }
