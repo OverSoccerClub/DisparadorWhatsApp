@@ -10,6 +10,7 @@ import {
   ArrowRightOnRectangleIcon,
   UserIcon
 } from '@heroicons/react/24/outline'
+import Link from 'next/link'
 import { Menu, Transition } from '@headlessui/react'
 import { Fragment, useState } from 'react'
 import { useAuth } from '@/lib/hooks/useAuth'

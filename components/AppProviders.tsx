@@ -11,6 +11,7 @@ import { AlertProvider, useAlertContext } from '@/lib/contexts/AlertContext'
 import PendingMaturationChecker from '@/components/PendingMaturationChecker'
 import BackgroundMaturationWidget from '@/components/BackgroundMaturationWidget'
 import AlertModal from '@/components/AlertModal'
+import ButtonTooltipManager from '@/components/ButtonTooltipManager'
 
 interface AppProvidersProps {
   children: React.ReactNode
@@ -41,6 +42,7 @@ export default function AppProviders({ children }: AppProvidersProps) {
             <SidebarProvider>
               <NotificationProvider>
                 <PendingMaturationChecker />
+                <ButtonTooltipManager />
                 {children}
                 <BackgroundMaturationWidget />
                 <Footer />
