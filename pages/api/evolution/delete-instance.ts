@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { EvolutionConfigService } from '@/lib/supabase/evolution-config-service'
 
 export default async function handler(
@@ -8,7 +9,7 @@ export default async function handler(
   if (req.method !== 'DELETE') {
     return res.status(405).json({ success: false, message: 'Method not allowed' })
   }
- {
+
   try {
     const { apiUrl, globalApiKey, instanceName, userId } = req.body
     
@@ -21,15 +22,59 @@ export default async function handler(
 
     if (!apiUrl || !globalApiKey || !instanceName) {
       console.log('Erro: Parâmetros obrigatórios não fornecidos')
-      return res.status(200).json({ success: false, error: 'URL da API, API KEY GLOBAL e nome da instancia sao obrigatorios' },
-        { status: 400 }
-      )
+      return res.status(400).json({
+        success: false,
+        error: 'URL da API, API KEY GLOBAL e nome da instancia sao obrigatorios'
+      })
     }
 
-    // Verificação de permissão simplificada
-    // Com o novo sistema de nomes, não podemos mais verificar pelo prefixo
-    // Por enquanto, permitir exclusão para todos os usuários autenticados
-    console.log('Verificação de permissão simplificada - permitindo exclusão para usuário:', userId)
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return req.cookies[name]
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            res.setHeader(
+              'Set-Cookie',
+              `${name}=${value}; Path=/; HttpOnly; SameSite=Lax; ${
+                options.maxAge ? `Max-Age=${options.maxAge}` : ''
+              }`
+            )
+          },
+          remove(name: string, _options: CookieOptions) {
+            res.setHeader('Set-Cookie', `${name}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`)
+          }
+        }
+      }
+    )
+
+    const {
+      data: { user },
+      error: authError
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Usuário não autenticado'
+      })
+    }
+
+    // Sempre confiar no usuário autenticado
+    const effectiveUserId = user.id
+
+    // Validar que o body não tenta excluir outra conta
+    if (userId && userId !== effectiveUserId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Acesso negado'
+      })
+    }
+
+    console.log('Verificação de permissão - usuário autenticado:', effectiveUserId)
 
     // Excluir instância da Evolution API
     console.log('Fazendo requisição para Evolution API:', `${apiUrl}/instance/delete/${instanceName}`)
@@ -69,22 +114,18 @@ export default async function handler(
     let supabaseSuccess = false
     let supabaseError = null
 
-    if (userId) {
-      try {
-        const result = await EvolutionConfigService.deleteInstance(userId, instanceName)
-        if (result.success) {
-          supabaseSuccess = true
-          console.log('Exclusão bem-sucedida no Supabase')
-        } else {
-          supabaseError = result.error
-          console.log('Erro no Supabase:', supabaseError)
-        }
-      } catch (error) {
-        supabaseError = error instanceof Error ? error.message : String(error)
-        console.error('Erro ao excluir do Supabase:', error)
+    try {
+      const result = await EvolutionConfigService.deleteInstance(effectiveUserId, instanceName, supabase)
+      if (result.success) {
+        supabaseSuccess = true
+        console.log('Exclusão bem-sucedida no Supabase')
+      } else {
+        supabaseError = result.error
+        console.log('Erro no Supabase:', supabaseError)
       }
-    } else {
-      console.log('Usuário não fornecido, pulando exclusão do Supabase')
+    } catch (error) {
+      supabaseError = error instanceof Error ? error.message : String(error)
+      console.error('Erro ao excluir do Supabase:', error)
     }
 
     // Determinar resultado final
@@ -124,21 +165,18 @@ export default async function handler(
         }
       })
     } else {
-      return res.status(200).json({
+      return res.status(500).json({
         success: false,
         error: 'Erro ao excluir instância da Evolution API e do banco de dados',
         details: {
           evolutionApiError,
           supabaseError
         }
-      }, { status: 500 })
+      })
     }
 
   } catch (error) {
     console.error('Erro ao excluir instância:', error)
-    return res.status(200).json({ success: false, error: 'Erro interno do servidor' },
-      { status: 500 }
-    )
+    return res.status(500).json({ success: false, error: 'Erro interno do servidor' })
   }
-}
 }
