@@ -84,23 +84,41 @@ export default async function handler(
     
     // Excluir instância da Evolution API
     try {
-      console.log('Fazendo requisição real para Evolution API:', `${apiUrl}/instance/delete/${instanceName}`)
-      const response = await fetch(`${apiUrl}/instance/delete/${instanceName}`, {
+      const sanitizedApiUrl = apiUrl.replace(/\/+$/, '')
+      const encodedInstanceName = encodeURIComponent(instanceName)
+      const trimmedApiKey = globalApiKey.trim()
+      const evolutionUrl = `${sanitizedApiUrl}/instance/delete/${encodedInstanceName}`
+
+      console.log('Fazendo requisição real para Evolution API:', evolutionUrl)
+      const response = await fetch(evolutionUrl, {
         method: 'DELETE',
         headers: {
-          'apikey': globalApiKey
+          'apikey': trimmedApiKey,
+          'Authorization': `Bearer ${trimmedApiKey}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }
       })
 
       console.log('Resposta da Evolution API:', response.status)
-      const data = await response.json()
+      let data: any = null
+      const responseText = await response.text().catch(() => '')
+      if (responseText) {
+        try {
+          data = JSON.parse(responseText)
+        } catch {
+          data = responseText
+        }
+      }
       console.log('Dados da resposta da Evolution API:', data)
 
       if (response.ok) {
         evolutionApiSuccess = true
         console.log('Exclusão bem-sucedida na Evolution API')
       } else {
-        evolutionApiError = data.message || 'Erro ao excluir da Evolution API'
+        evolutionApiError =
+          (typeof data === 'string' ? data : data?.message || data?.error) ||
+          `Erro ao excluir da Evolution API (status ${response.status})`
         console.log('Erro na Evolution API:', evolutionApiError)
       }
     } catch (fetchError) {

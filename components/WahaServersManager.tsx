@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   DevicePhoneMobileIcon,
   PlusIcon,
@@ -12,7 +12,8 @@ import {
   ServerIcon,
   ClockIcon,
   XMarkIcon,
-  CogIcon
+  CogIcon,
+  QrCodeIcon
 } from '@heroicons/react/24/outline'
 import { useAlertContext } from '@/lib/contexts/AlertContext'
 
@@ -73,6 +74,12 @@ export default function WahaServersManager({ userId }: Props = {}) {
   const [loading, setLoading] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [editingServer, setEditingServer] = useState<WahaServer | null>(null)
+  const [showQrModal, setShowQrModal] = useState(false)
+  const [selectedSession, setSelectedSession] = useState<WahaSession | null>(null)
+  const [qrCode, setQrCode] = useState<string | null>(null)
+  const [loadingQr, setLoadingQr] = useState(false)
+  const [checkingConnection, setCheckingConnection] = useState(false)
+  const connectionCheckIntervalRef = React.useRef<NodeJS.Timeout | null>(null)
   const [testStatus, setTestStatus] = useState<TestStatus>({
     testing: false,
     connected: null,
@@ -164,9 +171,114 @@ export default function WahaServersManager({ userId }: Props = {}) {
     }
   }
 
+  // Buscar QR code da sessão
+  const loadQrCode = async (session: WahaSession) => {
+    try {
+      setLoadingQr(true)
+      const server = servers.find(s => s.id === session.serverId)
+      if (!server) {
+        showError('Servidor não encontrado')
+        return
+      }
+
+      const response = await fetch(`/api/waha/sessions/${session.name}/qr`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serverId: session.serverId,
+          apiUrl: server.apiUrl,
+          apiKey: server.apiKey
+        })
+      })
+
+      const data = await response.json()
+      
+      if (data.success && data.qrCode) {
+        setQrCode(data.qrCode)
+        setSelectedSession(session)
+        setShowQrModal(true)
+        // Iniciar verificação de conexão
+        startConnectionCheck(session)
+      } else {
+        showError(data.error || 'Erro ao buscar QR code')
+      }
+    } catch (error) {
+      console.error('Erro ao buscar QR code:', error)
+      showError('Erro ao buscar QR code')
+    } finally {
+      setLoadingQr(false)
+    }
+  }
+
+  // Limpar verificação de conexão
+  const stopConnectionCheck = () => {
+    if (connectionCheckIntervalRef.current) {
+      clearInterval(connectionCheckIntervalRef.current)
+      connectionCheckIntervalRef.current = null
+    }
+    setCheckingConnection(false)
+  }
+
+  // Verificar conexão automaticamente
+  const startConnectionCheck = (session: WahaSession) => {
+    // Limpar intervalo anterior se existir
+    stopConnectionCheck()
+    
+    setCheckingConnection(true)
+    let checkCount = 0
+    const maxChecks = 60 // 3 minutos (60 * 3 segundos)
+    
+    const interval = setInterval(async () => {
+      checkCount++
+      
+      // Buscar sessão atualizada
+      const response = await fetch('/api/waha/sessions/all', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          const updatedSession = data.sessions.find((s: WahaSession) => 
+            s.serverId === session.serverId && s.name === session.name
+          )
+          
+          if (updatedSession) {
+            const isWorking = updatedSession.status === 'WORKING' || 
+                             updatedSession.status === 'CONNECTED' || 
+                             updatedSession.status === 'OPEN'
+            
+            if (isWorking) {
+              stopConnectionCheck()
+              setShowQrModal(false)
+              setQrCode(null)
+              setSelectedSession(null)
+              await loadSessions() // Recarregar para atualizar a lista
+              showSuccess('Sessão conectada com sucesso!')
+            }
+          }
+        }
+      }
+      
+      // Parar após maxChecks tentativas
+      if (checkCount >= maxChecks) {
+        stopConnectionCheck()
+      }
+    }, 3000)
+
+    connectionCheckIntervalRef.current = interval
+  }
+
   useEffect(() => {
     loadServers()
     loadSessions()
+    
+    // Limpar intervalo ao desmontar
+    return () => {
+      stopConnectionCheck()
+    }
   }, [])
 
   // Abrir modal para adicionar novo servidor
@@ -675,6 +787,32 @@ export default function WahaServersManager({ userId }: Props = {}) {
                                 Conectado: {new Date(session.connectedAt).toLocaleString('pt-BR')}
                               </p>
                             )}
+                            
+                            {/* Botões de ação */}
+                            <div className="mt-3 flex gap-2">
+                              {!isWorking && (
+                                <button
+                                  onClick={() => loadQrCode(session)}
+                                  disabled={loadingQr}
+                                  className="btn btn-primary btn-sm flex-1"
+                                  title="Escanear QR Code"
+                                >
+                                  <QrCodeIcon className="h-4 w-4" />
+                                  {loadingQr ? 'Carregando...' : 'QR Code'}
+                                </button>
+                              )}
+                              <button
+                                onClick={() => {
+                                  setSelectedSession(session)
+                                  setShowQrModal(true)
+                                }}
+                                className="btn btn-secondary btn-sm flex-1"
+                                title="Ver detalhes"
+                              >
+                                <DevicePhoneMobileIcon className="h-4 w-4" />
+                                Detalhes
+                              </button>
+                            </div>
                           </div>
                         )
                       })}
@@ -958,6 +1096,169 @@ export default function WahaServersManager({ userId }: Props = {}) {
                     {loading ? 'Salvando...' : 'Salvar'}
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de QR Code e Detalhes da Sessão */}
+      {showQrModal && selectedSession && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-secondary-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-medium text-secondary-900 dark:text-secondary-100 flex items-center">
+                  <DevicePhoneMobileIcon className="h-5 w-5 mr-2" />
+                  Sessão: {selectedSession.name}
+                </h3>
+                <button
+                  onClick={() => {
+                    stopConnectionCheck()
+                    setShowQrModal(false)
+                    setQrCode(null)
+                    setSelectedSession(null)
+                  }}
+                  className="text-secondary-400 dark:text-secondary-500 hover:text-secondary-600 dark:hover:text-secondary-300 transition-colors"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Informações da Sessão */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
+                      Status
+                    </label>
+                    <span
+                      className={`px-3 py-1 text-sm rounded-full font-medium inline-block ${
+                        selectedSession.status === 'WORKING' || selectedSession.status === 'CONNECTED'
+                          ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-300'
+                          : 'bg-secondary-100 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-400'
+                      }`}
+                    >
+                      {selectedSession.status}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
+                      Servidor
+                    </label>
+                    <p className="text-sm text-secondary-900 dark:text-secondary-100">
+                      {selectedSession.serverName}
+                    </p>
+                  </div>
+                  {selectedSession.phoneNumber && (
+                    <div>
+                      <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
+                        Número de Telefone
+                      </label>
+                      <p className="text-sm text-secondary-900 dark:text-secondary-100">
+                        {selectedSession.phoneNumber}
+                      </p>
+                    </div>
+                  )}
+                  {selectedSession.connectedAt && (
+                    <div>
+                      <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
+                        Conectado em
+                      </label>
+                      <p className="text-sm text-secondary-900 dark:text-secondary-100">
+                        {new Date(selectedSession.connectedAt).toLocaleString('pt-BR')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Foto de Perfil */}
+                {selectedSession.avatar && (
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                      Foto de Perfil
+                    </label>
+                    <img
+                      src={selectedSession.avatar}
+                      alt={selectedSession.name}
+                      className="w-20 h-20 rounded-full border-2 border-secondary-200 dark:border-secondary-700"
+                    />
+                  </div>
+                )}
+
+                {/* QR Code */}
+                {(selectedSession.status === 'SCAN_QR_CODE' || selectedSession.status === 'STARTING' || qrCode) && (
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                      QR Code para Conectar
+                    </label>
+                    <div className="text-center">
+                      <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-4">
+                        1. Abra o WhatsApp no seu celular<br/>
+                        2. Toque em Menu ou Configurações<br/>
+                        3. Toque em "Dispositivos conectados"<br/>
+                        4. Toque em "Conectar um dispositivo"<br/>
+                        5. Escaneie o QR Code abaixo
+                      </p>
+                      
+                      {qrCode ? (
+                        <div className="bg-white dark:bg-secondary-900 p-4 rounded-lg border border-secondary-200 dark:border-secondary-700 inline-block">
+                          <img 
+                            src={qrCode} 
+                            alt="QR Code WhatsApp" 
+                            className="w-64 h-64"
+                          />
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => loadQrCode(selectedSession)}
+                          disabled={loadingQr}
+                          className="btn btn-primary"
+                        >
+                          <QrCodeIcon className="h-5 w-5" />
+                          {loadingQr ? 'Carregando QR Code...' : 'Gerar QR Code'}
+                        </button>
+                      )}
+                      
+                      {checkingConnection && (
+                        <div className="mt-4 flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 dark:border-primary-400 mr-2"></div>
+                          <span className="text-sm text-secondary-600 dark:text-secondary-400">
+                            Verificando conexão...
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Configurações da Sessão */}
+                {selectedSession.config && (
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                      Configurações
+                    </label>
+                    <div className="bg-secondary-50 dark:bg-secondary-700/50 rounded-lg p-4">
+                      <pre className="text-xs text-secondary-700 dark:text-secondary-300 overflow-auto">
+                        {JSON.stringify(selectedSession.config, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={() => {
+                    stopConnectionCheck()
+                    setShowQrModal(false)
+                    setQrCode(null)
+                    setSelectedSession(null)
+                  }}
+                  className="btn btn-secondary"
+                >
+                  Fechar
+                </button>
               </div>
             </div>
           </div>
