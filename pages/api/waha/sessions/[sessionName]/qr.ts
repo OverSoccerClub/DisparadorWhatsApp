@@ -260,28 +260,55 @@ export default async function handler(
       })
     }
 
-    const qrData = await response.json()
+    // Quando POST funciona, SEMPRE ler como arrayBuffer primeiro (nunca usar .json() diretamente)
+    const contentType = response.headers.get('content-type') || ''
+    const arrayBuffer = await response.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
     
-    // WAHA pode retornar o QR code em diferentes formatos
-    // Pode ser: { qr: "data:image/png;base64,..." } ou { qrCode: "..." } ou diretamente a string
-    let qrCodeValue = null
-    if (typeof qrData === 'string') {
-      qrCodeValue = qrData
-    } else if (qrData.qr) {
-      qrCodeValue = qrData.qr
-    } else if (qrData.qrCode) {
-      qrCodeValue = qrData.qrCode
-    } else if (qrData.data) {
-      qrCodeValue = qrData.data
+    console.log(`📦 POST Content-Type: ${contentType}, tamanho: ${buffer.length} bytes`)
+    
+    // Se for claramente JSON, tentar parsear
+    if (contentType.includes('application/json')) {
+      try {
+        const text = buffer.toString('utf-8')
+        const trimmed = text.trim()
+        if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+          const qrData = JSON.parse(text)
+          
+          // WAHA pode retornar o QR code em diferentes formatos
+          let qrCodeValue = null
+          if (typeof qrData === 'string') {
+            qrCodeValue = qrData
+          } else if (qrData.qr) {
+            qrCodeValue = qrData.qr
+          } else if (qrData.qrCode) {
+            qrCodeValue = qrData.qrCode
+          } else if (qrData.data) {
+            qrCodeValue = qrData.data
+          }
+          
+          if (qrCodeValue) {
+            return res.status(200).json({
+              success: true,
+              qrCode: qrCodeValue,
+              sessionName,
+              serverId
+            })
+          }
+        }
+      } catch (jsonError) {
+        console.log('⚠️ POST falhou ao parsear JSON, tratando como PNG...')
+      }
     }
     
-    if (!qrCodeValue) {
-      console.error('❌ Formato de QR code não reconhecido:', qrData)
-      return res.status(500).json({
-        success: false,
-        error: 'Formato de QR code não reconhecido pela API WAHA'
-      })
-    }
+    // Para qualquer outro caso (imagem, vazio, ou desconhecido), tratar como PNG binário
+    const base64 = buffer.toString('base64')
+    const mimeType = contentType.includes('image/') 
+      ? contentType.split(';')[0] 
+      : 'image/png'
+    const qrCodeValue = `data:${mimeType};base64,${base64}`
+    
+    console.log(`✅ POST QR code convertido para base64 (${base64.length} chars)`)
     
     return res.status(200).json({
       success: true,
