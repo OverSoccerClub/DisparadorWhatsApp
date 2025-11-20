@@ -183,29 +183,63 @@ export default async function handler(
         try {
           const getResponse = await fetch(`${normalizedApiUrl}/api/${encodeURIComponent(normalizedSessionName)}/auth/qr`, {
             method: 'GET',
-            headers,
+            headers: {
+              ...headers,
+              'Accept': 'application/json,image/png,*/*'
+            },
           })
           
           if (getResponse.ok) {
-            const getQrData = await getResponse.json()
-            let qrCodeValue = null
-            if (typeof getQrData === 'string') {
-              qrCodeValue = getQrData
-            } else if (getQrData.qr) {
-              qrCodeValue = getQrData.qr
-            } else if (getQrData.qrCode) {
-              qrCodeValue = getQrData.qrCode
-            } else if (getQrData.data) {
-              qrCodeValue = getQrData.data
-            }
+            const contentType = getResponse.headers.get('content-type') || ''
             
-            if (qrCodeValue) {
+            // Se for imagem PNG, converter para base64
+            if (contentType.includes('image/png') || contentType.includes('image/')) {
+              const arrayBuffer = await getResponse.arrayBuffer()
+              const buffer = Buffer.from(arrayBuffer)
+              const base64 = buffer.toString('base64')
+              const qrCodeValue = `data:image/png;base64,${base64}`
+              
               return res.status(200).json({
                 success: true,
                 qrCode: qrCodeValue,
                 sessionName: normalizedSessionName,
                 serverId
               })
+            }
+            
+            // Se for JSON, processar normalmente
+            try {
+              const getQrData = await getResponse.json()
+              let qrCodeValue = null
+              if (typeof getQrData === 'string') {
+                qrCodeValue = getQrData
+              } else if (getQrData.qr) {
+                qrCodeValue = getQrData.qr
+              } else if (getQrData.qrCode) {
+                qrCodeValue = getQrData.qrCode
+              } else if (getQrData.data) {
+                qrCodeValue = getQrData.data
+              }
+              
+              if (qrCodeValue) {
+                return res.status(200).json({
+                  success: true,
+                  qrCode: qrCodeValue,
+                  sessionName: normalizedSessionName,
+                  serverId
+                })
+              }
+            } catch (jsonError) {
+              // Se não for JSON válido, tentar como texto
+              const textData = await getResponse.text()
+              if (textData && textData.trim()) {
+                return res.status(200).json({
+                  success: true,
+                  qrCode: textData,
+                  sessionName: normalizedSessionName,
+                  serverId
+                })
+              }
             }
           }
         } catch (getError) {
