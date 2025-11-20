@@ -197,8 +197,33 @@ export default async function handler(
             
             console.log(`📦 Content-Type recebido: ${contentType}, tamanho: ${buffer.length} bytes`)
             
-            // Se for claramente JSON, tentar parsear
-            if (contentType.includes('application/json')) {
+            // Verificar se é PNG pelos bytes mágicos (89 50 4E 47 = PNG)
+            const isPng = buffer.length >= 4 && 
+              buffer[0] === 0x89 && 
+              buffer[1] === 0x50 && 
+              buffer[2] === 0x4E && 
+              buffer[3] === 0x47
+            
+            // Se for PNG (por bytes ou content-type), tratar como imagem
+            if (isPng || contentType.includes('image/')) {
+              const base64 = buffer.toString('base64')
+              const mimeType = contentType.includes('image/') 
+                ? contentType.split(';')[0] 
+                : 'image/png'
+              const qrCodeValue = `data:${mimeType};base64,${base64}`
+              
+              console.log(`✅ QR code PNG detectado e convertido para base64 (${base64.length} chars)`)
+              
+              return res.status(200).json({
+                success: true,
+                qrCode: qrCodeValue,
+                sessionName: normalizedSessionName,
+                serverId
+              })
+            }
+            
+            // Se for claramente JSON (content-type E não é PNG), tentar parsear
+            if (contentType.includes('application/json') && !isPng) {
               try {
                 const text = buffer.toString('utf-8')
                 // Verificar se começa com { ou [ (JSON válido)
@@ -230,15 +255,11 @@ export default async function handler(
               }
             }
             
-            // Para qualquer outro caso (imagem, vazio, ou desconhecido), tratar como PNG binário
-            // Isso é seguro porque WAHA geralmente retorna PNG quando GET funciona
+            // Fallback: tratar como PNG binário (mais seguro para WAHA)
             const base64 = buffer.toString('base64')
-            const mimeType = contentType.includes('image/') 
-              ? contentType.split(';')[0] 
-              : 'image/png'
-            const qrCodeValue = `data:${mimeType};base64,${base64}`
+            const qrCodeValue = `data:image/png;base64,${base64}`
             
-            console.log(`✅ QR code convertido para base64 (${base64.length} chars)`)
+            console.log(`✅ QR code tratado como PNG (fallback, ${base64.length} chars)`)
             
             return res.status(200).json({
               success: true,
