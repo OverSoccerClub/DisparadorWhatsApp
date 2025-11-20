@@ -223,31 +223,38 @@ export default async function handler(
             }
             
             // Se for claramente JSON (content-type E não é PNG), tentar parsear
+            // MAS só se não for PNG pelos bytes mágicos (proteção extra)
             if (contentType.includes('application/json') && !isPng) {
               try {
                 const text = buffer.toString('utf-8')
-                // Verificar se começa com { ou [ (JSON válido)
+                // Verificar se começa com { ou [ (JSON válido) E não contém caracteres binários
                 const trimmed = text.trim()
                 if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-                  const getQrData = JSON.parse(text)
-                  let qrCodeValue = null
-                  if (typeof getQrData === 'string') {
-                    qrCodeValue = getQrData
-                  } else if (getQrData.qr) {
-                    qrCodeValue = getQrData.qr
-                  } else if (getQrData.qrCode) {
-                    qrCodeValue = getQrData.qrCode
-                  } else if (getQrData.data) {
-                    qrCodeValue = getQrData.data
-                  }
-                  
-                  if (qrCodeValue) {
-                    return res.status(200).json({
-                      success: true,
-                      qrCode: qrCodeValue,
-                      sessionName: normalizedSessionName,
-                      serverId
-                    })
+                  // Verificação extra: garantir que não é binário disfarçado
+                  const hasBinaryChars = /[\x00-\x08\x0E-\x1F]/.test(text)
+                  if (!hasBinaryChars) {
+                    const getQrData = JSON.parse(text)
+                    let qrCodeValue = null
+                    if (typeof getQrData === 'string') {
+                      qrCodeValue = getQrData
+                    } else if (getQrData.qr) {
+                      qrCodeValue = getQrData.qr
+                    } else if (getQrData.qrCode) {
+                      qrCodeValue = getQrData.qrCode
+                    } else if (getQrData.data) {
+                      qrCodeValue = getQrData.data
+                    }
+                    
+                    if (qrCodeValue) {
+                      return res.status(200).json({
+                        success: true,
+                        qrCode: qrCodeValue,
+                        sessionName: normalizedSessionName,
+                        serverId
+                      })
+                    }
+                  } else {
+                    console.log('⚠️ Detectado caracteres binários, tratando como PNG...')
                   }
                 }
               } catch (jsonError) {
