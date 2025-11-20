@@ -24,6 +24,10 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Erro de autenticação JWT em rotas de API (agora usa createServerClient corretamente)
 - Erro `TypeError: r.closest is not a function` em tooltips
 
+
+## [0.1.12] - 2025-11-20
+### Adicionado
+- Funcionalidades em desenvolvimento
 ## [Não Publicado]
 
 ### Adicionado
