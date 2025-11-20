@@ -190,69 +190,55 @@ export default async function handler(
           })
           
           if (getResponse.ok) {
-            const contentType = getResponse.headers.get('content-type') || ''
-            
-            // Ler o body como arrayBuffer (funciona para qualquer tipo)
+            // SEMPRE ler como arrayBuffer primeiro (nunca usar .json() diretamente)
             const arrayBuffer = await getResponse.arrayBuffer()
             const buffer = Buffer.from(arrayBuffer)
+            const contentType = getResponse.headers.get('content-type') || ''
             
-            // Se for imagem, converter para base64
-            if (contentType.includes('image/')) {
-              const base64 = buffer.toString('base64')
-              const mimeType = contentType.split(';')[0] || 'image/png'
-              const qrCodeValue = `data:${mimeType};base64,${base64}`
-              
-              return res.status(200).json({
-                success: true,
-                qrCode: qrCodeValue,
-                sessionName: normalizedSessionName,
-                serverId
-              })
-            }
+            console.log(`📦 Content-Type recebido: ${contentType}, tamanho: ${buffer.length} bytes`)
             
-            // Se for JSON ou não especificado, tentar parsear como JSON
-            if (contentType.includes('application/json') || !contentType || contentType === '') {
+            // Se for claramente JSON, tentar parsear
+            if (contentType.includes('application/json')) {
               try {
                 const text = buffer.toString('utf-8')
-                const getQrData = JSON.parse(text)
-                let qrCodeValue = null
-                if (typeof getQrData === 'string') {
-                  qrCodeValue = getQrData
-                } else if (getQrData.qr) {
-                  qrCodeValue = getQrData.qr
-                } else if (getQrData.qrCode) {
-                  qrCodeValue = getQrData.qrCode
-                } else if (getQrData.data) {
-                  qrCodeValue = getQrData.data
-                }
-                
-                if (qrCodeValue) {
-                  return res.status(200).json({
-                    success: true,
-                    qrCode: qrCodeValue,
-                    sessionName: normalizedSessionName,
-                    serverId
-                  })
+                // Verificar se começa com { ou [ (JSON válido)
+                const trimmed = text.trim()
+                if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                  const getQrData = JSON.parse(text)
+                  let qrCodeValue = null
+                  if (typeof getQrData === 'string') {
+                    qrCodeValue = getQrData
+                  } else if (getQrData.qr) {
+                    qrCodeValue = getQrData.qr
+                  } else if (getQrData.qrCode) {
+                    qrCodeValue = getQrData.qrCode
+                  } else if (getQrData.data) {
+                    qrCodeValue = getQrData.data
+                  }
+                  
+                  if (qrCodeValue) {
+                    return res.status(200).json({
+                      success: true,
+                      qrCode: qrCodeValue,
+                      sessionName: normalizedSessionName,
+                      serverId
+                    })
+                  }
                 }
               } catch (jsonError) {
-                // Se falhar ao parsear JSON, pode ser binário sem content-type
-                // Tentar como imagem PNG
-                console.log('⚠️ Falha ao parsear como JSON, tratando como PNG binário...')
-                const base64 = buffer.toString('base64')
-                const qrCodeValue = `data:image/png;base64,${base64}`
-                
-                return res.status(200).json({
-                  success: true,
-                  qrCode: qrCodeValue,
-                  sessionName: normalizedSessionName,
-                  serverId
-                })
+                console.log('⚠️ Falha ao parsear JSON, tratando como PNG...')
               }
             }
             
-            // Fallback: tratar como PNG se não conseguir identificar
+            // Para qualquer outro caso (imagem, vazio, ou desconhecido), tratar como PNG binário
+            // Isso é seguro porque WAHA geralmente retorna PNG quando GET funciona
             const base64 = buffer.toString('base64')
-            const qrCodeValue = `data:image/png;base64,${base64}`
+            const mimeType = contentType.includes('image/') 
+              ? contentType.split(';')[0] 
+              : 'image/png'
+            const qrCodeValue = `data:${mimeType};base64,${base64}`
+            
+            console.log(`✅ QR code convertido para base64 (${base64.length} chars)`)
             
             return res.status(200).json({
               success: true,
@@ -261,8 +247,10 @@ export default async function handler(
               serverId
             })
           }
-        } catch (getError) {
+        } catch (getError: any) {
           console.error('❌ Erro ao tentar GET:', getError)
+          console.error('❌ Stack:', getError?.stack)
+          // Não propagar o erro, deixar o fluxo continuar para retornar o erro 404 original
         }
       }
       
