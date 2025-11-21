@@ -1418,7 +1418,6 @@ export default function WahaServersManager({ userId }: Props = {}) {
           </div>
         </div>
       )}
-      </div>
 
       {/* Modal de Confirmação */}
       <ConfirmModal
