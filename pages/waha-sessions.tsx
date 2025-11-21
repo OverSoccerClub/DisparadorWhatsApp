@@ -18,8 +18,8 @@ export default function WahaSessions() {
           <Header />
           
           <main className="flex-1">
-            <div className="py-6">
-              <div className="px-3 md:px-4 lg:px-6">
+            <div className="py-8">
+              <div className="px-4 md:px-6 lg:px-8">
                 <WahaServersManager />
               </div>
             </div>

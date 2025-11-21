@@ -581,19 +581,19 @@ export default function WahaServersManager({ userId }: Props = {}) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header padronizado */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100 flex items-center">
-            <DevicePhoneMobileIcon className="h-6 w-6 mr-2 text-primary-600 dark:text-primary-400" />
+          <h1 className="text-3xl font-bold text-secondary-900 dark:text-secondary-100 flex items-center mb-2">
+            <DevicePhoneMobileIcon className="h-7 w-7 mr-3 text-primary-600 dark:text-primary-400" />
             Sessões WAHA
           </h1>
-          <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">
-            Gerencie seus servidores e sessões WAHA
+          <p className="text-base text-secondary-600 dark:text-secondary-400">
+            Gerencie seus servidores e sessões WAHA de forma centralizada
           </p>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex space-x-3 flex-wrap">
           <button
             onClick={() => {
               const serverIds = servers.map(s => s.id).filter(Boolean) as string[]
@@ -613,40 +613,43 @@ export default function WahaServersManager({ userId }: Props = {}) {
             disabled={loading}
             className="btn btn-primary btn-md"
           >
-            <PlusIcon className="h-4 w-4 mr-2" />
+            <PlusIcon className="h-5 w-5 mr-2" />
             Adicionar Servidor
           </button>
         </div>
       </div>
 
-      {/* Conteúdo */}
-      <div className="card p-6">
-
       {/* Resumo de Status */}
       {servers.length > 0 && (
-        <div className="mb-6 p-4 bg-secondary-50 dark:bg-secondary-800 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-6">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-success-500 dark:bg-success-400 rounded-full mr-2"></div>
-                <span className="text-sm text-secondary-700 dark:text-secondary-300">
-                  Online: {servers.filter(s => s.status?.connected).length}
+        <div className="mb-6 p-5 bg-gradient-to-r from-secondary-50 to-secondary-100 dark:from-secondary-800 dark:to-secondary-900 rounded-xl border border-secondary-200 dark:border-secondary-700 shadow-sm">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center space-x-6 flex-wrap">
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-success-500 dark:bg-success-400 rounded-full shadow-sm"></div>
+                <span className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
+                  <span className="font-semibold text-success-700 dark:text-success-300">
+                    {servers.filter(s => s.status?.connected).length}
+                  </span> Online
                 </span>
               </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-error-500 dark:bg-error-400 rounded-full mr-2"></div>
-                <span className="text-sm text-secondary-700 dark:text-secondary-300">
-                  Offline: {servers.filter(s => s.status && !s.status.connected).length}
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-error-500 dark:bg-error-400 rounded-full shadow-sm"></div>
+                <span className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
+                  <span className="font-semibold text-error-700 dark:text-error-300">
+                    {servers.filter(s => s.status && !s.status.connected).length}
+                  </span> Offline
                 </span>
               </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-secondary-400 dark:bg-secondary-500 rounded-full mr-2"></div>
-                <span className="text-sm text-secondary-700 dark:text-secondary-300">
-                  Não testado: {servers.filter(s => !s.status).length}
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-secondary-400 dark:bg-secondary-500 rounded-full shadow-sm"></div>
+                <span className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
+                  <span className="font-semibold text-secondary-600 dark:text-secondary-400">
+                    {servers.filter(s => !s.status).length}
+                  </span> Não testado
                 </span>
               </div>
             </div>
-            <div className="text-sm text-secondary-600 dark:text-secondary-400">
+            <div className="text-sm font-semibold text-secondary-800 dark:text-secondary-200">
               Total: {servers.length} servidor{servers.length !== 1 ? 'es' : ''}
             </div>
           </div>
@@ -655,216 +658,322 @@ export default function WahaServersManager({ userId }: Props = {}) {
 
       {/* Lista de Servidores */}
       {servers.length === 0 ? (
-        <div className="text-center py-12 bg-secondary-50 dark:bg-secondary-800 rounded-lg">
-          <ServerIcon className="h-12 w-12 mx-auto text-secondary-400 dark:text-secondary-600 mb-4" />
-          <p className="text-secondary-600 dark:text-secondary-400 mb-4">Nenhum servidor WAHA configurado</p>
+        <div className="card p-12 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 bg-secondary-100 dark:bg-secondary-800 rounded-full flex items-center justify-center">
+            <ServerIcon className="h-8 w-8 text-secondary-400 dark:text-secondary-600" />
+          </div>
+          <p className="text-lg font-medium text-secondary-700 dark:text-secondary-300 mb-2">Nenhum servidor WAHA configurado</p>
+          <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-6">Comece adicionando seu primeiro servidor WAHA</p>
           <button
             onClick={handleAdd}
-            className="btn btn-primary btn-sm"
+            className="btn btn-primary btn-md"
           >
-            <PlusIcon className="h-4 w-4 mr-2" />
+            <PlusIcon className="h-5 w-5 mr-2" />
             Adicionar Primeiro Servidor
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {servers.map((server) => (
-            <div
-              key={server.id}
-              className="border border-secondary-200 dark:border-secondary-700 rounded-lg p-4 hover:shadow-md transition-shadow bg-white dark:bg-secondary-800"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <h4 className="font-medium text-secondary-900 dark:text-secondary-100 flex items-center">
-                    {server.name}
-                    {server.status ? (
-                      <span
-                        className={`ml-2 px-2 py-1 text-xs rounded-full font-medium ${
-                          server.status.connected 
-                            ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-300' 
-                            : 'bg-error-100 dark:bg-error-900/30 text-error-800 dark:text-error-300'
-                        }`}
-                      >
-                        {server.status.connected ? 'ONLINE' : 'OFFLINE'}
-                      </span>
-                    ) : (
-                      <span className="ml-2 px-2 py-1 text-xs rounded-full font-medium bg-secondary-100 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-400">
-                        NÃO TESTADO
-                      </span>
-                    )}
-                  </h4>
-                  <p className="text-xs text-secondary-600 dark:text-secondary-400 break-all mt-1 leading-tight">
-                    {server.apiUrl}
-                  </p>
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 mb-4 flex items-center">
+            <ServerIcon className="h-5 w-5 mr-2 text-primary-600 dark:text-primary-400" />
+            Servidores WAHA
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {servers.map((server) => (
+              <div
+                key={server.id}
+                className={`group relative border-2 rounded-xl p-5 transition-all duration-200 bg-white dark:bg-secondary-800 hover:shadow-lg hover:-translate-y-1 ${
+                  server.status?.connected
+                    ? 'border-success-200 dark:border-success-800 hover:border-success-300 dark:hover:border-success-700'
+                    : server.status && !server.status.connected
+                    ? 'border-error-200 dark:border-error-800 hover:border-error-300 dark:hover:border-error-700'
+                    : 'border-secondary-200 dark:border-secondary-700 hover:border-secondary-300 dark:hover:border-secondary-600'
+                }`}
+              >
+                {/* Badge de Status no topo */}
+                <div className="absolute top-3 right-3">
+                  {server.status ? (
+                    <span
+                      className={`px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${
+                        server.status.connected 
+                          ? 'bg-success-100 dark:bg-success-900/40 text-success-700 dark:text-success-300 border border-success-200 dark:border-success-800' 
+                          : 'bg-error-100 dark:bg-error-900/40 text-error-700 dark:text-error-300 border border-error-200 dark:border-error-800'
+                      }`}
+                    >
+                      {server.status.connected ? '● ONLINE' : '● OFFLINE'}
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 text-xs font-semibold rounded-full shadow-sm bg-secondary-100 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-400 border border-secondary-200 dark:border-secondary-600">
+                      NÃO TESTADO
+                    </span>
+                  )}
                 </div>
-                <div className="flex space-x-1">
+
+                {/* Ícone e Nome do Servidor */}
+                <div className="flex items-start mb-4 pr-20">
+                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center mr-3 flex-shrink-0 ${
+                    server.status?.connected
+                      ? 'bg-success-100 dark:bg-success-900/30 text-success-600 dark:text-success-400'
+                      : server.status && !server.status.connected
+                      ? 'bg-error-100 dark:bg-error-900/30 text-error-600 dark:text-error-400'
+                      : 'bg-secondary-100 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-400'
+                  }`}>
+                    <ServerIcon className="h-6 w-6" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-secondary-900 dark:text-secondary-100 text-base mb-1 truncate">
+                      {server.name}
+                    </h4>
+                    <p className="text-xs text-secondary-500 dark:text-secondary-500 break-all leading-relaxed line-clamp-2">
+                      {server.apiUrl}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Informações de Status */}
+                {server.status && (
+                  <div className="mb-4 space-y-2 p-3 bg-secondary-50 dark:bg-secondary-900/50 rounded-lg border border-secondary-200 dark:border-secondary-700">
+                    {server.status.responseTime && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-secondary-600 dark:text-secondary-400 flex items-center">
+                          <ClockIcon className="h-3.5 w-3.5 mr-1.5" />
+                          Tempo de resposta
+                        </span>
+                        <span className="font-semibold text-secondary-900 dark:text-secondary-100">
+                          {server.status.responseTime}ms
+                        </span>
+                      </div>
+                    )}
+                    {server.status.instances !== undefined && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-secondary-600 dark:text-secondary-400 flex items-center">
+                          <DevicePhoneMobileIcon className="h-3.5 w-3.5 mr-1.5" />
+                          Instâncias
+                        </span>
+                        <span className="font-semibold text-secondary-900 dark:text-secondary-100">
+                          {server.status.instances} ({server.status.activeConnections} ativas)
+                        </span>
+                      </div>
+                    )}
+                    {server.status.lastTest && (
+                      <div className="flex items-center text-xs text-secondary-500 dark:text-secondary-500 pt-1 border-t border-secondary-200 dark:border-secondary-700">
+                        <ClockIcon className="h-3 w-3 mr-1.5" />
+                        {new Date(server.status.lastTest).toLocaleString('pt-BR', { 
+                          day: '2-digit', 
+                          month: '2-digit', 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Ações */}
+                <div className="flex items-center space-x-2">
                   <button
                     onClick={() => handleEdit(server)}
-                    className="p-1 hover:bg-secondary-100 dark:hover:bg-secondary-700 rounded transition-colors"
-                    title="Editar"
+                    className="flex-1 btn btn-secondary btn-sm"
+                    title="Editar servidor"
                   >
-                    <PencilIcon className="h-4 w-4 text-secondary-600 dark:text-secondary-400" />
+                    <PencilIcon className="h-4 w-4 mr-1.5" />
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => server.id && handleTest(server.id)}
+                    disabled={loading}
+                    className="flex-1 btn btn-primary btn-sm"
+                    title="Testar conexão"
+                  >
+                    <WifiIcon className="h-4 w-4 mr-1.5" />
+                    Testar
                   </button>
                   <button
                     onClick={() => server.id && handleDelete(server.id, server.name)}
-                    className="p-1 hover:bg-error-50 dark:hover:bg-error-900/30 rounded transition-colors"
-                    title="Excluir"
+                    className="p-2 btn btn-error btn-sm"
+                    title="Excluir servidor"
                   >
-                    <TrashIcon className="h-4 w-4 text-error-600 dark:text-error-400" />
+                    <TrashIcon className="h-4 w-4" />
                   </button>
                 </div>
               </div>
-
-              {/* Status */}
-              {server.status && (
-                <div className="text-xs text-secondary-600 dark:text-secondary-400 space-y-1 mb-3">
-                  {server.status.lastTest && (
-                    <div className="flex items-center">
-                      <ClockIcon className="h-3 w-3 mr-1" />
-                      Último teste: {new Date(server.status.lastTest).toLocaleString('pt-BR')}
-                    </div>
-                  )}
-                  {server.status.responseTime && (
-                    <div className="flex items-center">
-                      <ServerIcon className="h-3 w-3 mr-1" />
-                      Tempo: {server.status.responseTime}ms
-                    </div>
-                  )}
-                  {server.status.instances !== undefined && (
-                    <div className="flex items-center">
-                      <DevicePhoneMobileIcon className="h-3 w-3 mr-1" />
-                      Instâncias: {server.status.instances} ({server.status.activeConnections} ativas)
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <button
-                onClick={() => server.id && handleTest(server.id)}
-                disabled={loading}
-                className="btn btn-secondary btn-sm w-full"
-              >
-                <WifiIcon className="h-4 w-4 mr-2" />
-                Testar Conexão
-              </button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
       {/* Seção de Sessões WAHA */}
       {servers.length > 0 && (
         <div className="mt-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex items-center">
-              <DevicePhoneMobileIcon className="h-5 w-5 mr-2" />
-              Sessões WAHA
-            </h2>
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100 flex items-center">
+                <DevicePhoneMobileIcon className="h-5 w-5 mr-2 text-primary-600 dark:text-primary-400" />
+                Sessões WAHA
+              </h2>
+              <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">
+                Gerencie e monitore as sessões conectadas nos servidores
+              </p>
+            </div>
             <button
               onClick={loadSessions}
               disabled={loadingSessions}
-              className="btn btn-secondary btn-sm"
+              className="btn btn-secondary btn-md"
               title="Recarregar sessões"
             >
-              {loadingSessions ? 'Carregando...' : 'Atualizar'}
+              {loadingSessions ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                  Carregando...
+                </>
+              ) : (
+                <>
+                  <WifiIcon className="h-4 w-4 mr-2" />
+                  Atualizar
+                </>
+              )}
             </button>
           </div>
 
           {loadingSessions ? (
-            <div className="card p-6 text-center">
+            <div className="card p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 dark:border-primary-400 mx-auto mb-3"></div>
               <p className="text-secondary-600 dark:text-secondary-400">Carregando sessões...</p>
             </div>
           ) : sessions.length === 0 ? (
-            <div className="card p-6 text-center bg-secondary-50 dark:bg-secondary-800">
-              <DevicePhoneMobileIcon className="h-12 w-12 mx-auto text-secondary-400 dark:text-secondary-600 mb-4" />
-              <p className="text-secondary-600 dark:text-secondary-400 mb-2">Nenhuma sessão encontrada</p>
-              <p className="text-xs text-secondary-500 dark:text-secondary-500">
+            <div className="card p-10 text-center bg-gradient-to-br from-secondary-50 to-secondary-100 dark:from-secondary-800 dark:to-secondary-900 border border-secondary-200 dark:border-secondary-700">
+              <div className="w-16 h-16 mx-auto mb-4 bg-secondary-100 dark:bg-secondary-800 rounded-full flex items-center justify-center">
+                <DevicePhoneMobileIcon className="h-8 w-8 text-secondary-400 dark:text-secondary-600" />
+              </div>
+              <p className="text-base font-medium text-secondary-700 dark:text-secondary-300 mb-2">Nenhuma sessão encontrada</p>
+              <p className="text-sm text-secondary-500 dark:text-secondary-500">
                 As sessões aparecerão aqui quando estiverem conectadas nos servidores WAHA
               </p>
             </div>
           ) : (
-            <div className="card p-6">
+            <div className="space-y-6">
               {/* Agrupar sessões por servidor */}
               {servers.map((server) => {
                 const serverSessions = sessions.filter(s => s.serverId === server.id)
                 if (serverSessions.length === 0) return null
 
                 return (
-                  <div key={server.id} className="mb-6 last:mb-0">
-                    <h3 className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-3 flex items-center">
-                      <ServerIcon className="h-4 w-4 mr-2" />
-                      {server.name}
-                      <span className="ml-2 text-xs text-secondary-500 dark:text-secondary-500">
-                        ({serverSessions.length} sessão{serverSessions.length !== 1 ? 'ões' : ''})
-                      </span>
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {serverSessions.map((session) => {
-                        const isWorking = session.status === 'WORKING' || session.status === 'CONNECTED' || session.status === 'OPEN'
-                        return (
-                          <div
-                            key={`${session.serverId}:${session.name}`}
-                            className={`border rounded-lg p-3 ${
-                              isWorking
-                                ? 'border-success-200 dark:border-success-800 bg-success-50 dark:bg-success-900/20'
-                                : 'border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800'
-                            }`}
-                          >
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex-1">
-                                <div className="flex items-center mb-1">
+                  <div key={server.id} className="card p-6">
+                    <div className="flex items-center justify-between mb-4 pb-4 border-b border-secondary-200 dark:border-secondary-700">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                          <ServerIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-base font-semibold text-secondary-900 dark:text-secondary-100">
+                            {server.name}
+                          </h3>
+                          <p className="text-xs text-secondary-500 dark:text-secondary-500">
+                            {serverSessions.length} sessão{serverSessions.length !== 1 ? 'ões' : ''} ativa{serverSessions.length !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Sessões em layout horizontal com scroll */}
+                    <div className="overflow-x-auto -mx-6 px-6 scroll-smooth">
+                      <div className="flex space-x-4 pb-3 min-w-max">
+                        {serverSessions.map((session) => {
+                          const isWorking = session.status === 'WORKING' || session.status === 'CONNECTED' || session.status === 'OPEN' || session.status === 'AUTHENTICATED'
+                          return (
+                            <div
+                              key={`${session.serverId}:${session.name}`}
+                              className={`group relative flex-shrink-0 w-72 border-2 rounded-xl p-4 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${
+                                isWorking
+                                  ? 'border-success-200 dark:border-success-800 bg-gradient-to-br from-success-50 to-white dark:from-success-900/20 dark:to-secondary-800'
+                                  : 'border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800'
+                              }`}
+                            >
+                              {/* Badge de Status */}
+                              <div className="absolute top-3 right-3">
+                                <span
+                                  className={`px-2.5 py-1 text-xs font-semibold rounded-full shadow-sm ${getStatusColor(session.status)}`}
+                                >
+                                  {translateStatus(session.status)}
+                                </span>
+                              </div>
+
+                              {/* Avatar e Nome */}
+                              <div className="flex items-start mb-3 pr-20">
+                                <div className="flex-shrink-0">
                                   {session.avatar ? (
                                     <img
                                       src={session.avatar}
                                       alt={session.name}
-                                      className="w-8 h-8 rounded-full mr-2"
+                                      className="w-12 h-12 rounded-full border-2 border-secondary-200 dark:border-secondary-700 shadow-sm"
                                     />
                                   ) : (
-                                    <div className="w-8 h-8 rounded-full bg-secondary-200 dark:bg-secondary-700 flex items-center justify-center mr-2">
-                                      <DevicePhoneMobileIcon className="h-4 w-4 text-secondary-500 dark:text-secondary-400" />
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 shadow-sm ${
+                                      isWorking
+                                        ? 'bg-success-100 dark:bg-success-900/40 border-success-200 dark:border-success-800'
+                                        : 'bg-secondary-100 dark:bg-secondary-700 border-secondary-200 dark:border-secondary-600'
+                                    }`}>
+                                      <DevicePhoneMobileIcon className={`h-6 w-6 ${
+                                        isWorking
+                                          ? 'text-success-600 dark:text-success-400'
+                                          : 'text-secondary-500 dark:text-secondary-400'
+                                      }`} />
                                     </div>
                                   )}
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-secondary-900 dark:text-secondary-100 truncate">
-                                      {session.name}
+                                </div>
+                                <div className="ml-3 flex-1 min-w-0">
+                                  <p className="text-sm font-semibold text-secondary-900 dark:text-secondary-100 truncate mb-0.5">
+                                    {session.name}
+                                  </p>
+                                  {session.phoneNumber && (
+                                    <p className="text-xs text-secondary-600 dark:text-secondary-400 font-medium">
+                                      {session.phoneNumber}
                                     </p>
-                                    {session.phoneNumber && (
-                                      <p className="text-xs text-secondary-600 dark:text-secondary-400">
-                                        {session.phoneNumber}
-                                      </p>
-                                    )}
-                                  </div>
+                                  )}
                                 </div>
                               </div>
-                              <span
-                                className={`px-2 py-1 text-xs rounded-full font-medium ${getStatusColor(session.status)}`}
-                              >
-                                {translateStatus(session.status)}
-                              </span>
-                            </div>
-                            {session.connectedAt && (
-                              <p className="text-xs text-secondary-500 dark:text-secondary-500 mt-1">
-                                Conectado: {new Date(session.connectedAt).toLocaleString('pt-BR')}
-                              </p>
-                            )}
-                            
-                            {/* Botão de ação */}
-                            {!isWorking && (
-                              <div className="mt-3">
+
+                              {/* Informações adicionais */}
+                              {session.connectedAt && (
+                                <div className="mb-3 p-2.5 bg-secondary-50 dark:bg-secondary-900/50 rounded-lg border border-secondary-200 dark:border-secondary-700">
+                                  <div className="flex items-center text-xs text-secondary-600 dark:text-secondary-400">
+                                    <ClockIcon className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
+                                    <span className="truncate">
+                                      Conectado: {new Date(session.connectedAt).toLocaleString('pt-BR', { 
+                                        day: '2-digit', 
+                                        month: '2-digit', 
+                                        hour: '2-digit', 
+                                        minute: '2-digit' 
+                                      })}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Botão de ação */}
+                              {!isWorking && (
                                 <button
                                   onClick={() => loadQrCode(session)}
                                   disabled={loadingQr}
-                                  className="btn btn-primary btn-sm w-full"
+                                  className="w-full btn btn-primary btn-sm"
                                   title="Escanear QR Code"
                                 >
-                                  <QrCodeIcon className="h-4 w-4" />
+                                  <QrCodeIcon className="h-4 w-4 mr-2" />
                                   {loadingQr ? 'Carregando...' : 'Escanear QR Code'}
                                 </button>
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
+                              )}
+                              
+                              {isWorking && (
+                                <div className="w-full px-3 py-2 bg-success-100 dark:bg-success-900/30 border border-success-200 dark:border-success-800 rounded-lg text-center">
+                                  <p className="text-xs font-medium text-success-700 dark:text-success-300">
+                                    ✓ Sessão Ativa
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
                     </div>
                   </div>
                 )
