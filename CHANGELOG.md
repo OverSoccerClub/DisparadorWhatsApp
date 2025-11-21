@@ -32,6 +32,10 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ## [0.1.13] - 2025-11-21
 ### Adicionado
 - Funcionalidades em desenvolvimento
+
+## [0.1.14] - 2025-11-21
+### Adicionado
+- Funcionalidades em desenvolvimento
 ## [Não Publicado]
 
 ### Adicionado
