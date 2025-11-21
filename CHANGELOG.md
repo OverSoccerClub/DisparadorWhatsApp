@@ -34,8 +34,24 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Funcionalidades em desenvolvimento
 
 ## [0.1.14] - 2025-11-21
+
 ### Adicionado
-- Funcionalidades em desenvolvimento
+- Layout horizontal com scroll para sessões WAHA (sessões lado a lado)
+- Indicadores visuais melhorados para status de servidores e sessões
+- Cards de servidores redesenhados com melhor hierarquia visual
+
+### Alterado
+- Interface da página WAHA Sessions completamente redesenhada
+- Cards de servidores com design moderno, bordas coloridas e efeitos hover
+- Cards de sessões com layout horizontal e scroll suave
+- Melhor organização visual com badges de status e ícones destacados
+- Espaçamento e padding aumentados para melhor legibilidade
+- Resumo de status com design em gradiente
+
+### Melhorado
+- Experiência do usuário na gestão de servidores e sessões WAHA
+- Visualização intuitiva das sessões agrupadas por servidor
+- Feedback visual para sessões ativas vs inativas
 ## [Não Publicado]
 
 ### Adicionado
