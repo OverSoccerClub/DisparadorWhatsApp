@@ -507,7 +507,7 @@ export default function EvolutionApiPage() {
       })
       
       if (!confirmDelete) {
-        toast('Ação cancelada')
+        showSuccess('Ação cancelada')
         setIsDeleting(false)
         return
       }
