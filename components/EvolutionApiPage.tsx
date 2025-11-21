@@ -392,7 +392,7 @@ export default function EvolutionApiPage() {
       variant: 'warning'
     })
     if (!confirmDisconnect) {
-      toast('Ação cancelada')
+      showSuccess('Ação cancelada')
       return
     }
 
@@ -678,7 +678,7 @@ export default function EvolutionApiPage() {
     
     setTimeout(() => {
       stopConnectionCheck()
-      toast('Tempo limite de verificação atingido. Tente gerar um novo QR Code.')
+      showError('Tempo limite de verificação atingido. Tente gerar um novo QR Code.')
     }, 300000)
   }
 
