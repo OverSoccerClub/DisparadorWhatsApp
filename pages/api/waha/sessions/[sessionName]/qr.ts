@@ -98,15 +98,32 @@ export default async function handler(
     })
     
     let sessionExists = false
+    let sessionStatus: string | null = null
+    let sessionIsWorking = false
+    
     if (sessionInfoResponse.ok) {
       const sessionsList = await sessionInfoResponse.json()
       if (Array.isArray(sessionsList)) {
-        sessionExists = sessionsList.some((s: any) => s.name === normalizedSessionName)
-        console.log(`📋 Sessão ${normalizedSessionName} ${sessionExists ? 'encontrada' : 'não encontrada'} na lista`)
+        const foundSession = sessionsList.find((s: any) => s.name === normalizedSessionName)
+        if (foundSession) {
+          sessionExists = true
+          sessionStatus = String(foundSession.status || '').toUpperCase()
+          // Verificar se a sessão está em um status ativo
+          sessionIsWorking = sessionStatus === 'WORKING' || 
+                            sessionStatus === 'CONNECTED' || 
+                            sessionStatus === 'OPEN' || 
+                            sessionStatus === 'READY' || 
+                            sessionStatus === 'AUTHENTICATED'
+          console.log(`📋 Sessão ${normalizedSessionName} encontrada com status: ${sessionStatus} (${sessionIsWorking ? 'ATIVA' : 'INATIVA'})`)
+        } else {
+          console.log(`📋 Sessão ${normalizedSessionName} não encontrada na lista`)
+        }
       }
     }
     
-    // Se a sessão não existe, tentar criar/iniciar ela primeiro
+    // IMPORTANTE: NÃO reiniciar sessões que já existem, mesmo que não estejam WORKING
+    // Apenas criar/iniciar se a sessão realmente não existir
+    // Isso evita reiniciar sessões que estão sendo usadas ou que estão em processo de conexão
     if (!sessionExists) {
       console.log(`🔄 Sessão ${normalizedSessionName} não encontrada, tentando criar/iniciar...`)
       try {
@@ -126,7 +143,7 @@ export default async function handler(
           console.log(`⚠️ Não foi possível criar sessão (pode já existir): ${createResponse.status} - ${createErrorText.substring(0, 100)}`)
         }
         
-        // Tentar iniciar a sessão
+        // Tentar iniciar a sessão apenas se ela não existir
         const startResponse = await fetch(`${normalizedApiUrl}/api/${encodeURIComponent(normalizedSessionName)}/start`, {
           method: 'POST',
           headers,
@@ -143,6 +160,10 @@ export default async function handler(
       } catch (startError) {
         console.error('❌ Erro ao tentar criar/iniciar sessão:', startError)
       }
+    } else {
+      // Sessão existe - não fazer nada, apenas buscar o QR code
+      // Não reiniciar mesmo que não esteja WORKING para evitar desconexões
+      console.log(`ℹ️ Sessão ${normalizedSessionName} já existe (status: ${sessionStatus}), buscando QR code sem reiniciar`)
     }
     
     // Buscar QR code da sessão WAHA
