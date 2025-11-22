@@ -54,8 +54,18 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Feedback visual para sessões ativas vs inativas
 
 ## [0.1.15] - 2025-11-22
-### Adicionado
-- Funcionalidades em desenvolvimento
+
+### Corrigido
+- **BUG CRÍTICO**: Corrigido bug que reiniciava sessões WAHA automaticamente ao acessar o sistema
+- Sessões WAHA existentes não são mais reiniciadas ao buscar QR code
+- Verificação de status da sessão antes de iniciar/restartar
+- Sessões WORKING/CONNECTED agora permanecem ativas ao acessar o sistema
+- Erro de permissão ao salvar BUILD_HASH.txt em produção (não tenta salvar em runtime)
+
+### Melhorado
+- Lógica de verificação de sessões WAHA mais robusta
+- Prevenção de desconexões desnecessárias de sessões ativas
+- Sistema de hash de build mais resiliente em ambientes de produção
 ## [Não Publicado]
 
 ### Adicionado
