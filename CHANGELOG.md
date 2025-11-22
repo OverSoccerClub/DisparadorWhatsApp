@@ -68,8 +68,23 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Sistema de hash de build mais resiliente em ambientes de produção
 
 ## [0.1.16] - 2025-11-22
+
 ### Adicionado
-- Funcionalidades em desenvolvimento
+- Atualização automática do QR code após 25 segundos se a sessão ainda não conectou
+- Detecção automática de conexão com fechamento do modal e notificação de sucesso
+- Layout horizontal aprimorado para sessões WAHA (lado a lado com scroll)
+
+### Melhorado
+- Layout das sessões agora exibe cards lado a lado (horizontal) ao invés de empilhados
+- Sistema de atualização automática do QR code quando necessário
+- Detecção de conexão mais robusta com verificação a cada 3 segundos
+- Mensagem de sucesso automática quando conexão é estabelecida
+- Limpeza automática de timers e recursos ao fechar modais
+
+### Alterado
+- Cards de sessões com largura fixa (280px) para melhor alinhamento horizontal
+- Scroll horizontal suave para navegação entre múltiplas sessões
+- Verificação de status inclui mais estados (READY, AUTHENTICATED)
 ## [Não Publicado]
 
 ### Adicionado

@@ -82,6 +82,7 @@ export default function WahaServersManager({ userId }: Props = {}) {
   const [loadingQr, setLoadingQr] = useState(false)
   const [checkingConnection, setCheckingConnection] = useState(false)
   const connectionCheckIntervalRef = React.useRef<NodeJS.Timeout | null>(null)
+  const qrRefreshIntervalRef = React.useRef<NodeJS.Timeout | null>(null)
   const [testStatus, setTestStatus] = useState<TestStatus>({
     testing: false,
     connected: null,
@@ -250,6 +251,8 @@ export default function WahaServersManager({ userId }: Props = {}) {
         setShowQrModal(true)
         // Iniciar verificação de conexão
         startConnectionCheck(session)
+        // Iniciar atualização automática do QR code após 25 segundos
+        startQrRefresh(session)
       } else {
         showError(data.error || 'Erro ao buscar QR code. A sessão pode não existir ou não estar pronta.')
       }
@@ -269,6 +272,92 @@ export default function WahaServersManager({ userId }: Props = {}) {
       connectionCheckIntervalRef.current = null
     }
     setCheckingConnection(false)
+  }
+
+  // Limpar atualização de QR code
+  const stopQrRefresh = () => {
+    if (qrRefreshIntervalRef.current) {
+      clearInterval(qrRefreshIntervalRef.current)
+      qrRefreshIntervalRef.current = null
+    }
+  }
+
+  // Atualizar QR code automaticamente após 25 segundos
+  const startQrRefresh = (session: WahaSession) => {
+    // Limpar intervalo anterior se existir
+    stopQrRefresh()
+    
+    // Aguardar 25 segundos antes de atualizar
+    const timeout = setTimeout(async () => {
+      // Verificar se o modal ainda está aberto e a sessão ainda não conectou
+      if (showQrModal && selectedSession && selectedSession.name === session.name) {
+        // Verificar status antes de atualizar
+        try {
+          const statusResponse = await fetch('/api/waha/sessions/all', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+          })
+          
+          if (statusResponse.ok) {
+            const statusData = await statusResponse.json()
+            if (statusData.success) {
+              const currentSession = statusData.sessions.find((s: WahaSession) => 
+                s.serverId === session.serverId && s.name === session.name
+              )
+              
+              // Só atualizar se ainda não estiver conectado
+              if (currentSession) {
+                const isWorking = currentSession.status === 'WORKING' || 
+                                 currentSession.status === 'CONNECTED' || 
+                                 currentSession.status === 'OPEN' ||
+                                 currentSession.status === 'AUTHENTICATED'
+                
+                if (!isWorking) {
+                  console.log('🔄 Atualizando QR code após 25 segundos...')
+                  
+                  // Buscar novo QR code diretamente
+                  try {
+                    setLoadingQr(true)
+                    const server = servers.find(s => s.id === session.serverId)
+                    if (server) {
+                      const response = await fetch(`/api/waha/sessions/${session.name}/qr`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          serverId: session.serverId,
+                          apiUrl: server.apiUrl,
+                          apiKey: server.apiKey
+                        })
+                      })
+                      
+                      if (response.ok) {
+                        const data = await response.json()
+                        if (data.success && data.qrCode) {
+                          setQrCode(data.qrCode)
+                          // Reiniciar o timer de atualização para próxima vez (se ainda não conectou)
+                          if (showQrModal && selectedSession && selectedSession.name === session.name) {
+                            startQrRefresh(session)
+                          }
+                        }
+                      }
+                    }
+                  } catch (error) {
+                    console.error('Erro ao atualizar QR code:', error)
+                  } finally {
+                    setLoadingQr(false)
+                  }
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Erro ao verificar status antes de atualizar QR:', error)
+        }
+      }
+    }, 25000) // 25 segundos
+
+    qrRefreshIntervalRef.current = timeout as any
   }
 
   // Verificar conexão automaticamente
@@ -300,15 +389,25 @@ export default function WahaServersManager({ userId }: Props = {}) {
           if (updatedSession) {
             const isWorking = updatedSession.status === 'WORKING' || 
                              updatedSession.status === 'CONNECTED' || 
-                             updatedSession.status === 'OPEN'
+                             updatedSession.status === 'OPEN' ||
+                             updatedSession.status === 'AUTHENTICATED' ||
+                             updatedSession.status === 'READY'
             
             if (isWorking) {
+              // Parar todas as verificações
               stopConnectionCheck()
+              stopQrRefresh()
+              
+              // Fechar modal
               setShowQrModal(false)
               setQrCode(null)
               setSelectedSession(null)
-              await loadSessions() // Recarregar para atualizar a lista
-              showSuccess('Sessão conectada com sucesso!')
+              
+              // Recarregar sessões para atualizar a lista
+              await loadSessions()
+              
+              // Mostrar mensagem de sucesso
+              showSuccess('✅ Conexão estabelecida com sucesso! A sessão está ativa.')
             }
           }
         }
@@ -318,7 +417,7 @@ export default function WahaServersManager({ userId }: Props = {}) {
       if (checkCount >= maxChecks) {
         stopConnectionCheck()
       }
-    }, 3000)
+    }, 3000) // Verificar a cada 3 segundos
 
     connectionCheckIntervalRef.current = interval
   }
@@ -327,9 +426,10 @@ export default function WahaServersManager({ userId }: Props = {}) {
     loadServers()
     loadSessions()
     
-    // Limpar intervalo ao desmontar
+    // Limpar intervalos ao desmontar
     return () => {
       stopConnectionCheck()
+      stopQrRefresh()
     }
   }, [])
 
@@ -876,18 +976,19 @@ export default function WahaServersManager({ userId }: Props = {}) {
                     </div>
                     
                     {/* Sessões em layout horizontal com scroll */}
-                    <div className="overflow-x-auto -mx-6 px-6 scroll-smooth">
-                      <div className="flex space-x-4 pb-3 min-w-max">
+                    <div className="overflow-x-auto -mx-6 px-6 scroll-smooth" style={{ scrollbarWidth: 'thin', WebkitOverflowScrolling: 'touch' }}>
+                      <div className="flex space-x-4 pb-3" style={{ display: 'flex', flexWrap: 'nowrap', flexDirection: 'row' }}>
                         {serverSessions.map((session) => {
                           const isWorking = session.status === 'WORKING' || session.status === 'CONNECTED' || session.status === 'OPEN' || session.status === 'AUTHENTICATED'
                           return (
                             <div
                               key={`${session.serverId}:${session.name}`}
-                              className={`group relative flex-shrink-0 w-72 border-2 rounded-xl p-4 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${
+                              className={`group relative flex-shrink-0 border-2 rounded-xl p-4 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${
                                 isWorking
                                   ? 'border-success-200 dark:border-success-800 bg-gradient-to-br from-success-50 to-white dark:from-success-900/20 dark:to-secondary-800'
                                   : 'border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800'
                               }`}
+                              style={{ minWidth: '280px', maxWidth: '280px', width: '280px' }}
                             >
                               {/* Badge de Status */}
                               <div className="absolute top-3 right-3">
@@ -1273,6 +1374,7 @@ export default function WahaServersManager({ userId }: Props = {}) {
                 <button
                   onClick={() => {
                     stopConnectionCheck()
+                    stopQrRefresh()
                     setShowQrModal(false)
                     setQrCode(null)
                     setSelectedSession(null)
@@ -1405,6 +1507,7 @@ export default function WahaServersManager({ userId }: Props = {}) {
                 <button
                   onClick={() => {
                     stopConnectionCheck()
+                    stopQrRefresh()
                     setShowQrModal(false)
                     setQrCode(null)
                     setSelectedSession(null)
