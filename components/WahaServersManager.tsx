@@ -976,19 +976,42 @@ export default function WahaServersManager({ userId }: Props = {}) {
                     </div>
                     
                     {/* Sessões em layout horizontal com scroll */}
-                    <div className="overflow-x-auto -mx-6 px-6 scroll-smooth" style={{ scrollbarWidth: 'thin', WebkitOverflowScrolling: 'touch' }}>
-                      <div className="flex space-x-4 pb-3" style={{ display: 'flex', flexWrap: 'nowrap', flexDirection: 'row' }}>
+                    <div 
+                      className="overflow-x-auto -mx-6 px-6 scroll-smooth" 
+                      style={{ 
+                        scrollbarWidth: 'thin', 
+                        WebkitOverflowScrolling: 'touch',
+                        overflowY: 'hidden',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      <div 
+                        className="flex pb-3" 
+                        style={{ 
+                          display: 'flex',
+                          flexDirection: 'row',
+                          flexWrap: 'nowrap',
+                          gap: '1rem',
+                          alignItems: 'stretch'
+                        }}
+                      >
                         {serverSessions.map((session) => {
                           const isWorking = session.status === 'WORKING' || session.status === 'CONNECTED' || session.status === 'OPEN' || session.status === 'AUTHENTICATED'
                           return (
                             <div
                               key={`${session.serverId}:${session.name}`}
-                              className={`group relative flex-shrink-0 border-2 rounded-xl p-4 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${
+                              className={`group relative border-2 rounded-xl p-4 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${
                                 isWorking
                                   ? 'border-success-200 dark:border-success-800 bg-gradient-to-br from-success-50 to-white dark:from-success-900/20 dark:to-secondary-800'
                                   : 'border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800'
                               }`}
-                              style={{ minWidth: '280px', maxWidth: '280px', width: '280px' }}
+                              style={{ 
+                                flexShrink: 0,
+                                flexGrow: 0,
+                                minWidth: '280px',
+                                maxWidth: '280px',
+                                width: '280px'
+                              }}
                             >
                               {/* Badge de Status */}
                               <div className="absolute top-3 right-3">
