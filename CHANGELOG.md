@@ -52,6 +52,10 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Experiência do usuário na gestão de servidores e sessões WAHA
 - Visualização intuitiva das sessões agrupadas por servidor
 - Feedback visual para sessões ativas vs inativas
+
+## [0.1.15] - 2025-11-22
+### Adicionado
+- Funcionalidades em desenvolvimento
 ## [Não Publicado]
 
 ### Adicionado

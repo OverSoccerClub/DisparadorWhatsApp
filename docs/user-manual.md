@@ -3,7 +3,7 @@
 > **Objetivo**  
 > Ensinar novos operadores e gestores a configurar, operar e monitorar toda a plataforma de disparo de mensagens com segurança, eficiência e autonomia.
 
-> **Última atualização automática**: 21 de novembro de 2025
+> **Última atualização automática**: 22 de novembro de 2025
 
 ---
 
