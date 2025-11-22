@@ -31,6 +31,50 @@ function getNodeModules() {
   return { fs, path, crypto }
 }
 
+// Tenta salvar em diferentes locais com base nas permissões disponíveis
+function getBuildHashFilePath(): string | null {
+  const modules = getNodeModules()
+  if (!modules) {
+    return null
+  }
+  
+  const { fs, path } = modules
+  
+  if (typeof process === 'undefined' || !process.cwd) {
+    return null
+  }
+  
+  // Lista de locais possíveis para salvar (em ordem de preferência)
+  const possiblePaths = [
+    path.join(process.cwd(), 'BUILD_HASH.txt'), // Diretório raiz (preferido)
+    path.join(process.cwd(), '.next', 'BUILD_HASH.txt'), // Dentro de .next
+    path.join('/tmp', 'BUILD_HASH.txt'), // Diretório temporário
+  ]
+  
+  // Retorna o primeiro caminho que existe ou pode ser escrito
+  for (const filePath of possiblePaths) {
+    try {
+      const dir = path.dirname(filePath)
+      // Verifica se o diretório existe e pode ser escrito
+      if (fs.existsSync(dir)) {
+        // Tenta escrever um arquivo de teste
+        try {
+          const testFile = path.join(dir, '.write-test')
+          fs.writeFileSync(testFile, 'test')
+          fs.unlinkSync(testFile)
+          return filePath
+        } catch {
+          continue // Não tem permissão, tenta próximo
+        }
+      }
+    } catch {
+      continue
+    }
+  }
+  
+  return null // Nenhum local disponível para escrita
+}
+
 const BUILD_HASH_FILE = typeof process !== 'undefined' && process.cwd 
   ? require('path').join(process.cwd(), 'BUILD_HASH.txt')
   : 'BUILD_HASH.txt'
@@ -59,6 +103,7 @@ export function generateBuildHash(): string {
 
 /**
  * Salva o hash de build no arquivo BUILD_HASH.txt
+ * Tenta salvar em diferentes locais se não tiver permissão no diretório raiz
  */
 export function saveBuildHash(hash?: string): string {
   const modules = getNodeModules()
@@ -69,40 +114,86 @@ export function saveBuildHash(hash?: string): string {
   const { fs } = modules
   const buildHash = hash || generateBuildHash()
   
+  // Tenta encontrar um local com permissão de escrita
+  const filePath = getBuildHashFilePath()
+  const targetPath = filePath || BUILD_HASH_FILE
+  
   try {
-    fs.writeFileSync(BUILD_HASH_FILE, buildHash, 'utf-8')
+    fs.writeFileSync(targetPath, buildHash, 'utf-8')
     return buildHash
-  } catch (error) {
-    console.error('Erro ao salvar hash de build:', error)
+  } catch (error: any) {
+    // Se não conseguir salvar, apenas loga o erro mas não falha
+    // O hash ainda é retornado para uso
+    if (error.code !== 'EACCES' && error.code !== 'EPERM') {
+      console.error('Erro ao salvar hash de build:', error.message)
+    }
+    // Em produção, é comum não ter permissão de escrita, então apenas retorna o hash
     return buildHash
   }
 }
 
+// Cache em memória para evitar regenerar o hash a cada chamada
+let cachedBuildHash: string | null = null
+
 /**
  * Lê o hash de build do arquivo BUILD_HASH.txt
  * Se o arquivo não existir, gera um novo hash
+ * Usa cache em memória para evitar regenerar
  */
 export function getBuildHash(): string {
+  // Retorna hash em cache se disponível
+  if (cachedBuildHash) {
+    return cachedBuildHash
+  }
+  
   const modules = getNodeModules()
   if (!modules) {
     throw new Error('getBuildHash só pode ser usado no servidor')
   }
   
-  const { fs } = modules
+  const { fs, path } = modules
   
-  try {
-    if (fs.existsSync(BUILD_HASH_FILE)) {
-      const hash = fs.readFileSync(BUILD_HASH_FILE, 'utf-8').trim()
-      if (hash && hash.length === 12) {
-        return hash
+  // Lista de locais possíveis para ler (em ordem de preferência)
+  const possiblePaths = [
+    path.join(process.cwd(), 'BUILD_HASH.txt'),
+    path.join(process.cwd(), '.next', 'BUILD_HASH.txt'),
+    path.join('/tmp', 'BUILD_HASH.txt'),
+  ]
+  
+  // Tenta ler de qualquer um dos locais possíveis
+  for (const filePath of possiblePaths) {
+    try {
+      if (fs.existsSync(filePath)) {
+        const hash = fs.readFileSync(filePath, 'utf-8').trim()
+        if (hash && hash.length === 12) {
+          cachedBuildHash = hash
+          return hash
+        }
       }
+    } catch (error) {
+      // Continua tentando outros locais
+      continue
     }
-  } catch (error) {
-    console.error('Erro ao ler hash de build:', error)
   }
   
-  // Se não conseguir ler, gera um novo hash
-  return saveBuildHash()
+  // Se não conseguir ler de nenhum lugar, gera um novo hash
+  // Em runtime (API), não tenta salvar para evitar erros de permissão
+  // O hash é gerado durante o build, então em produção geralmente já existe
+  const buildHash = generateBuildHash()
+  
+  // Apenas tenta salvar se estiver em ambiente de desenvolvimento/build
+  // Em produção/runtime, não tenta salvar para evitar erros de permissão
+  const isRuntime = process.env.NODE_ENV === 'production' && !process.env.NEXT_PHASE
+  if (!isRuntime) {
+    try {
+      saveBuildHash(buildHash)
+    } catch {
+      // Ignora erro de escrita em runtime
+    }
+  }
+  
+  cachedBuildHash = buildHash
+  return buildHash
 }
 
 
