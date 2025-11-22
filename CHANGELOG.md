@@ -66,6 +66,10 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Lógica de verificação de sessões WAHA mais robusta
 - Prevenção de desconexões desnecessárias de sessões ativas
 - Sistema de hash de build mais resiliente em ambientes de produção
+
+## [0.1.16] - 2025-11-22
+### Adicionado
+- Funcionalidades em desenvolvimento
 ## [Não Publicado]
 
 ### Adicionado
